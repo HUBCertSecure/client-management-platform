@@ -5,6 +5,9 @@ on:
     - cron: '0 */4 * * *'   # every 4 hours
   workflow_dispatch:         # manual "Run workflow" button in GitHub Actions UI
 
+permissions:
+  contents: write
+
 jobs:
   sync-evident:
     runs-on: ubuntu-latest
