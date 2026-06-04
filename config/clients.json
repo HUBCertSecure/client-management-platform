@@ -1387,6 +1387,18 @@
       "producer_name": "",
       "contact_name": "",
       "demo": true
+    },
+    {
+      "client_name": "Excel Constructors Inc.",
+      "rp_common_name": "excelconstructors",
+      "program_start_date": "",
+      "go_live_date": "",
+      "structure": "project",
+      "source": "trustlayer",
+      "active": false,
+      "platform": "trustlayer",
+      "producer_name": "Chandlor Cullor",
+      "contact_name": "Ryan Lantz"
     }
   ]
 }
