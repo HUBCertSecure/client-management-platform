@@ -879,6 +879,68 @@
       </div>
     </div>
 
+    <!-- STEP 1.5: Template Type Chooser -->
+    <div id="tg-step-15" style="display:none">
+      <div class="client-banner" id="tg-client-banner-15">
+        <div style="display:flex;align-items:center;gap:8px">
+          <div>
+            <div class="banner-name" id="tg-banner-name-15"></div>
+            <div class="banner-struct" id="tg-banner-struct-15"></div>
+          </div>
+        </div>
+        <span class="banner-change" onclick="tgGoStep(1)">&#8592; Change Client</span>
+      </div>
+      <div class="card" style="margin-top:14px">
+        <div class="card-title" style="margin-bottom:6px">&#128462; Select Template Type</div>
+        <div style="font-size:12px;color:var(--muted);margin-bottom:20px">Choose the type of template to generate for this client.</div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px">
+          <!-- New Third-Party Request -->
+          <div onclick="tgGoStep(2)" style="cursor:pointer;border:2px solid var(--border);border-radius:10px;padding:22px 20px;display:flex;flex-direction:column;gap:10px;transition:border-color .15s,background .15s" onmouseover="this.style.borderColor='#3872B8';this.style.background='#F0F7FF'" onmouseout="this.style.borderColor='var(--border)';this.style.background=''">
+            <div style="font-size:28px">&#10133;</div>
+            <div style="font-weight:700;font-size:15px;color:var(--text)">New Third-Party Request</div>
+            <div style="font-size:12px;color:var(--muted);line-height:1.5">Generates a branded intake form to send to the client. Third parties fill it out and return it to HUB.</div>
+          </div>
+          <!-- Delete Third-Party Request -->
+          <div onclick="tgGoStep(3)" style="cursor:pointer;border:2px solid var(--border);border-radius:10px;padding:22px 20px;display:flex;flex-direction:column;gap:10px;transition:border-color .15s,background .15s" onmouseover="this.style.borderColor='#DC2626';this.style.background='#FEF2F2'" onmouseout="this.style.borderColor='var(--border)';this.style.background=''">
+            <div style="font-size:28px">&#128465;</div>
+            <div style="font-weight:700;font-size:15px;color:var(--text)">Delete Third-Party Request</div>
+            <div style="font-size:12px;color:var(--muted);line-height:1.5">Loads all active third parties for this client. Select who to remove and generate a branded Excel for client review.</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- STEP 3: Delete Third-Party Request -->
+    <div id="tg-step-3" style="display:none">
+      <div class="client-banner" id="tg-client-banner-3">
+        <div style="display:flex;align-items:center;gap:8px">
+          <div>
+            <div class="banner-name" id="tg-banner-name-3"></div>
+            <div class="banner-struct" id="tg-banner-struct-3"></div>
+          </div>
+        </div>
+        <span class="banner-change" onclick="tgGoStep(15)">&#8592; Back</span>
+      </div>
+      <div class="card" style="margin-top:14px">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;flex-wrap:wrap;gap:8px">
+          <div>
+            <div class="card-title" style="margin-bottom:2px">&#128465; Delete Third-Party Request</div>
+            <div style="font-size:12px;color:var(--muted)" id="tg-del-count">Loading third parties…</div>
+          </div>
+          <div style="display:flex;gap:8px;align-items:center">
+            <input type="text" id="tg-del-search" placeholder="Search…" style="width:180px;font-size:12px;padding:6px 10px" oninput="tgDelFilter()">
+            <button class="btn btn-secondary" style="font-size:12px;padding:6px 12px" onclick="tgDelSelectAll()">Select All</button>
+            <button class="btn btn-secondary" style="font-size:12px;padding:6px 12px" onclick="tgDelClearAll()">Clear</button>
+            <button class="btn btn-primary" style="font-size:12px;padding:6px 14px;white-space:nowrap" id="tg-del-generate-btn" onclick="tgDelGenerate()" disabled>&#11015; Download Excel</button>
+          </div>
+        </div>
+        <div id="tg-del-list" style="max-height:420px;overflow-y:auto;border:1px solid var(--border);border-radius:7px;font-size:12px">
+          <div style="padding:20px;text-align:center;color:var(--muted)">Loading…</div>
+        </div>
+      </div>
+    </div>
+
+
     <!-- STEP 2: Configure -->
     <div id="tg-step-2" style="display:none">
       <div class="client-banner" id="tg-client-banner">
@@ -5136,7 +5198,7 @@ async function tgSelectClient(key) {
     tgInitRows(key);
   }
 
-  tgGoStep(2);
+  tgGoStep(15);
   tgRenderBuilder();
   tgRenderTemplateButtons();
   // Update entity/party labels based on platform
@@ -5157,12 +5219,26 @@ async function tgSelectClient(key) {
 }
 
 function tgGoStep(n) {
-  [1,2].forEach(i => {
-    const el = document.getElementById('tg-step-' + i);
+  [1, 15, 2, 3].forEach(i => {
+    const el = document.getElementById('tg-step-' + (i === 15 ? '15' : i));
     if (el) el.style.display = i === n ? 'block' : 'none';
   });
-  if (n === 1) setHeaderTitle('Build Template');
+  if (n === 1)  setHeaderTitle('Build Template');
+  if (n === 15 && _tgClient) {
+    setHeaderTitle('Build Template', _tgClient.name);
+    // Sync banners
+    ['15','3'].forEach(sfx => {
+      const bn = document.getElementById('tg-banner-name-' + sfx);
+      const bs = document.getElementById('tg-banner-struct-' + sfx);
+      if (bn) bn.textContent = _tgClient.name;
+      if (bs) bs.textContent = STRUCT[_tgClient.structure]?.label || '';
+    });
+  }
   if (n === 2 && _tgClient) setHeaderTitle('Build Template', _tgClient.name);
+  if (n === 3 && _tgClient) {
+    setHeaderTitle('Delete Third-Party Request', _tgClient.name);
+    tgDelLoad();
+  }
 }
 
 function tgRenderStandardFields() {
@@ -8033,6 +8109,175 @@ function renderAuditLog() {
         ${e.user ? `<div style="font-size:11px;color:var(--muted);margin-top:2px">${e.user}${e.role ? ' · ' + e.role : ''}</div>` : ''}
       </div>
     </div>`).join('');
+}
+
+
+// ── TEMPLATE GENERATOR — DELETE THIRD-PARTY REQUEST ──────────────────
+let _tgDelRows = [];     // full list loaded from CSV
+let _tgDelFiltered = []; // after search filter
+let _tgDelSelected = new Set(); // selected insured_ids / vendor ids
+
+async function tgDelLoad() {
+  const list    = document.getElementById('tg-del-list');
+  const countEl = document.getElementById('tg-del-count');
+  const genBtn  = document.getElementById('tg-del-generate-btn');
+  if (!_tgClient) return;
+  if (list) list.innerHTML = '<div style="padding:20px;text-align:center;color:var(--muted)">Loading…</div>';
+  if (countEl) countEl.textContent = 'Loading third parties…';
+  _tgDelRows = [];
+  _tgDelSelected.clear();
+  if (genBtn) genBtn.disabled = true;
+
+  try {
+    const s     = getSettings();
+    const isTL  = isTLClient(_tgClient.key);
+    const path  = isTL
+      ? (s.tlInsuredsPath || 'data/trustlayer/vendors.csv')
+      : (s.insuredsPath   || 'data/evident/insureds.csv');
+
+    const rows = await fetchCSV(path);
+
+    // Filter to this client, active only
+    const clientName = _tgClient.name;
+    const filtered = rows.filter(r => {
+      const rowClient = r.client || r.Client || '';
+      if (rowClient.trim() !== clientName.trim()) return false;
+      // Active only — skip inactive and paused
+      const active = String(r.active  || r.Active  || r.status || 'true').toLowerCase();
+      const paused = String(r.paused  || r.Paused  || 'false').toLowerCase();
+      if (active === 'false' || active === 'inactive') return false;
+      if (paused === 'true') return false;
+      return true;
+    });
+
+    // Normalise columns — Evident uses insured_id/insured_name, TrustLayer uses id/name
+    _tgDelRows = filtered.map(r => ({
+      id:     r.insured_id || r.id     || r.vendor_id || '',
+      name:   r.insured_name || r.name || r.vendor_name || r['Business Name'] || '',
+      email:  r.primary_contact_email || r.email || r.primary_email || '',
+      status: r.compliance_status || r.status || '',
+    })).filter(r => r.name);
+
+    _tgDelFiltered = [..._tgDelRows];
+    if (countEl) countEl.textContent = `${_tgDelRows.length} active third ${_tgDelRows.length === 1 ? 'party' : 'parties'} — select who to remove`;
+    tgDelRender();
+  } catch(e) {
+    if (list) list.innerHTML = `<div style="padding:20px;text-align:center;color:var(--red)">Failed to load: ${e.message}</div>`;
+    if (countEl) countEl.textContent = 'Error loading data';
+  }
+}
+
+function tgDelRender() {
+  const list   = document.getElementById('tg-del-list');
+  const genBtn = document.getElementById('tg-del-generate-btn');
+  if (!list) return;
+  if (!_tgDelFiltered.length) {
+    list.innerHTML = '<div style="padding:20px;text-align:center;color:var(--muted)">No active third parties found for this client.</div>';
+    if (genBtn) genBtn.disabled = true;
+    return;
+  }
+  const selCount = _tgDelSelected.size;
+  if (genBtn) genBtn.disabled = selCount === 0;
+  if (genBtn) genBtn.textContent = selCount ? `⬇ Download Excel (${selCount} selected)` : '⬇ Download Excel';
+
+  list.innerHTML = _tgDelFiltered.map(r => {
+    const checked = _tgDelSelected.has(r.id || r.name);
+    return `<div style="display:flex;align-items:center;gap:10px;padding:9px 12px;border-bottom:1px solid var(--border);cursor:pointer;${checked ? 'background:#FEF2F2' : ''}" onclick="tgDelToggle('${(r.id || r.name).replace(/'/g,"\'")}',this)">
+      <input type="checkbox" ${checked ? 'checked' : ''} style="width:15px;height:15px;flex-shrink:0;cursor:pointer" onclick="event.stopPropagation();tgDelToggle('${(r.id || r.name).replace(/'/g,"\'")}',this.closest('div'))">
+      <div style="flex:1;min-width:0">
+        <div style="font-weight:600;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${r.name}</div>
+        ${r.email ? `<div style="color:var(--muted);font-size:11px">${r.email}</div>` : ''}
+      </div>
+      <div style="font-size:11px;padding:2px 8px;border-radius:10px;white-space:nowrap;${r.status.toUpperCase() === 'NON_COMPLIANT' ? 'background:#FEE2E2;color:#DC2626' : r.status.toUpperCase() === 'COMPLIANT' ? 'background:#DCFCE7;color:#16A34A' : 'background:#F3F4F6;color:#6B7280'}">${r.status || 'Unknown'}</div>
+    </div>`;
+  }).join('');
+}
+
+function tgDelToggle(key, rowEl) {
+  if (_tgDelSelected.has(key)) {
+    _tgDelSelected.delete(key);
+    if (rowEl) rowEl.style.background = '';
+  } else {
+    _tgDelSelected.add(key);
+    if (rowEl) rowEl.style.background = '#FEF2F2';
+  }
+  // Update checkbox state
+  const cb = rowEl?.querySelector('input[type="checkbox"]');
+  if (cb) cb.checked = _tgDelSelected.has(key);
+  // Update button
+  const genBtn = document.getElementById('tg-del-generate-btn');
+  const selCount = _tgDelSelected.size;
+  if (genBtn) { genBtn.disabled = selCount === 0; genBtn.textContent = selCount ? `⬇ Download Excel (${selCount} selected)` : '⬇ Download Excel'; }
+}
+
+function tgDelFilter() {
+  const q = (document.getElementById('tg-del-search')?.value || '').toLowerCase();
+  _tgDelFiltered = q ? _tgDelRows.filter(r => r.name.toLowerCase().includes(q) || r.email.toLowerCase().includes(q)) : [..._tgDelRows];
+  tgDelRender();
+}
+
+function tgDelSelectAll() {
+  _tgDelFiltered.forEach(r => _tgDelSelected.add(r.id || r.name));
+  tgDelRender();
+}
+
+function tgDelClearAll() {
+  _tgDelSelected.clear();
+  tgDelRender();
+}
+
+function tgDelGenerate() {
+  if (!_tgClient || !_tgDelSelected.size) return;
+  const selected = _tgDelRows.filter(r => _tgDelSelected.has(r.id || r.name));
+  const isTL     = isTLClient(_tgClient.key);
+  const today    = new Date().toLocaleDateString('en-US', { year:'numeric', month:'long', day:'numeric' });
+  const platform = isTL ? 'TrustLayer' : 'Evident';
+
+  // Build Excel using SheetJS
+  if (typeof XLSX === 'undefined') { toast('Excel library not loaded — try a hard refresh', 'error'); return; }
+
+  const headers = ['Entity Name', 'Entity ID', 'Primary Contact Email', 'Compliance Status', 'Platform', 'Requested For Deletion', 'Client', 'Date Requested'];
+  const wsData  = [
+    headers,
+    ...selected.map(r => [
+      r.name,
+      r.id   || '',
+      r.email || '',
+      r.status || '',
+      platform,
+      'Yes',
+      _tgClient.name,
+      today,
+    ])
+  ];
+
+  const ws = XLSX.utils.aoa_to_sheet(wsData);
+
+  // Style header row width
+  ws['!cols'] = [
+    { wch: 40 }, // Entity Name
+    { wch: 38 }, // Entity ID
+    { wch: 35 }, // Email
+    { wch: 18 }, // Status
+    { wch: 14 }, // Platform
+    { wch: 22 }, // Deletion flag
+    { wch: 35 }, // Client
+    { wch: 18 }, // Date
+  ];
+
+  const wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, ws, 'Delete Request');
+
+  const filename = `${_tgClient.name} - Delete Third-Party Request - ${new Date().toISOString().split('T')[0]}.xlsx`;
+  XLSX.writeFile(wb, filename);
+
+  // Log to audit + recent activity
+  auditLogAdd('Delete Third-Party Request Generated', `${_tgClient.name} · ${selected.length} ${selected.length === 1 ? 'party' : 'parties'}`);
+  const label = `${_tgClient.name} — Delete Request (${selected.length} ${selected.length === 1 ? 'party' : 'parties'})`;
+  _notifs.unshift({ msg: label, type: 'success', time: new Date() });
+  if (_notifs.length > 15) _notifs.pop();
+  renderNotifList();
+  toast(`\u2713 Excel downloaded — ${selected.length} ${selected.length === 1 ? 'party' : 'parties'} listed`, 'success');
 }
 
 </script>
