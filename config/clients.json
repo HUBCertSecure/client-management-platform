@@ -1395,7 +1395,7 @@
       "go_live_date": "",
       "structure": "project",
       "source": "trustlayer",
-      "active": false,
+      "active": true,
       "platform": "trustlayer",
       "producer_name": "Chandlor Cullor",
       "contact_name": "Ryan Lantz"
