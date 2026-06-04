@@ -22,8 +22,9 @@
 const fs   = require("fs");
 const path = require("path");
 
-const DATA_DIR = path.join(__dirname, "..", "data");
-const TODAY    = new Date().toISOString().split("T")[0];
+const DATA_DIR      = path.join(__dirname, "..", "data");
+const SNAPSHOT_BASE = path.join(__dirname, "..", "snapshots", "trustlayer");
+const TODAY         = new Date().toISOString().split("T")[0];
 
 // ------------------------------------------------------------
 // CSV PARSER — handles quoted fields with embedded commas/newlines
@@ -260,7 +261,41 @@ function main() {
   console.log(`\n✅ insureds.csv  — ${insuredRows.length} rows`);
   console.log(`✅ coverages.csv — ${coverageRows.length} rows`);
   console.log(`✅ criteria.csv  — ${criteriaRows.length} rows`);
+
+  // Write snapshots — daily + monthly
+  writeSnapshots(insuredRows, criteriaRows, coverageRows);
+
   console.log("\n✅ Transform complete.\n");
+}
+
+// ── SNAPSHOT HELPER — daily + monthly ─────────────────────────────────
+function writeSnapshots(insuredRows, criteriaRows, coverageRows) {
+  const now   = new Date();
+  const yyyy  = now.getUTCFullYear().toString();
+  const mm    = String(now.getUTCMonth() + 1).padStart(2, "0");
+  const dd    = String(now.getUTCDate()).padStart(2, "0");
+  const month = `${yyyy}-${mm}`;
+  const day   = `${yyyy}-${mm}-${dd}`;
+
+  const files = [
+    { name: "insureds.csv",  rows: insuredRows  },
+    { name: "criteria.csv",  rows: criteriaRows },
+    { name: "coverages.csv", rows: coverageRows },
+  ];
+
+  // Monthly — snapshots/trustlayer/YYYY/YYYY-MM/ (overwritten each run)
+  const monthlyDir = path.join(SNAPSHOT_BASE, yyyy, month);
+  fs.mkdirSync(monthlyDir, { recursive: true });
+  for (const { name, rows } of files)
+    fs.writeFileSync(path.join(monthlyDir, name), toCsv(rows), "utf8");
+  console.log(`\n📅 TL Monthly snapshot → snapshots/trustlayer/${yyyy}/${month}/`);
+
+  // Daily — snapshots/trustlayer/daily/YYYY/YYYY-MM-DD/
+  const dailyDir = path.join(SNAPSHOT_BASE, "daily", yyyy, day);
+  fs.mkdirSync(dailyDir, { recursive: true });
+  for (const { name, rows } of files)
+    fs.writeFileSync(path.join(dailyDir, name), toCsv(rows), "utf8");
+  console.log(`📅 TL Daily snapshot   → snapshots/trustlayer/daily/${yyyy}/${day}/`);
 }
 
 main();
