@@ -935,46 +935,17 @@
               <button class="btn btn-secondary" style="font-size:12px;padding:5px 12px;margin-right:6px" onclick="tgFilterPickerSelectAll()">Select All</button>
               <button class="btn btn-secondary" style="font-size:12px;padding:5px 12px" onclick="tgFilterPickerClearAll()">Clear All</button>
             </div>
-            <button class="btn btn-primary" onclick="tgFilterPickerContinue()" id="tg-filter-picker-continue">Continue &#8594;</button>
+            <button class="btn btn-primary" onclick="tgFilterPickerGenerate()" id="tg-filter-picker-continue">&#11015; Generate HTML File</button>
           </div>
         </div>
         <div id="tg-filter-picker-empty" style="display:none;padding:20px;text-align:center;color:var(--muted)">
           No custom fields found for this client — the HTML file will include search only.
-          <div style="margin-top:16px"><button class="btn btn-primary" onclick="tgFilterPickerContinue()">Continue &#8594;</button></div>
+          <div style="margin-top:16px"><button class="btn btn-primary" onclick="tgFilterPickerGenerate()">&#11015; Generate HTML File (search only)</button></div>
         </div>
       </div>
     </div>
 
-    <!-- STEP 3: Delete Third-Party Request -->
-    <div id="tg-step-3" style="display:none">
-      <div class="client-banner" id="tg-client-banner-3">
-        <div style="display:flex;align-items:center;gap:8px">
-          <div>
-            <div class="banner-name" id="tg-banner-name-3"></div>
-            <div class="banner-struct" id="tg-banner-struct-3"></div>
-          </div>
-        </div>
-        <span class="banner-change" onclick="tgGoStep(25)">&#8592; Back</span>
-      </div>
-      <div class="card" style="margin-top:14px">
-        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;flex-wrap:wrap;gap:8px">
-          <div>
-            <div class="card-title" style="margin-bottom:2px">&#128465; Delete Third-Party Request</div>
-            <div style="font-size:12px;color:var(--muted)" id="tg-del-count">Loading third parties…</div>
-          </div>
-          <div style="display:flex;gap:8px;align-items:center">
-            <input type="text" id="tg-del-search" placeholder="Search…" style="width:180px;font-size:12px;padding:6px 10px" oninput="tgDelFilter()">
-            <button class="btn btn-secondary" style="font-size:12px;padding:6px 12px" onclick="tgDelSelectAll()">Select All</button>
-            <button class="btn btn-secondary" style="font-size:12px;padding:6px 12px" onclick="tgDelClearAll()">Clear</button>
-            <button class="btn btn-primary" style="font-size:12px;padding:6px 14px;white-space:nowrap" id="tg-del-generate-btn" onclick="tgDelGenerate()" disabled>&#11015; Generate HTML File</button>
-          </div>
-        </div>
-        <div id="tg-del-filters" style="display:none;flex-wrap:wrap;gap:8px;margin-bottom:10px"></div>
-        <div id="tg-del-list" style="max-height:420px;overflow-y:auto;border:1px solid var(--border);border-radius:7px;font-size:12px">
-          <div style="padding:20px;text-align:center;color:var(--muted)">Loading…</div>
-        </div>
-      </div>
-    </div>
+
 
 
     <!-- STEP 2: Configure -->
@@ -5255,15 +5226,14 @@ async function tgSelectClient(key) {
 }
 
 function tgGoStep(n) {
-  [1, 15, 2, 25, 3].forEach(i => {
+  [1, 15, 2, 25].forEach(i => {
     const el = document.getElementById('tg-step-' + (i === 15 ? '15' : i));
     if (el) el.style.display = i === n ? 'block' : 'none';
   });
   if (n === 1)  setHeaderTitle('Build Template');
   if (n === 15 && _tgClient) {
     setHeaderTitle('Build Template', _tgClient.name);
-    // Sync banners
-    ['15','3'].forEach(sfx => {
+    ['15'].forEach(sfx => {
       const bn = document.getElementById('tg-banner-name-' + sfx);
       const bs = document.getElementById('tg-banner-struct-' + sfx);
       if (bn) bn.textContent = _tgClient.name;
@@ -5272,18 +5242,14 @@ function tgGoStep(n) {
   }
   if (n === 2 && _tgClient) setHeaderTitle('Build Template', _tgClient.name);
   if (n === 25 && _tgClient) {
-    setHeaderTitle('Configure Delete Request', _tgClient.name);
-    ['25','3'].forEach(sfx => {
+    setHeaderTitle('Delete Third-Party Request', _tgClient.name);
+    ['25'].forEach(sfx => {
       const bn = document.getElementById('tg-banner-name-' + sfx);
       const bs = document.getElementById('tg-banner-struct-' + sfx);
       if (bn) bn.textContent = _tgClient.name;
       if (bs) bs.textContent = STRUCT[_tgClient.structure]?.label || '';
     });
     tgFilterPickerLoad();
-  }
-  if (n === 3 && _tgClient) {
-    setHeaderTitle('Delete Third-Party Request', _tgClient.name);
-    tgDelLoad();
   }
 }
 
@@ -8159,189 +8125,27 @@ function renderAuditLog() {
 
 
 // ── TEMPLATE GENERATOR — DELETE THIRD-PARTY REQUEST ──────────────────
-let _tgDelRows = [];       // full list loaded from CSV
-let _tgDelFiltered = [];   // after search filter
-let _tgDelSelected = new Set(); // selected insured_ids / vendor ids
-let _tgDelCustomFields = {}; // field name → { values: Set, byId: {} }
+let _tgDelCustomFields = {}; // field name → { values: Set, byId: {} } — set by filter picker
 
-async function tgDelLoad() {
-  const list    = document.getElementById('tg-del-list');
-  const countEl = document.getElementById('tg-del-count');
-  const genBtn  = document.getElementById('tg-del-generate-btn');
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+async function tgDelGenerate() {
   if (!_tgClient) return;
-  if (list) list.innerHTML = '<div style="padding:20px;text-align:center;color:var(--muted)">Loading…</div>';
-  if (countEl) countEl.textContent = 'Loading third parties…';
-  _tgDelRows = [];
-  _tgDelFiltered = [];
-  _tgDelSelected.clear();
-  _tgDelCustomFields = {};
-  if (genBtn) genBtn.disabled = true;
-
+  const btn = document.getElementById('tg-filter-picker-continue');
+  if (btn) { btn.disabled = true; btn.textContent = 'Generating…'; }
   try {
-    const s    = getSettings();
-    const isTL = isTLClient(_tgClient.key);
-    const clientName = _tgClient.name;
-
-    // Load main list
-    const path = isTL
-      ? (s.tlInsuredsPath || 'data/trustlayer/vendors.csv')
-      : (s.insuredsPath   || 'data/evident/insureds.csv');
-    const rows = await fetchCSV(path);
-
-    // Filter to this client, active only
-    const filtered = rows.filter(r => {
-      const rowClient = r.client || r.Client || '';
-      if (rowClient.trim() !== clientName.trim()) return false;
-      const active = String(r.active || r.Active || r.status || 'true').toLowerCase();
-      const paused = String(r.paused || r.Paused || 'false').toLowerCase();
-      if (active === 'false' || active === 'inactive') return false;
-      if (paused === 'true') return false;
-      return true;
-    });
-
-    // Normalise columns
-    _tgDelRows = filtered.map(r => ({
-      id:     r.insured_id || r.id     || r.vendor_id || '',
-      name:   r.insured_name || r.name || r.vendor_name || '',
-      email:  r.primary_contact_email || r.email || r.primary_email || '',
-      status: r.compliance_status || r.status || '',
-      _raw:   r,
-    })).filter(r => r.name);
-
-    // Load custom fields/attributes for filter dropdowns
-    try {
-      const cpPath = isTL
-        ? 'data/trustlayer/vendor_attributes.csv'
-        : (s.customPropsPath || 'data/evident/custom_properties.csv');
-      const cpRows = await fetchCSV(cpPath);
-      const clientCp = cpRows.filter(r => (r.client || '').trim() === clientName.trim());
-
-      // Build field → Set of unique values map
-      const fieldMap = {};
-      const nameKey  = isTL ? 'field_name' : 'field_name';
-      const valKey   = isTL ? 'value'       : 'field_value';
-      const idKey    = isTL ? 'vendor_id'   : 'insured_id';
-      clientCp.forEach(r => {
-        const fn = (r[nameKey] || '').trim();
-        const fv = (r[valKey]  || '').trim();
-        const fid = (r[idKey]  || '').trim();
-        if (!fn || !fv) return;
-        if (!fieldMap[fn]) fieldMap[fn] = { values: new Set(), byId: {} };
-        fieldMap[fn].values.add(fv);
-        if (!fieldMap[fn].byId[fid]) fieldMap[fn].byId[fid] = [];
-        fieldMap[fn].byId[fid].push(fv);
-      });
-
-      // Keep only fields with 2–15 unique values (good filter candidates)
-      Object.entries(fieldMap).forEach(([fn, fd]) => {
-        if (fd.values.size >= 2 && fd.values.size <= 15) {
-          _tgDelCustomFields[fn] = fd;
-        }
-      });
-    } catch(e) { /* custom fields optional */ }
-
-    _tgDelFiltered = [..._tgDelRows];
-    if (countEl) countEl.textContent = `${_tgDelRows.length} active third ${_tgDelRows.length === 1 ? 'party' : 'parties'} — select who to remove`;
-    tgDelBuildFilters();
-    tgDelRender();
-  } catch(e) {
-    if (list) list.innerHTML = `<div style="padding:20px;text-align:center;color:var(--red)">Failed to load: ${e.message}</div>`;
-    if (countEl) countEl.textContent = 'Error loading data';
-  }
-}
-
-function tgDelBuildFilters() {
-  const container = document.getElementById('tg-del-filters');
-  if (!container) return;
-  const fields = Object.keys(_tgDelCustomFields);
-  if (!fields.length) { container.style.display = 'none'; return; }
-  container.style.display = '';
-  container.innerHTML = fields.map(fn => {
-    const vals = Array.from(_tgDelCustomFields[fn].values).sort();
-    return `<select onchange="tgDelFilter()" data-field="${fn.replace(/"/g,'&quot;')}" style="font-size:12px;padding:5px 8px;border:1px solid var(--border);border-radius:6px;background:var(--white);color:var(--text)">
-      <option value="">All ${fn}</option>
-      ${vals.map(v => `<option value="${v.replace(/"/g,'&quot;')}">${v}</option>`).join('')}
-    </select>`;
-  }).join('');
-}
-
-function tgDelRender() {
-  const list   = document.getElementById('tg-del-list');
-  const genBtn = document.getElementById('tg-del-generate-btn');
-  if (!list) return;
-  if (!_tgDelFiltered.length) {
-    list.innerHTML = '<div style="padding:20px;text-align:center;color:var(--muted)">No active third parties found for this client.</div>';
-    if (genBtn) genBtn.disabled = true;
-    return;
-  }
-  const selCount = _tgDelSelected.size;
-  if (genBtn) genBtn.disabled = selCount === 0;
-  if (genBtn) genBtn.textContent = selCount ? `⬇ Download Excel (${selCount} selected)` : '⬇ Download Excel';
-
-  list.innerHTML = _tgDelFiltered.map(r => {
-    const checked = _tgDelSelected.has(r.id || r.name);
-    return `<div style="display:flex;align-items:center;gap:10px;padding:9px 12px;border-bottom:1px solid var(--border);cursor:pointer;${checked ? 'background:#FEF2F2' : ''}" onclick="tgDelToggle('${(r.id || r.name).replace(/'/g,"\'")}',this)">
-      <input type="checkbox" ${checked ? 'checked' : ''} style="width:15px;height:15px;flex-shrink:0;cursor:pointer" onclick="event.stopPropagation();tgDelToggle('${(r.id || r.name).replace(/'/g,"\'")}',this.closest('div'))">
-      <div style="flex:1;min-width:0">
-        <div style="font-weight:600;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${r.name}</div>
-        ${r.email ? `<div style="color:var(--muted);font-size:11px">${r.email}</div>` : ''}
-      </div>
-      <div style="font-size:11px;padding:2px 8px;border-radius:10px;white-space:nowrap;${r.status.toUpperCase() === 'NON_COMPLIANT' ? 'background:#FEE2E2;color:#DC2626' : r.status.toUpperCase() === 'COMPLIANT' ? 'background:#DCFCE7;color:#16A34A' : 'background:#F3F4F6;color:#6B7280'}">${r.status || 'Unknown'}</div>
-    </div>`;
-  }).join('');
-}
-
-function tgDelToggle(key, rowEl) {
-  if (_tgDelSelected.has(key)) {
-    _tgDelSelected.delete(key);
-    if (rowEl) rowEl.style.background = '';
-  } else {
-    _tgDelSelected.add(key);
-    if (rowEl) rowEl.style.background = '#FEF2F2';
-  }
-  // Update checkbox state
-  const cb = rowEl?.querySelector('input[type="checkbox"]');
-  if (cb) cb.checked = _tgDelSelected.has(key);
-  // Update button
-  const genBtn = document.getElementById('tg-del-generate-btn');
-  const selCount = _tgDelSelected.size;
-  if (genBtn) { genBtn.disabled = selCount === 0; genBtn.textContent = selCount ? `⬇ Download Excel (${selCount} selected)` : '⬇ Download Excel'; }
-}
-
-function tgDelFilter() {
-  const q = (document.getElementById('tg-del-search')?.value || '').toLowerCase();
-  // Collect active custom field filters
-  const activeFilters = {};
-  document.querySelectorAll('#tg-del-filters select').forEach(sel => {
-    if (sel.value) activeFilters[sel.dataset.field] = sel.value;
-  });
-  _tgDelFiltered = _tgDelRows.filter(r => {
-    if (q && !r.name.toLowerCase().includes(q) && !r.email.toLowerCase().includes(q)) return false;
-    for (const [fn, fv] of Object.entries(activeFilters)) {
-      const fd = _tgDelCustomFields[fn];
-      if (!fd) continue;
-      const rowId = r.id || r.name;
-      const vals  = fd.byId[rowId] || [];
-      if (!vals.includes(fv)) return false;
-    }
-    return true;
-  });
-  tgDelRender();
-}
-
-function tgDelSelectAll() {
-  _tgDelFiltered.forEach(r => _tgDelSelected.add(r.id || r.name));
-  tgDelRender();
-}
-
-function tgDelClearAll() {
-  _tgDelSelected.clear();
-  tgDelRender();
-}
-
-function tgDelGenerate() {
-  if (!_tgClient || !_tgDelSelected.size) return;
-  const selected  = _tgDelRows.filter(r => _tgDelSelected.has(r.id || r.name));
   const isTL      = isTLClient(_tgClient.key);
   const clientName = _tgClient.name;
   const platform  = isTL ? 'TrustLayer' : 'Evident';
@@ -8354,8 +8158,29 @@ function tgDelGenerate() {
   const filename  = `${clientName} - Delete Third-Party Request - ${new Date().toISOString().split('T')[0]}.xlsx`;
   const hubEmail  = 'Client.CertSecure@hubinternational.com';
 
-  // Build the rows HTML for the party list
-  const rowsHtml = selected.map((r, idx) => `
+  // Load all active parties from CSV
+  const s    = getSettings();
+  const path = isTL
+    ? (s.tlInsuredsPath || 'data/trustlayer/vendors.csv')
+    : (s.insuredsPath   || 'data/evident/insureds.csv');
+  const allRows = await fetchCSV(path);
+  const clientRows = allRows.filter(r => {
+    if ((r.client || '').trim() !== clientName.trim()) return false;
+    const active = String(r.active || r.Active || r.status || 'true').toLowerCase();
+    const paused = String(r.paused || r.Paused || 'false').toLowerCase();
+    if (active === 'false' || active === 'inactive') return false;
+    if (paused === 'true') return false;
+    return true;
+  });
+  const allParties = clientRows.map(r => ({
+    id:     r.insured_id || r.id || r.vendor_id || '',
+    name:   r.insured_name || r.name || r.vendor_name || '',
+    email:  r.primary_contact_email || r.email || r.primary_email || '',
+    status: r.compliance_status || r.status || '',
+  })).filter(r => r.name);
+
+  // Build the rows HTML for the party list (all parties — client selects)
+  const rowsHtml = allParties.map((r, idx) => `
     <tr>
       <td style="padding:10px 14px;border-bottom:1px solid #E5E7EB;vertical-align:middle">
         <label style="display:flex;align-items:center;gap:10px;cursor:pointer">
@@ -8607,12 +8432,17 @@ function submitRequest() {
   URL.revokeObjectURL(url);
 
   // Log to audit + recent activity
-  auditLogAdd('Delete Third-Party Request Generated', `${clientName} · ${selected.length} ${selected.length === 1 ? 'party' : 'parties'}`);
-  const label = `${clientName} — Delete Request (${selected.length} ${selected.length === 1 ? 'party' : 'parties'})`;
+  auditLogAdd('Delete Third-Party Request Generated', `${clientName} · ${allParties.length} ${allParties.length === 1 ? 'party' : 'parties'} listed`);
+  const label = `${clientName} — Delete Request (${allParties.length} listed)`;
   _notifs.unshift({ msg: label, type: 'success', time: new Date() });
   if (_notifs.length > 15) _notifs.pop();
   renderNotifList();
   toast(`\u2713 HTML file downloaded — send to ${clientName}`, 'success');
+  } catch(e) {
+    toast('Failed to generate: ' + e.message, 'error');
+  } finally {
+    if (btn) { btn.disabled = false; btn.textContent = '\u2B07 Generate HTML File'; }
+  }
 }
 
 
@@ -8720,15 +8550,15 @@ function tgFilterPickerClearAll() {
   tgFilterPickerRender();
 }
 
-function tgFilterPickerContinue() {
-  // Pass selected fields into _tgDelCustomFields before going to step 3
+function tgFilterPickerGenerate() {
+  // Collect selected fields
   _tgDelCustomFields = {};
   Object.entries(_tgFilterPickerFields).forEach(([fn, fd]) => {
     if (fd.selected) {
       _tgDelCustomFields[fn] = { values: new Set(fd.values), byId: fd.byId };
     }
   });
-  tgGoStep(3);
+  tgDelGenerate();
 }
 
 </script>
