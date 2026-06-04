@@ -8295,8 +8295,8 @@ async function tgDelGenerate() {
 
 <script>
 // ── Custom field data embedded for filter dropdowns ──
-const CUSTOM_FIELDS = ${__CUSTOM_FIELDS_JSON__};
-const PARTY_DATA    = ${__PARTY_DATA_JSON__};
+const CUSTOM_FIELDS = %%CUSTOM_FIELDS_JSON%%;
+const PARTY_DATA    = %%PARTY_DATA_JSON%%;
 
 // Build filter dropdowns
 (function() {
@@ -8355,7 +8355,7 @@ function filterList() {
 }
 
 // Custom fields by ID for filter logic
-const CUSTOM_FIELDS_BY_ID = ${__CUSTOM_FIELDS_BY_ID_JSON__};
+const CUSTOM_FIELDS_BY_ID = %%CUSTOM_FIELDS_BY_ID_JSON%%;
 
 function submitRequest() {
   const selected = getSelected();
@@ -8403,24 +8403,22 @@ function submitRequest() {
     window.location.href = 'mailto:${hubEmail}?subject=' + subject + '&body=' + body;
   }, 400);
 }
-</script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<\/script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"><\/script>
 </body>
-</html>`;
-
-  // Embed the custom fields data into the HTML
+</html>`
   const cfJson = {};
   const cfByIdJson = {};
   Object.entries(_tgDelCustomFields).forEach(([fn, fd]) => {
     cfJson[fn] = Array.from(fd.values).sort();
     cfByIdJson[fn] = fd.byId;
   });
-  const partyData = selected.map(r => ({ id: r.id, name: r.name, email: r.email, status: r.status }));
+  const partyData = allParties.map(r => ({ id: r.id, name: r.name, email: r.email, status: r.status }));
 
   const finalHtml = html
-    .replace('${__CUSTOM_FIELDS_JSON__}', JSON.stringify(cfJson))
-    .replace('${__PARTY_DATA_JSON__}',    JSON.stringify(partyData))
-    .replace('${__CUSTOM_FIELDS_BY_ID_JSON__}', JSON.stringify(cfByIdJson));
+    .replace('%%CUSTOM_FIELDS_JSON%%', JSON.stringify(cfJson))
+    .replace('%%PARTY_DATA_JSON%%',    JSON.stringify(partyData))
+    .replace('%%CUSTOM_FIELDS_BY_ID_JSON%%', JSON.stringify(cfByIdJson));
 
   // Download the HTML file
   const blob = new Blob([finalHtml], { type: 'text/html' });
