@@ -1,0 +1,8 @@
+[
+  {
+    "client": "A G Equipment Company",
+    "stage": "criteria",
+    "insured": "4cb4669b-6c84-4b86-9108-a6318a3647af",
+    "error": "HTTP 500 on /insurance/insureds/4cb4669b-6c84-4b86-9108-a6318a3647af/status: {\"message\":\"Unexpected error: please contact system administrator.\",\"error\":\"Unknown\"}"
+  }
+]
