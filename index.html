@@ -931,9 +931,10 @@
             <input type="text" id="tg-del-search" placeholder="Search…" style="width:180px;font-size:12px;padding:6px 10px" oninput="tgDelFilter()">
             <button class="btn btn-secondary" style="font-size:12px;padding:6px 12px" onclick="tgDelSelectAll()">Select All</button>
             <button class="btn btn-secondary" style="font-size:12px;padding:6px 12px" onclick="tgDelClearAll()">Clear</button>
-            <button class="btn btn-primary" style="font-size:12px;padding:6px 14px;white-space:nowrap" id="tg-del-generate-btn" onclick="tgDelGenerate()" disabled>&#11015; Download Excel</button>
+            <button class="btn btn-primary" style="font-size:12px;padding:6px 14px;white-space:nowrap" id="tg-del-generate-btn" onclick="tgDelGenerate()" disabled>&#11015; Generate HTML File</button>
           </div>
         </div>
+        <div id="tg-del-filters" style="display:none;flex-wrap:wrap;gap:8px;margin-bottom:10px"></div>
         <div id="tg-del-list" style="max-height:420px;overflow-y:auto;border:1px solid var(--border);border-radius:7px;font-size:12px">
           <div style="padding:20px;text-align:center;color:var(--muted)">Loading…</div>
         </div>
@@ -8113,9 +8114,10 @@ function renderAuditLog() {
 
 
 // ── TEMPLATE GENERATOR — DELETE THIRD-PARTY REQUEST ──────────────────
-let _tgDelRows = [];     // full list loaded from CSV
-let _tgDelFiltered = []; // after search filter
+let _tgDelRows = [];       // full list loaded from CSV
+let _tgDelFiltered = [];   // after search filter
 let _tgDelSelected = new Set(); // selected insured_ids / vendor ids
+let _tgDelCustomFields = {}; // field name → { values: Set, byId: {} }
 
 async function tgDelLoad() {
   const list    = document.getElementById('tg-del-list');
@@ -8125,46 +8127,97 @@ async function tgDelLoad() {
   if (list) list.innerHTML = '<div style="padding:20px;text-align:center;color:var(--muted)">Loading…</div>';
   if (countEl) countEl.textContent = 'Loading third parties…';
   _tgDelRows = [];
+  _tgDelFiltered = [];
   _tgDelSelected.clear();
+  _tgDelCustomFields = {};
   if (genBtn) genBtn.disabled = true;
 
   try {
-    const s     = getSettings();
-    const isTL  = isTLClient(_tgClient.key);
-    const path  = isTL
+    const s    = getSettings();
+    const isTL = isTLClient(_tgClient.key);
+    const clientName = _tgClient.name;
+
+    // Load main list
+    const path = isTL
       ? (s.tlInsuredsPath || 'data/trustlayer/vendors.csv')
       : (s.insuredsPath   || 'data/evident/insureds.csv');
-
     const rows = await fetchCSV(path);
 
     // Filter to this client, active only
-    const clientName = _tgClient.name;
     const filtered = rows.filter(r => {
       const rowClient = r.client || r.Client || '';
       if (rowClient.trim() !== clientName.trim()) return false;
-      // Active only — skip inactive and paused
-      const active = String(r.active  || r.Active  || r.status || 'true').toLowerCase();
-      const paused = String(r.paused  || r.Paused  || 'false').toLowerCase();
+      const active = String(r.active || r.Active || r.status || 'true').toLowerCase();
+      const paused = String(r.paused || r.Paused || 'false').toLowerCase();
       if (active === 'false' || active === 'inactive') return false;
       if (paused === 'true') return false;
       return true;
     });
 
-    // Normalise columns — Evident uses insured_id/insured_name, TrustLayer uses id/name
+    // Normalise columns
     _tgDelRows = filtered.map(r => ({
       id:     r.insured_id || r.id     || r.vendor_id || '',
-      name:   r.insured_name || r.name || r.vendor_name || r['Business Name'] || '',
+      name:   r.insured_name || r.name || r.vendor_name || '',
       email:  r.primary_contact_email || r.email || r.primary_email || '',
       status: r.compliance_status || r.status || '',
+      _raw:   r,
     })).filter(r => r.name);
+
+    // Load custom fields/attributes for filter dropdowns
+    try {
+      const cpPath = isTL
+        ? 'data/trustlayer/vendor_attributes.csv'
+        : (s.customPropsPath || 'data/evident/custom_properties.csv');
+      const cpRows = await fetchCSV(cpPath);
+      const clientCp = cpRows.filter(r => (r.client || '').trim() === clientName.trim());
+
+      // Build field → Set of unique values map
+      const fieldMap = {};
+      const nameKey  = isTL ? 'field_name' : 'field_name';
+      const valKey   = isTL ? 'value'       : 'field_value';
+      const idKey    = isTL ? 'vendor_id'   : 'insured_id';
+      clientCp.forEach(r => {
+        const fn = (r[nameKey] || '').trim();
+        const fv = (r[valKey]  || '').trim();
+        const fid = (r[idKey]  || '').trim();
+        if (!fn || !fv) return;
+        if (!fieldMap[fn]) fieldMap[fn] = { values: new Set(), byId: {} };
+        fieldMap[fn].values.add(fv);
+        if (!fieldMap[fn].byId[fid]) fieldMap[fn].byId[fid] = [];
+        fieldMap[fn].byId[fid].push(fv);
+      });
+
+      // Keep only fields with 2–15 unique values (good filter candidates)
+      Object.entries(fieldMap).forEach(([fn, fd]) => {
+        if (fd.values.size >= 2 && fd.values.size <= 15) {
+          _tgDelCustomFields[fn] = fd;
+        }
+      });
+    } catch(e) { /* custom fields optional */ }
 
     _tgDelFiltered = [..._tgDelRows];
     if (countEl) countEl.textContent = `${_tgDelRows.length} active third ${_tgDelRows.length === 1 ? 'party' : 'parties'} — select who to remove`;
+    tgDelBuildFilters();
     tgDelRender();
   } catch(e) {
     if (list) list.innerHTML = `<div style="padding:20px;text-align:center;color:var(--red)">Failed to load: ${e.message}</div>`;
     if (countEl) countEl.textContent = 'Error loading data';
   }
+}
+
+function tgDelBuildFilters() {
+  const container = document.getElementById('tg-del-filters');
+  if (!container) return;
+  const fields = Object.keys(_tgDelCustomFields);
+  if (!fields.length) { container.style.display = 'none'; return; }
+  container.style.display = '';
+  container.innerHTML = fields.map(fn => {
+    const vals = Array.from(_tgDelCustomFields[fn].values).sort();
+    return `<select onchange="tgDelFilter()" data-field="${fn.replace(/"/g,'&quot;')}" style="font-size:12px;padding:5px 8px;border:1px solid var(--border);border-radius:6px;background:var(--white);color:var(--text)">
+      <option value="">All ${fn}</option>
+      ${vals.map(v => `<option value="${v.replace(/"/g,'&quot;')}">${v}</option>`).join('')}
+    </select>`;
+  }).join('');
 }
 
 function tgDelRender() {
@@ -8212,7 +8265,22 @@ function tgDelToggle(key, rowEl) {
 
 function tgDelFilter() {
   const q = (document.getElementById('tg-del-search')?.value || '').toLowerCase();
-  _tgDelFiltered = q ? _tgDelRows.filter(r => r.name.toLowerCase().includes(q) || r.email.toLowerCase().includes(q)) : [..._tgDelRows];
+  // Collect active custom field filters
+  const activeFilters = {};
+  document.querySelectorAll('#tg-del-filters select').forEach(sel => {
+    if (sel.value) activeFilters[sel.dataset.field] = sel.value;
+  });
+  _tgDelFiltered = _tgDelRows.filter(r => {
+    if (q && !r.name.toLowerCase().includes(q) && !r.email.toLowerCase().includes(q)) return false;
+    for (const [fn, fv] of Object.entries(activeFilters)) {
+      const fd = _tgDelCustomFields[fn];
+      if (!fd) continue;
+      const rowId = r.id || r.name;
+      const vals  = fd.byId[rowId] || [];
+      if (!vals.includes(fv)) return false;
+    }
+    return true;
+  });
   tgDelRender();
 }
 
@@ -8228,56 +8296,278 @@ function tgDelClearAll() {
 
 function tgDelGenerate() {
   if (!_tgClient || !_tgDelSelected.size) return;
-  const selected = _tgDelRows.filter(r => _tgDelSelected.has(r.id || r.name));
-  const isTL     = isTLClient(_tgClient.key);
-  const today    = new Date().toLocaleDateString('en-US', { year:'numeric', month:'long', day:'numeric' });
-  const platform = isTL ? 'TrustLayer' : 'Evident';
+  const selected  = _tgDelRows.filter(r => _tgDelSelected.has(r.id || r.name));
+  const isTL      = isTLClient(_tgClient.key);
+  const clientName = _tgClient.name;
+  const platform  = isTL ? 'TrustLayer' : 'Evident';
+  const today     = new Date().toLocaleDateString('en-US', { year:'numeric', month:'long', day:'numeric' });
+  const accent    = document.getElementById('tg-accent-hex')?.value || '#3872B8';
+  const header    = document.getElementById('tg-header-hex')?.value || '#283847';
+  const safeAccent = /^#[0-9a-fA-F]{6}$/.test(accent) ? accent : '#3872B8';
+  const safeHeader = /^#[0-9a-fA-F]{6}$/.test(header) ? header : '#283847';
+  const logoHtml  = _tgLogoData ? `<img src="${_tgLogoData}" style="max-height:44px;max-width:180px;object-fit:contain">` : '';
+  const filename  = `${clientName} - Delete Third-Party Request - ${new Date().toISOString().split('T')[0]}.xlsx`;
+  const hubEmail  = 'Client.CertSecure@hubinternational.com';
 
-  // Build Excel using SheetJS
-  if (typeof XLSX === 'undefined') { toast('Excel library not loaded — try a hard refresh', 'error'); return; }
+  // Build the rows HTML for the party list
+  const rowsHtml = selected.map((r, idx) => `
+    <tr>
+      <td style="padding:10px 14px;border-bottom:1px solid #E5E7EB;vertical-align:middle">
+        <label style="display:flex;align-items:center;gap:10px;cursor:pointer">
+          <input type="checkbox" name="del_party" value="${(r.id||r.name).replace(/"/g,'&quot;')}" data-name="${r.name.replace(/"/g,'&quot;')}" data-email="${(r.email||'').replace(/"/g,'&quot;')}" data-status="${(r.status||'').replace(/"/g,'&quot;')}" style="width:16px;height:16px;cursor:pointer" onchange="updateCount()">
+          <span style="font-weight:600;color:#1E2E3D">${r.name}</span>
+        </label>
+      </td>
+      <td style="padding:10px 14px;border-bottom:1px solid #E5E7EB;color:#6B7280;font-size:13px">${r.email || '—'}</td>
+      <td style="padding:10px 14px;border-bottom:1px solid #E5E7EB;text-align:center">
+        <span style="font-size:12px;padding:2px 10px;border-radius:10px;font-weight:600;${r.status.toUpperCase()==='NON_COMPLIANT'?'background:#FEE2E2;color:#DC2626':r.status.toUpperCase()==='COMPLIANT'?'background:#DCFCE7;color:#16A34A':'background:#F3F4F6;color:#6B7280'}">${r.status||'Unknown'}</span>
+      </td>
+    </tr>`).join('');
 
-  const headers = ['Entity Name', 'Entity ID', 'Primary Contact Email', 'Compliance Status', 'Platform', 'Requested For Deletion', 'Client', 'Date Requested'];
+  const html = `<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>${clientName} — Delete Third-Party Request</title>
+<style>
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:#F4F6F9;color:#1E2E3D;min-height:100vh}
+  .page{max-width:860px;margin:0 auto;padding:32px 20px 60px}
+  .header{background:${safeHeader};border-radius:12px 12px 0 0;padding:28px 32px;display:flex;justify-content:space-between;align-items:center}
+  .header-title{color:white}
+  .header-title h1{font-size:22px;font-weight:800;margin-bottom:4px}
+  .header-title p{font-size:13px;opacity:.75}
+  .body{background:white;padding:28px 32px;border-radius:0 0 12px 12px;border:1px solid #E5E7EB;border-top:none}
+  .notice{background:#FFF8E1;border:1px solid #FBC02D;border-radius:8px;padding:14px 18px;font-size:13px;color:#7B5800;margin-bottom:24px;line-height:1.5}
+  .search-row{display:flex;gap:10px;margin-bottom:14px;flex-wrap:wrap;align-items:center}
+  .search-row input[type=text]{flex:1;min-width:200px;padding:8px 12px;border:1.5px solid #D1DCE8;border-radius:7px;font-size:13px;font-family:inherit}
+  .search-row select{padding:8px 10px;border:1.5px solid #D1DCE8;border-radius:7px;font-size:13px;font-family:inherit;background:white}
+  .toolbar{display:flex;gap:8px;margin-bottom:10px;align-items:center;flex-wrap:wrap}
+  .toolbar button{padding:6px 14px;border-radius:6px;font-size:12px;font-family:inherit;cursor:pointer;border:1.5px solid #D1DCE8;background:white;color:#1E2E3D}
+  .toolbar button:hover{background:#F4F6F9}
+  .count-badge{font-size:12px;color:#6B7280;margin-left:auto}
+  table{width:100%;border-collapse:collapse;font-size:13px}
+  thead th{background:#F8FAFC;padding:10px 14px;text-align:left;font-size:11px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:#6B7280;border-bottom:2px solid #E5E7EB}
+  tr.hidden{display:none}
+  .submit-section{margin-top:28px;padding:24px;background:#F8FAFC;border-radius:10px;border:1.5px solid #E5E7EB}
+  .submit-section h3{font-size:15px;font-weight:700;margin-bottom:8px;color:#1E2E3D}
+  .submit-section p{font-size:13px;color:#6B7280;margin-bottom:16px;line-height:1.5}
+  textarea{width:100%;padding:10px 14px;border:1.5px solid #D1DCE8;border-radius:7px;font-size:13px;font-family:inherit;resize:vertical;min-height:80px;margin-bottom:14px}
+  .btn-primary{display:inline-block;padding:11px 24px;background:${safeAccent};color:white;border:none;border-radius:8px;font-size:14px;font-weight:700;font-family:inherit;cursor:pointer;text-decoration:none}
+  .btn-primary:disabled{opacity:.5;cursor:not-allowed}
+  .btn-secondary{display:inline-block;padding:11px 24px;background:white;color:#1E2E3D;border:1.5px solid #D1DCE8;border-radius:8px;font-size:14px;font-weight:600;font-family:inherit;cursor:pointer;margin-right:10px}
+  .footer{margin-top:28px;font-size:11px;color:#9CA3AF;text-align:center;line-height:1.6}
+  .step-badge{display:inline-block;background:${safeAccent};color:white;border-radius:50%;width:22px;height:22px;font-size:12px;font-weight:700;text-align:center;line-height:22px;margin-right:6px;flex-shrink:0}
+  .step-row{display:flex;align-items:center;margin-bottom:6px}
+</style>
+</head>
+<body>
+<div class="page">
+  <div class="header">
+    <div class="header-title">
+      <h1>Delete Third-Party Request</h1>
+      <p>${clientName} &nbsp;·&nbsp; ${today} &nbsp;·&nbsp; ${platform}</p>
+    </div>
+    <div>${logoHtml}</div>
+  </div>
+  <div class="body">
+    <div class="notice">
+      <strong>Instructions:</strong> Review the list below and check the box next to each third party you would like removed from the compliance platform.
+      When finished, click <strong>Download &amp; Email HUB</strong> — your Excel file will download automatically and your email client will open pre-addressed to your HUB account team.
+      Please attach the downloaded Excel file to the email before sending.
+    </div>
+
+    <!-- Search + Filter row -->
+    <div class="search-row">
+      <input type="text" id="search-box" placeholder="Search by name or email…" oninput="filterList()">
+      <div id="filter-dropdowns" style="display:flex;gap:8px;flex-wrap:wrap"></div>
+    </div>
+    <div class="toolbar">
+      <button onclick="selectAll()">Select All</button>
+      <button onclick="clearAll()">Clear</button>
+      <span class="count-badge" id="count-badge">0 selected</span>
+    </div>
+
+    <table id="party-table">
+      <thead>
+        <tr>
+          <th>Third Party</th>
+          <th>Contact Email</th>
+          <th style="text-align:center">Compliance Status</th>
+        </tr>
+      </thead>
+      <tbody id="party-tbody">
+        ${rowsHtml}
+      </tbody>
+    </table>
+
+    <!-- Submit section -->
+    <div class="submit-section">
+      <h3>&#9993; Submit Deletion Request</h3>
+      <p>
+        <span class="step-row"><span class="step-badge">1</span> Review and check all parties you want removed above.</span>
+        <span class="step-row"><span class="step-badge">2</span> Add any notes for your HUB account team below (optional).</span>
+        <span class="step-row"><span class="step-badge">3</span> Click <strong>Download &amp; Email HUB</strong> — attach the downloaded file to the email.</span>
+      </p>
+      <textarea id="notes-box" placeholder="Optional notes for HUB (e.g. reason for deletion, effective date, special instructions)…"></textarea>
+      <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">
+        <button class="btn-primary" id="submit-btn" onclick="submitRequest()" disabled>&#11015; Download &amp; Email HUB</button>
+        <span id="submit-msg" style="font-size:13px;color:#6B7280;display:none"></span>
+      </div>
+    </div>
+
+    <div class="footer">
+      Confidential — For internal review purposes only. &nbsp;&#8212;&nbsp; ${clientName} &nbsp;&#8212;&nbsp; HUB CertSecure
+    </div>
+  </div>
+</div>
+
+<script>
+// ── Custom field data embedded for filter dropdowns ──
+const CUSTOM_FIELDS = ${__CUSTOM_FIELDS_JSON__};
+const PARTY_DATA    = ${__PARTY_DATA_JSON__};
+
+// Build filter dropdowns
+(function() {
+  const container = document.getElementById('filter-dropdowns');
+  Object.entries(CUSTOM_FIELDS).forEach(([fn, vals]) => {
+    const sel = document.createElement('select');
+    sel.style.cssText = 'padding:7px 10px;border:1.5px solid #D1DCE8;border-radius:7px;font-size:13px;background:white';
+    sel.innerHTML = '<option value="">All ' + fn + '</option>' +
+      vals.map(v => '<option value="' + v.replace(/"/g,'&quot;') + '">' + v + '</option>').join('');
+    sel.dataset.field = fn;
+    sel.addEventListener('change', filterList);
+    container.appendChild(sel);
+  });
+  if (!Object.keys(CUSTOM_FIELDS).length) container.style.display = 'none';
+})();
+
+function getSelected() {
+  return Array.from(document.querySelectorAll('input[name="del_party"]:checked'));
+}
+function updateCount() {
+  const n = getSelected().length;
+  document.getElementById('count-badge').textContent = n + ' selected';
+  document.getElementById('submit-btn').disabled = n === 0;
+}
+function selectAll() {
+  document.querySelectorAll('input[name="del_party"]').forEach(cb => {
+    if (!cb.closest('tr').classList.contains('hidden')) cb.checked = true;
+  });
+  updateCount();
+}
+function clearAll() {
+  document.querySelectorAll('input[name="del_party"]').forEach(cb => cb.checked = false);
+  updateCount();
+}
+function filterList() {
+  const q = document.getElementById('search-box').value.toLowerCase();
+  const activeFilters = {};
+  document.querySelectorAll('#filter-dropdowns select').forEach(s => {
+    if (s.value) activeFilters[s.dataset.field] = s.value;
+  });
+  document.querySelectorAll('#party-tbody tr').forEach(row => {
+    const cb   = row.querySelector('input[name="del_party"]');
+    if (!cb) return;
+    const id   = cb.value;
+    const name = (cb.dataset.name || '').toLowerCase();
+    const email= (cb.dataset.email|| '').toLowerCase();
+    let show = true;
+    if (q && !name.includes(q) && !email.includes(q)) show = false;
+    Object.entries(activeFilters).forEach(([fn, fv]) => {
+      const byId = CUSTOM_FIELDS_BY_ID[fn] || {};
+      const vals = byId[id] || [];
+      if (!vals.includes(fv)) show = false;
+    });
+    row.classList.toggle('hidden', !show);
+  });
+}
+
+// Custom fields by ID for filter logic
+const CUSTOM_FIELDS_BY_ID = ${__CUSTOM_FIELDS_BY_ID_JSON__};
+
+function submitRequest() {
+  const selected = getSelected();
+  if (!selected.length) return;
+  const notes    = (document.getElementById('notes-box').value || '').trim();
+  const today    = new Date().toLocaleDateString('en-US', {year:'numeric',month:'long',day:'numeric'});
+
+  // Build Excel with SheetJS (loaded below)
+  if (typeof XLSX === 'undefined') { alert('Excel library not loaded. Please reload the file.'); return; }
+
+  const headers = ['Entity Name','Entity ID','Primary Contact Email','Compliance Status','Platform','Requested For Deletion','Client','Date Requested','Notes'];
   const wsData  = [
     headers,
-    ...selected.map(r => [
-      r.name,
-      r.id   || '',
-      r.email || '',
-      r.status || '',
-      platform,
+    ...selected.map(cb => [
+      cb.dataset.name || '',
+      cb.value || '',
+      cb.dataset.email || '',
+      cb.dataset.status || '',
+      '${platform}',
       'Yes',
-      _tgClient.name,
+      '${clientName.replace(/'/g, "\\'")}',
       today,
+      notes,
     ])
   ];
-
   const ws = XLSX.utils.aoa_to_sheet(wsData);
-
-  // Style header row width
-  ws['!cols'] = [
-    { wch: 40 }, // Entity Name
-    { wch: 38 }, // Entity ID
-    { wch: 35 }, // Email
-    { wch: 18 }, // Status
-    { wch: 14 }, // Platform
-    { wch: 22 }, // Deletion flag
-    { wch: 35 }, // Client
-    { wch: 18 }, // Date
-  ];
-
+  ws['!cols'] = [{wch:40},{wch:38},{wch:35},{wch:18},{wch:14},{wch:22},{wch:35},{wch:18},{wch:40}];
   const wb = XLSX.utils.book_new();
   XLSX.utils.book_append_sheet(wb, ws, 'Delete Request');
+  const xlsxFilename = '${clientName.replace(/'/g, "\\'")} - Delete Third-Party Request - ' + new Date().toISOString().split('T')[0] + '.xlsx';
+  XLSX.writeFile(wb, xlsxFilename);
 
-  const filename = `${_tgClient.name} - Delete Third-Party Request - ${new Date().toISOString().split('T')[0]}.xlsx`;
-  XLSX.writeFile(wb, filename);
+  // Open pre-addressed email
+  const subject = encodeURIComponent('${clientName.replace(/'/g, "\\'")} — Delete Third-Party Request');
+  const body    = encodeURIComponent(
+    'Hi HUB CertSecure Team,\\n\\nPlease find attached the Delete Third-Party Request for ${clientName.replace(/'/g, "\\'")}.\\n\\n' +
+    selected.length + ' third ' + (selected.length === 1 ? 'party has' : 'parties have') + ' been selected for removal.\\n' +
+    (notes ? '\\nNotes: ' + notes + '\\n' : '') +
+    '\\nPlease see the attached Excel file for the full list.\\n\\nThank you'
+  );
+  const msg = document.getElementById('submit-msg');
+  msg.style.display = '';
+  msg.textContent = '\\u2713 Excel downloaded! Please attach it to the email that just opened.';
+  setTimeout(() => {
+    window.location.href = 'mailto:${hubEmail}?subject=' + subject + '&body=' + body;
+  }, 400);
+}
+</script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+</body>
+</html>`;
+
+  // Embed the custom fields data into the HTML
+  const cfJson = {};
+  const cfByIdJson = {};
+  Object.entries(_tgDelCustomFields).forEach(([fn, fd]) => {
+    cfJson[fn] = Array.from(fd.values).sort();
+    cfByIdJson[fn] = fd.byId;
+  });
+  const partyData = selected.map(r => ({ id: r.id, name: r.name, email: r.email, status: r.status }));
+
+  const finalHtml = html
+    .replace('${__CUSTOM_FIELDS_JSON__}', JSON.stringify(cfJson))
+    .replace('${__PARTY_DATA_JSON__}',    JSON.stringify(partyData))
+    .replace('${__CUSTOM_FIELDS_BY_ID_JSON__}', JSON.stringify(cfByIdJson));
+
+  // Download the HTML file
+  const blob = new Blob([finalHtml], { type: 'text/html' });
+  const url  = URL.createObjectURL(blob);
+  const a    = document.createElement('a');
+  a.href     = url;
+  a.download = `${clientName} - Delete Third-Party Request - ${new Date().toISOString().split('T')[0]}.html`;
+  a.click();
+  URL.revokeObjectURL(url);
 
   // Log to audit + recent activity
-  auditLogAdd('Delete Third-Party Request Generated', `${_tgClient.name} · ${selected.length} ${selected.length === 1 ? 'party' : 'parties'}`);
-  const label = `${_tgClient.name} — Delete Request (${selected.length} ${selected.length === 1 ? 'party' : 'parties'})`;
+  auditLogAdd('Delete Third-Party Request Generated', `${clientName} · ${selected.length} ${selected.length === 1 ? 'party' : 'parties'}`);
+  const label = `${clientName} — Delete Request (${selected.length} ${selected.length === 1 ? 'party' : 'parties'})`;
   _notifs.unshift({ msg: label, type: 'success', time: new Date() });
   if (_notifs.length > 15) _notifs.pop();
   renderNotifList();
-  toast(`\u2713 Excel downloaded — ${selected.length} ${selected.length === 1 ? 'party' : 'parties'} listed`, 'success');
+  toast(`\u2713 HTML file downloaded — send to ${clientName}`, 'success');
 }
 
 </script>
