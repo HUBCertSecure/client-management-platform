@@ -8150,11 +8150,15 @@ async function tgDelGenerate() {
   const clientName = _tgClient.name;
   const platform  = isTL ? 'TrustLayer' : 'Evident';
   const today     = new Date().toLocaleDateString('en-US', { year:'numeric', month:'long', day:'numeric' });
-  const accent    = document.getElementById('tg-accent-hex')?.value || '#3872B8';
-  const header    = document.getElementById('tg-header-hex')?.value || '#283847';
-  const safeAccent = /^#[0-9a-fA-F]{6}$/.test(accent) ? accent : '#3872B8';
-  const safeHeader = /^#[0-9a-fA-F]{6}$/.test(header) ? header : '#283847';
-  const logoHtml  = _tgLogoData ? `<img src="${_tgLogoData}" style="max-height:44px;max-width:180px;object-fit:contain">` : '';
+  // Read colors from DOM (set by tgSelectClient) with CLIENT_META_MAP as fallback
+  const _meta      = (typeof CLIENT_META_MAP !== 'undefined' && _tgClient) ? (CLIENT_META_MAP[_tgClient.key] || {}) : {};
+  const accentRaw  = document.getElementById('tg-accent-hex')?.value || _meta.accent_color || '#3872B8';
+  const headerRaw  = document.getElementById('tg-header-hex')?.value || _meta.header_color || '#283847';
+  const safeAccent = /^#[0-9a-fA-F]{6}$/.test(accentRaw) ? accentRaw : '#3872B8';
+  const safeHeader = /^#[0-9a-fA-F]{6}$/.test(headerRaw) ? headerRaw : '#283847';
+  // Logo: use _tgLogoData (set by tgSelectClient) or fall back to meta.logo_data
+  const logoSrc    = _tgLogoData || _meta.tg_setup?.tg_logo || _meta.logo_data || null;
+  const logoHtml   = logoSrc ? `<img src="${logoSrc}" style="max-height:44px;max-width:180px;object-fit:contain">` : '';
   const filename  = `${clientName} - Delete Third-Party Request - ${new Date().toISOString().split('T')[0]}.xlsx`;
   const hubEmail  = 'Client.CertSecure@hubinternational.com';
 
