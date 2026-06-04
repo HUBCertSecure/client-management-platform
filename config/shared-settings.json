@@ -1,6 +1,6 @@
 {
-  "owner": "PhilipIrving",
-  "repo": "hubcertsecure",
+  "owner": "HUBCertSecure",
+  "repo": "client-management-platform",
   "branch": "main",
   "insuredsPath": "data/evident/insureds.csv",
   "coveragesPath": "data/evident/coverages.csv",
