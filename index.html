@@ -901,11 +901,46 @@
             <div style="font-size:12px;color:var(--muted);line-height:1.5">Generates a branded intake form to send to the client. Third parties fill it out and return it to HUB.</div>
           </div>
           <!-- Delete Third-Party Request -->
-          <div onclick="tgGoStep(3)" style="cursor:pointer;border:2px solid var(--border);border-radius:10px;padding:22px 20px;display:flex;flex-direction:column;gap:10px;transition:border-color .15s,background .15s" onmouseover="this.style.borderColor='#DC2626';this.style.background='#FEF2F2'" onmouseout="this.style.borderColor='var(--border)';this.style.background=''">
+          <div onclick="tgGoStep(25)" style="cursor:pointer;border:2px solid var(--border);border-radius:10px;padding:22px 20px;display:flex;flex-direction:column;gap:10px;transition:border-color .15s,background .15s" onmouseover="this.style.borderColor='#DC2626';this.style.background='#FEF2F2'" onmouseout="this.style.borderColor='var(--border)';this.style.background=''">
             <div style="font-size:28px">&#128465;</div>
             <div style="font-weight:700;font-size:15px;color:var(--text)">Delete Third-Party Request</div>
             <div style="font-size:12px;color:var(--muted);line-height:1.5">Loads all active third parties for this client. Select who to remove and generate a branded Excel for client review.</div>
           </div>
+        </div>
+      </div>
+    </div>
+
+
+    <!-- STEP 2.5: Delete — Filter Picker -->
+    <div id="tg-step-25" style="display:none">
+      <div class="client-banner" id="tg-client-banner-25">
+        <div style="display:flex;align-items:center;gap:8px">
+          <div>
+            <div class="banner-name" id="tg-banner-name-25"></div>
+            <div class="banner-struct" id="tg-banner-struct-25"></div>
+          </div>
+        </div>
+        <span class="banner-change" onclick="tgGoStep(15)">&#8592; Back</span>
+      </div>
+      <div class="card" style="margin-top:14px">
+        <div class="card-title" style="margin-bottom:4px">&#128203; Configure Delete Request</div>
+        <div style="font-size:12px;color:var(--muted);margin-bottom:20px;line-height:1.5">
+          Select which custom fields to include as filters in the client HTML file. Only fields with consistent values are shown.
+        </div>
+        <div id="tg-filter-picker-loading" style="padding:20px;text-align:center;color:var(--muted)">Loading available fields…</div>
+        <div id="tg-filter-picker-list" style="display:none">
+          <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:10px;margin-bottom:20px" id="tg-filter-picker-cards"></div>
+          <div style="display:flex;justify-content:space-between;align-items:center;padding-top:14px;border-top:1px solid var(--border)">
+            <div style="font-size:12px;color:var(--muted)">
+              <button class="btn btn-secondary" style="font-size:12px;padding:5px 12px;margin-right:6px" onclick="tgFilterPickerSelectAll()">Select All</button>
+              <button class="btn btn-secondary" style="font-size:12px;padding:5px 12px" onclick="tgFilterPickerClearAll()">Clear All</button>
+            </div>
+            <button class="btn btn-primary" onclick="tgFilterPickerContinue()" id="tg-filter-picker-continue">Continue &#8594;</button>
+          </div>
+        </div>
+        <div id="tg-filter-picker-empty" style="display:none;padding:20px;text-align:center;color:var(--muted)">
+          No custom fields found for this client — the HTML file will include search only.
+          <div style="margin-top:16px"><button class="btn btn-primary" onclick="tgFilterPickerContinue()">Continue &#8594;</button></div>
         </div>
       </div>
     </div>
@@ -919,7 +954,7 @@
             <div class="banner-struct" id="tg-banner-struct-3"></div>
           </div>
         </div>
-        <span class="banner-change" onclick="tgGoStep(15)">&#8592; Back</span>
+        <span class="banner-change" onclick="tgGoStep(25)">&#8592; Back</span>
       </div>
       <div class="card" style="margin-top:14px">
         <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;flex-wrap:wrap;gap:8px">
@@ -5220,7 +5255,7 @@ async function tgSelectClient(key) {
 }
 
 function tgGoStep(n) {
-  [1, 15, 2, 3].forEach(i => {
+  [1, 15, 2, 25, 3].forEach(i => {
     const el = document.getElementById('tg-step-' + (i === 15 ? '15' : i));
     if (el) el.style.display = i === n ? 'block' : 'none';
   });
@@ -5236,6 +5271,16 @@ function tgGoStep(n) {
     });
   }
   if (n === 2 && _tgClient) setHeaderTitle('Build Template', _tgClient.name);
+  if (n === 25 && _tgClient) {
+    setHeaderTitle('Configure Delete Request', _tgClient.name);
+    ['25','3'].forEach(sfx => {
+      const bn = document.getElementById('tg-banner-name-' + sfx);
+      const bs = document.getElementById('tg-banner-struct-' + sfx);
+      if (bn) bn.textContent = _tgClient.name;
+      if (bs) bs.textContent = STRUCT[_tgClient.structure]?.label || '';
+    });
+    tgFilterPickerLoad();
+  }
   if (n === 3 && _tgClient) {
     setHeaderTitle('Delete Third-Party Request', _tgClient.name);
     tgDelLoad();
@@ -8568,6 +8613,122 @@ function submitRequest() {
   if (_notifs.length > 15) _notifs.pop();
   renderNotifList();
   toast(`\u2713 HTML file downloaded — send to ${clientName}`, 'success');
+}
+
+
+// ── TEMPLATE GENERATOR — FILTER PICKER (Step 2.5) ────────────────────
+let _tgFilterPickerFields = {}; // field name → sorted array of unique values + byId map
+
+async function tgFilterPickerLoad() {
+  const loading = document.getElementById('tg-filter-picker-loading');
+  const listEl  = document.getElementById('tg-filter-picker-list');
+  const emptyEl = document.getElementById('tg-filter-picker-empty');
+  const cards   = document.getElementById('tg-filter-picker-cards');
+  if (loading) loading.style.display = '';
+  if (listEl)  listEl.style.display  = 'none';
+  if (emptyEl) emptyEl.style.display = 'none';
+  _tgFilterPickerFields = {};
+
+  try {
+    const s    = getSettings();
+    const isTL = isTLClient(_tgClient.key);
+    const clientName = _tgClient.name;
+
+    const cpPath = isTL
+      ? 'data/trustlayer/vendor_attributes.csv'
+      : (s.customPropsPath || 'data/evident/custom_properties.csv');
+
+    const cpRows = await fetchCSV(cpPath);
+    const clientCp = cpRows.filter(r => (r.client || '').trim() === clientName.trim());
+
+    const nameKey = 'field_name';
+    const valKey  = isTL ? 'value' : 'field_value';
+    const idKey   = isTL ? 'vendor_id' : 'insured_id';
+    const fieldMap = {};
+
+    clientCp.forEach(r => {
+      const fn  = (r[nameKey] || '').trim();
+      const fv  = (r[valKey]  || '').trim();
+      const fid = (r[idKey]   || '').trim();
+      if (!fn || !fv) return;
+      if (!fieldMap[fn]) fieldMap[fn] = { values: new Set(), byId: {} };
+      fieldMap[fn].values.add(fv);
+      if (!fieldMap[fn].byId[fid]) fieldMap[fn].byId[fid] = [];
+      fieldMap[fn].byId[fid].push(fv);
+    });
+
+    // Keep fields with 2–20 unique values
+    Object.entries(fieldMap).forEach(([fn, fd]) => {
+      if (fd.values.size >= 2 && fd.values.size <= 20) {
+        _tgFilterPickerFields[fn] = {
+          values: Array.from(fd.values).sort(),
+          byId:   fd.byId,
+          selected: true, // default all on
+        };
+      }
+    });
+
+    if (loading) loading.style.display = 'none';
+
+    const fieldNames = Object.keys(_tgFilterPickerFields);
+    if (!fieldNames.length) {
+      if (emptyEl) emptyEl.style.display = '';
+      return;
+    }
+
+    // Render toggle cards
+    tgFilterPickerRender();
+    if (listEl) listEl.style.display = '';
+
+  } catch(e) {
+    if (loading) loading.textContent = 'Could not load custom fields: ' + e.message;
+  }
+}
+
+function tgFilterPickerRender() {
+  const cards = document.getElementById('tg-filter-picker-cards');
+  if (!cards) return;
+  cards.innerHTML = Object.entries(_tgFilterPickerFields).map(([fn, fd]) => {
+    const on = fd.selected;
+    return `<div onclick="tgFilterPickerToggle('${fn.replace(/'/g,"\'")}',this)"
+      style="cursor:pointer;border:2px solid ${on ? '#3872B8' : 'var(--border)'};border-radius:8px;padding:14px 16px;background:${on ? '#F0F7FF' : 'var(--white)'};transition:all .15s;user-select:none">
+      <div style="display:flex;align-items:center;gap:8px;margin-bottom:4px">
+        <div style="width:16px;height:16px;border-radius:4px;border:2px solid ${on ? '#3872B8' : '#D1DCE8'};background:${on ? '#3872B8' : 'white'};display:flex;align-items:center;justify-content:center;flex-shrink:0">
+          ${on ? '<span style="color:white;font-size:11px;font-weight:700">✓</span>' : ''}
+        </div>
+        <span style="font-weight:700;font-size:13px;color:var(--text)">${fn}</span>
+      </div>
+      <div style="font-size:11px;color:var(--muted);margin-left:24px">${fd.values.length} unique value${fd.values.length === 1 ? '' : 's'}: ${fd.values.slice(0,4).join(', ')}${fd.values.length > 4 ? '…' : ''}</div>
+    </div>`;
+  }).join('');
+}
+
+function tgFilterPickerToggle(fieldName, cardEl) {
+  if (_tgFilterPickerFields[fieldName]) {
+    _tgFilterPickerFields[fieldName].selected = !_tgFilterPickerFields[fieldName].selected;
+    tgFilterPickerRender();
+  }
+}
+
+function tgFilterPickerSelectAll() {
+  Object.keys(_tgFilterPickerFields).forEach(fn => _tgFilterPickerFields[fn].selected = true);
+  tgFilterPickerRender();
+}
+
+function tgFilterPickerClearAll() {
+  Object.keys(_tgFilterPickerFields).forEach(fn => _tgFilterPickerFields[fn].selected = false);
+  tgFilterPickerRender();
+}
+
+function tgFilterPickerContinue() {
+  // Pass selected fields into _tgDelCustomFields before going to step 3
+  _tgDelCustomFields = {};
+  Object.entries(_tgFilterPickerFields).forEach(([fn, fd]) => {
+    if (fd.selected) {
+      _tgDelCustomFields[fn] = { values: new Set(fd.values), byId: fd.byId };
+    }
+  });
+  tgGoStep(3);
 }
 
 </script>
