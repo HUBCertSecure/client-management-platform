@@ -257,7 +257,8 @@
       <button class="stab active" id="stab-datasource" onclick="switchSettingsTab('datasource')">Data Source</button>
       <button class="stab" id="stab-monday-cfg" onclick="switchSettingsTab('monday-cfg')">APIs</button>
       <button class="stab" id="stab-users" onclick="switchSettingsTab('users')">Users</button>
-      <button class="stab" id="stab-admin" onclick="switchSettingsTab('admin')">Admin</button>
+      <button class="stab" id="stab-auditlog" onclick="switchSettingsTab('auditlog')">Audit Log</button>
+  <button class="stab" id="stab-admin" onclick="switchSettingsTab('admin')">Admin</button>
     </div>
 
     <!-- DATA SOURCE -->
@@ -407,6 +408,21 @@
     </div>
 
     <!-- ADMIN -->
+    <div id="stab-content-auditlog" style="display:none;padding:0 24px 20px">
+      <div class="settings-box">
+        <span class="section-lbl">Audit Log</span>
+        <div style="font-size:13px;color:var(--muted);margin-bottom:16px;line-height:1.6">
+          A record of key actions taken in the app — report generation, Monday.com syncs, client config changes, and shared settings publishes.
+        </div>
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
+          <div style="font-size:12px;color:var(--muted)" id="audit-count">No entries yet.</div>
+          <button class="btn btn-secondary" style="font-size:12px;padding:5px 12px" onclick="auditLogClear()">Clear Log</button>
+        </div>
+        <div id="audit-log-list" style="max-height:420px;overflow-y:auto;font-size:12px;border:1px solid var(--border);border-radius:6px">
+          <div id="audit-log-empty" style="padding:20px;text-align:center;color:var(--muted)">No entries yet.</div>
+        </div>
+      </div>
+    </div>
     <div id="stab-content-admin" style="display:none">
       <div class="settings-box">
         <span class="section-lbl">Supabase Edge Function</span>
@@ -1469,13 +1485,14 @@ function showAuthMsg(id, msg, isErr) {
   el.textContent = msg; el.className = isErr ? 'login-err' : 'login-success'; el.style.display = 'block';
 }
 function switchSettingsTab(tab) {
-  ['datasource','monday-cfg','users','admin'].forEach(t => {
+  ['datasource','monday-cfg','users','auditlog','admin'].forEach(t => {
     const btn = document.getElementById('stab-' + t);
     const pane = document.getElementById('stab-content-' + t);
     if (btn) btn.classList.toggle('active', t === tab);
     if (pane) pane.style.display = t === tab ? '' : 'none';
   });
   if (tab === 'users') loadUsers();
+  if (tab === 'auditlog') renderAuditLog();
   if (tab === 'monday-cfg') settingsMondayTabActivated();
 }
 async function loadUsers() {
@@ -1804,7 +1821,7 @@ async function publishSharedSettings() {
       }
       const lp = document.getElementById('shared-settings-status');
       if (lp) { lp.textContent = 'Last published: '+shared._published+' \u00b7 '+stamped+' user'+(stamped!==1?'s':'')+' updated'; lp.style.display=''; }
-      toast('\u2713 Published \u2014 '+stamped+' team member'+(stamped!==1?'s':'')+' will auto-load settings on next login', 'success');
+      auditLogAdd('Shared Settings Published', stamped+' team member'+(stamped!==1?'s':'')+' updated'); toast('\u2713 Published \u2014 '+stamped+' team member'+(stamped!==1?'s':'')+' will auto-load settings on next login', 'success');
     } catch(eStamp) {
       const lp = document.getElementById('shared-settings-status');
       if (lp) { lp.textContent = 'Last published: '+shared._published; lp.style.display=''; }
@@ -2122,7 +2139,7 @@ const CLIENTS_FALLBACK = [
   { client_name:"Construction Management Inc.",       rp_common_name:"constructionmgmt", structure:"project",  source:"trustlayer",  program_start_date:"2025-01-01", go_live_date:"2025-01-01", active:true },
   { client_name:"Alliance for Sustainable Energy, LLC", rp_common_name:"allianceenergy",       structure:"general",  source:"evident", producer_name:"Tom Quick",          active:true },
   { client_name:"Associated Wholesale Grocers, Inc.",  rp_common_name:"assocwholesalegrocers",structure:"general",  source:"trustlayer", producer_name:"Chandler Cullor", active:true },
-  { client_name:"Excel Constructors, Inc.",            rp_common_name:"excelconstructors",    structure:"project",  source:"trustlayer", producer_name:"Chandler Cullor", active:true },
+  { client_name:"Excel Constructors Inc.",            rp_common_name:"excelconstructors",    structure:"project",  source:"trustlayer", producer_name:"Chandler Cullor", active:true },
   { client_name:"Fincantieri Infrastructure Florida, Inc.", rp_common_name:"fincantieri",     structure:"project",  source:"evident", producer_name:"Kevin Scanlon",       active:true },
   { client_name:"QTS Data Centers",                   rp_common_name:"qtsdatacenters",   structure:"project",  source:"trustlayer",  program_start_date:"2025-01-01", go_live_date:"2025-01-01", active:true },
 ];
@@ -2575,7 +2592,14 @@ async function triggerHubWide() {
     const monthlySnapshots = [];
     for (const m of months) {
       btn.textContent = `Loading ${m}\u2026`;
-      try { const ins = await fetchCSV(`snapshots/${year}/${m}/insureds.csv`); let crit = []; try { crit = await fetchCSV(`snapshots/${year}/${m}/criteria.csv`); } catch(e) {} monthlySnapshots.push({ month: m, ins, crit }); } catch(e) {}
+      try {
+        const ins  = await fetchCSV(`snapshots/${year}/${m}/insureds.csv`).catch(()=>[]);
+        const crit = await fetchCSV(`snapshots/${year}/${m}/criteria.csv`).catch(()=>[]);
+        // Merge TrustLayer snapshots (snapshots/trustlayer/YYYY/YYYY-MM/)
+        const tlIns  = await fetchCSV(`snapshots/trustlayer/${year}/${m}/insureds.csv`).catch(()=>[]);
+        const tlCrit = await fetchCSV(`snapshots/trustlayer/${year}/${m}/criteria.csv`).catch(()=>[]);
+        monthlySnapshots.push({ month: m, ins: [...ins, ...tlIns], crit: [...crit, ...tlCrit] });
+      } catch(e) {}
     }
     let engAll = []; try { engAll = await fetchCSV(`snapshots/${year}/${lastMonth}/engagement.csv`); } catch(e) {}
     const allClients = CLIENTS.map(c => c.key);
@@ -2593,6 +2617,9 @@ async function triggerHubWide() {
       btn.textContent = 'Loading live data…';
       try { combinedLiveIns = await fetchCSV(s.insuredsPath); } catch(e) {}
       try { combinedCritLive = await fetchCSV(s.criteriaPath || 'data/evident/criteria.csv'); } catch(e) {}
+      // Merge TrustLayer live data
+      try { const tlIns = await fetchCSV(s.tlInsuredsPath || 'data/trustlayer/insureds.csv'); combinedLiveIns = [...combinedLiveIns, ...tlIns]; } catch(e) {}
+      try { const tlCrit = await fetchCSV(s.tlCriteriaPath || 'data/trustlayer/criteria.csv'); combinedCritLive = [...combinedCritLive, ...tlCrit]; } catch(e) {}
     }
     for (const clientKey of allClients) {
       const getStats = (snap, clientKey2) => {
@@ -2645,6 +2672,7 @@ async function triggerHubWide() {
     _notifs.unshift({ msg: `HUB-Wide Annual Review ${year}`, type: 'success', time: new Date(), _download: { type: 'pdf', html: htmlOut, _blobUrl: blobUrl, filename: `HUB-Wide Annual Review ${year} - ${new Date().toISOString().split('T')[0]}.pdf` } });
     if (_notifs.length > 15) _notifs.pop(); renderNotifList();
     const drawer = document.getElementById('notif-drawer'); if (drawer) { drawer.style.display = ''; _unread = 0; updateNotifBadge(); }
+    auditLogAdd('HUB-Wide Annual Report', `Year ${year} · ${clientStats.length} clients`);
     msg.textContent = '\u2713 Print dialog opening \u2014 save as PDF. Also in Recent Activity.';
     msg.style.cssText = 'display:block;font-size:12px;padding:8px 12px;border-radius:7px;background:var(--green-bg);color:var(--green);margin-top:10px';
     setTimeout(() => closeHubWide(), 3000);
@@ -3032,7 +3060,7 @@ function showDownloads(downloads){
 }
 function addDownloadNotif(d){
   if(d.type==='pdf'&&!d._blobUrl){const blob=new Blob([d.html],{type:'text/html'});d._blobUrl=URL.createObjectURL(blob);}
-  _notifs.unshift({msg:d.label,type:'success',time:new Date(),_download:d});
+  auditLogAdd('Report Generated', d.label || ''); _notifs.unshift({msg:d.label,type:'success',time:new Date(),_download:d});
   if(_notifs.length>15)_notifs.pop();
   renderNotifList();
 }
@@ -7958,5 +7986,54 @@ function tlsBuildShell() {
   </div>
 </div>`;
 }
+
+// ── AUDIT LOG ─────────────────────────────────────────────────────────
+const AUDIT_KEY = 'cs_audit_log';
+const AUDIT_MAX = 200;
+
+function auditLogAdd(action, detail = '') {
+  const log = auditLogGet();
+  log.unshift({
+    ts:     new Date().toLocaleString('en-US', { timeZone: 'America/Chicago', month: '2-digit', day: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false }).replace(',', ''),
+    action,
+    detail,
+    user:   (typeof _userEmail !== 'undefined' ? _userEmail : '') || '',
+    role:   (typeof _userRole  !== 'undefined' ? _userRole  : '') || '',
+  });
+  if (log.length > AUDIT_MAX) log.length = AUDIT_MAX;
+  try { localStorage.setItem(AUDIT_KEY, JSON.stringify(log)); } catch(e) {}
+}
+
+function auditLogGet() {
+  try { return JSON.parse(localStorage.getItem(AUDIT_KEY) || '[]'); } catch(e) { return []; }
+}
+
+function auditLogClear() {
+  if (!confirm('Clear all audit log entries?')) return;
+  localStorage.removeItem(AUDIT_KEY);
+  renderAuditLog();
+}
+
+function renderAuditLog() {
+  const log = auditLogGet();
+  const list = document.getElementById('audit-log-list');
+  const count = document.getElementById('audit-count');
+  if (!list) return;
+  if (count) count.textContent = log.length ? `${log.length} entr${log.length === 1 ? 'y' : 'ies'}` : 'No entries yet.';
+  if (!log.length) {
+    list.innerHTML = '<div style="padding:20px;text-align:center;color:var(--muted)">No entries yet.</div>';
+    return;
+  }
+  list.innerHTML = log.map(e => `
+    <div style="display:grid;grid-template-columns:160px 1fr;gap:8px;padding:8px 12px;border-bottom:1px solid var(--border);align-items:start">
+      <div style="color:var(--muted);font-size:11px;white-space:nowrap">${e.ts}</div>
+      <div>
+        <span style="font-weight:600;color:var(--text)">${e.action}</span>
+        ${e.detail ? `<span style="color:var(--muted)"> — ${e.detail}</span>` : ''}
+        ${e.user ? `<div style="font-size:11px;color:var(--muted);margin-top:2px">${e.user}${e.role ? ' · ' + e.role : ''}</div>` : ''}
+      </div>
+    </div>`).join('');
+}
+
 </script>
 </body></html>
