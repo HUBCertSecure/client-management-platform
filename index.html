@@ -8378,9 +8378,9 @@ textarea{width:100%;padding:10px 14px;border:1.5px solid #D1DCE8;border-radius:7
   </div>
 </div>
 
-<script id="d-parties" type="application/json">%%PARTY_DATA_JSON%%</script>
-<script id="d-fields" type="application/json">%%CUSTOM_FIELDS_JSON%%</script>
-<script id="d-byid" type="application/json">%%CUSTOM_FIELDS_BY_ID_JSON%%</script>
+<script id="d-parties" type="application/json">%%PARTY_DATA_JSON%%\u003c/script>
+<script id="d-fields" type="application/json">%%CUSTOM_FIELDS_JSON%%\u003c/script>
+<script id="d-byid" type="application/json">%%CUSTOM_FIELDS_BY_ID_JSON%%\u003c/script>
 <script>
 const ALL_PARTIES   = JSON.parse(document.getElementById('d-parties').textContent);
 const CUSTOM_FIELDS = JSON.parse(document.getElementById('d-fields').textContent);
@@ -8530,7 +8530,7 @@ document.addEventListener('DOMContentLoaded', function() {
 <\/html>`;
 
   // Escape forward slashes so any <\/script> in data can't break the HTML parser
-  const safeJSON = obj => JSON.stringify(obj)
+  const safeJSON = obj => JSON.stringify(obj).replace(/</g, '\u003c')
   const finalHtml = html
     .replace('%%PARTY_DATA_JSON%%',          safeJSON(partyData))
     .replace('%%CUSTOM_FIELDS_JSON%%',       safeJSON(cfJson))
