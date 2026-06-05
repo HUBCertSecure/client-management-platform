@@ -8443,7 +8443,7 @@ function applyFilters() {
     const st  = (r.status || '').toUpperCase();
     const stCls = st === 'NON_COMPLIANT' ? 'status-nc' : st === 'COMPLIANT' ? 'status-c' : 'status-p';
     return '<div class="party-row' + (sel ? ' selected' : '') + '" onclick="toggleParty(' + JSON.stringify(r) + ',this)">' +
-      '<input type="checkbox" class="party-cb"' + (sel ? ' checked' : '') + ' onclick="event.stopPropagation();toggleParty(' + JSON.stringify(r) + ',this.closest(\'.party-row\'))">' +
+      '<input type="checkbox" class="party-cb"' + (sel ? ' checked' : '') + ' onclick="event.stopPropagation();toggleParty(' + JSON.stringify(r) + ',this.closest(\".party-row\"))">' +
       '<div style="flex:1;min-width:0"><div class="party-name">' + r.name + '<\/div>' +
       (r.email ? '<div class="party-email">' + r.email + '<\/div>' : '') + '<\/div>' +
       '<span class="status-badge ' + stCls + '">' + (r.status || 'Unknown') + '<\/span>' +
@@ -8525,8 +8525,8 @@ document.addEventListener('DOMContentLoaded', function() {
     document.getElementById('results-count').textContent = ALL_PARTIES.length + ' active third parties \u2014 search or filter to browse';
   } catch(e) { console.error('HTML init ERROR:', e.message); }
 });
-\x3c/script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js">\x3c/script>
+%%END_SCRIPT%%
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js">%%END_SCRIPT%%
 <\/body>
 <\/html>`;
 
