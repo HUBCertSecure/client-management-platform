@@ -8585,7 +8585,9 @@ async function tgFilterPickerLoad() {
       : (s.customPropsPath || 'data/evident/custom_properties.csv');
 
     const cpRows = await fetchCSV(cpPath);
+    console.log('[PICKER] CSV rows fetched:', cpRows.length, 'path:', cpPath, 'clientName:', clientName);
     const clientCp = cpRows.filter(r => (r.client || '').trim() === clientName.trim());
+    console.log('[PICKER] Client rows after filter:', clientCp.length);
 
     const nameKey = 'field_name';
     const valKey  = isTL ? 'value' : 'field_value';
@@ -8627,8 +8629,13 @@ async function tgFilterPickerLoad() {
     if (listEl) listEl.style.display = '';
 
   } catch(e) {
-    if (loading) loading.textContent = 'Could not load custom fields: ' + e.message;
+    console.error('[PICKER] Failed to load custom fields:', e.message, e);
+    if (loading) {
+      loading.style.display = '';
+      loading.innerHTML = '<div style="padding:16px;color:var(--red);font-size:13px">Could not load custom fields: ' + e.message + '</div>';
+    }
   }
+  console.log('[PICKER] Fields loaded:', Object.keys(_tgFilterPickerFields));
 }
 
 function tgFilterPickerRender() {
