@@ -993,8 +993,8 @@
           </div>
         </div>
         <div style="display:flex;justify-content:flex-end;align-items:center;gap:10px;margin-top:14px;padding-top:14px;border-top:1px solid var(--border)">
-          <span id="tg-del-saved-badge" style="display:none;font-size:11px;color:var(--green)">&#10003; Branding saved</span>
-          <button id="tg-del-save-branding-btn" class="btn btn-secondary" style="font-size:12px;padding:6px 16px" onclick="tgDelSaveBranding()">&#128190; Save Branding</button>
+          <span id="tg-del-saved-badge" style="display:none;font-size:11px;color:var(--green)">&#10003; Setup saved</span>
+          <button id="tg-del-save-branding-btn" class="btn btn-secondary" style="font-size:12px;padding:6px 16px" onclick="tgDelSaveBranding()">&#128190; Save Setup</button>
         </div>
       </div>
     </div>
@@ -8266,7 +8266,7 @@ async function tgDelGenerate() {
   const cfByIdJson  = {};
   Object.entries(_tgDelCustomFields).forEach(([fn, fd]) => {
     // fd.values is already a sorted plain array from tgFilterPickerGenerate
-    cfJson[fn]     = Array.isArray(fd.values) ? fd.values : Array.from(fd.values).sort();
+    cfJson[fn]     = (Array.isArray(fd.values) ? [...fd.values] : Array.from(fd.values)).sort((a,b)=>a.localeCompare(b,undefined,{sensitivity:'base'}));
     cfByIdJson[fn] = fd.byId || {};
   });
   console.log('[DEL] _tgDelCustomFields keys:', Object.keys(_tgDelCustomFields));
@@ -8395,7 +8395,7 @@ document.addEventListener('DOMContentLoaded', function() {
     const sel = document.createElement('select');
     sel.style.cssText = 'padding:7px 10px;border:1.5px solid #D1DCE8;border-radius:7px;font-size:13px;background:white';
     sel.innerHTML = '<option value="">All ' + fn + '<\/option>' +
-      vals.map(v => '<option value="' + v.replace(/"/g, '&quot;') + '">' + v + '<\/option>').join('');
+      [...vals].sort((a,b)=>a.localeCompare(b,undefined,{sensitivity:'base'})).map(v => '<option value="' + v.replace(/"/g, '&quot;') + '">' + v + '<\/option>').join('');
     sel.dataset.field = fn;
     sel.addEventListener('change', applyFilters);
     container.appendChild(sel);
@@ -8646,7 +8646,7 @@ async function tgFilterPickerLoad() {
 function tgFilterPickerRender() {
   const cards = document.getElementById('tg-filter-picker-cards');
   if (!cards) return;
-  cards.innerHTML = Object.entries(_tgFilterPickerFields).map(([fn, fd]) => {
+  cards.innerHTML = Object.entries(_tgFilterPickerFields).sort(([a],[b])=>a.localeCompare(b)).map(([fn, fd]) => {
     const on = fd.selected;
     return `<div onclick="tgFilterPickerToggle('${fn.replace(/'/g,"\'")}',this)"
       style="cursor:pointer;border:2px solid ${on ? '#3872B8' : 'var(--border)'};border-radius:8px;padding:14px 16px;background:${on ? '#F0F7FF' : 'var(--white)'};transition:all .15s;user-select:none">
@@ -8792,7 +8792,7 @@ async function tgDelSaveBranding() {
   if (!_tgClient) { toast('No client selected', 'error'); return; }
   const btn   = document.getElementById('tg-del-save-branding-btn');
   const badge = document.getElementById('tg-del-saved-badge');
-  if (btn) { btn.disabled = true; btn.textContent = 'Saving...'; }
+  if (btn) { btn.disabled = true; btn.textContent = 'Saving…'; }
   try {
     const key    = _tgClient.key;
     const accent = document.getElementById('tg-del-accent-hex')?.value || '';
@@ -8819,11 +8819,11 @@ async function tgDelSaveBranding() {
     await saveClientsToConfig(updated);
     _allClientsData = updated;
     if (badge) badge.style.display = '';
-    toast('Delete branding saved for ' + _tgClient.name, 'success');
+    toast('\u2713 Setup saved for ' + _tgClient.name, 'success');
   } catch(e) {
     toast('Save failed: ' + e.message, 'error');
   } finally {
-    if (btn) { btn.disabled = false; btn.textContent = '\u{1F4BE} Save Branding'; }
+    if (btn) { btn.disabled = false; btn.textContent = '\u{1F4BE} Save Setup'; }
   }
 }
 
