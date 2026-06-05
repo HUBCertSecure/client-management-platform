@@ -71,7 +71,7 @@ const CLIENTS = [
 
 const BASE_V2  = "https://api.trustlayer.io/v2";
 const BASE_V1  = "https://api.trustlayer.io/v1";
-const DATA_DIR = path.join(__dirname, "..", "data");
+const DATA_DIR = path.join(__dirname, "..", "..", "data", "trustlayer");
 const TODAY    = new Date().toISOString().split("T")[0];
 
 // ------------------------------------------------------------
