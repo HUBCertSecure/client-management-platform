@@ -261,11 +261,31 @@ async function main() {
     // ── v1 REFERENCE DATA ─────────────────────────────────────
     // Custom field definitions
     let customFieldMap = {};
+    // Helper: resolve option IDs to human-readable labels
+    function resolveValue(a, fdef) {
+      if (a.value !== undefined && a.value !== null && a.value !== "") return String(a.value);
+      if (a.optionIds && a.optionIds.length) {
+        const labels = a.optionIds.map(oid => (fdef?.options?.[oid]) || oid);
+        return labels.join("; ");
+      }
+      if (a.optionId) return fdef?.options?.[a.optionId] || a.optionId;
+      return "";
+    }
     try {
       const fields = await fetchAllV1(client.token, "/custom-fields");
       for (const f of fields) {
         const id = f.id || f._id;
-        if (id) customFieldMap[id] = { name: f.name || f.label || id, type: f.type || "" };
+        if (id) {
+          // Build option lookup: optionId → label
+          const optionMap = {};
+          if (Array.isArray(f.options)) {
+            f.options.forEach(o => {
+              const oid = o.id || o._id || o.value;
+              if (oid) optionMap[oid] = o.label || o.name || o.value || String(oid);
+            });
+          }
+          customFieldMap[id] = { name: f.name || f.label || id, type: f.type || "", options: optionMap };
+        }
         rows.custom_field_defs.push({
           client:    client.name,
           id:        id || "",
@@ -376,8 +396,7 @@ async function main() {
             field_id:     fid,
             field_name:   fdef.name || fid,
             field_type:   fdef.type || "",
-            value:        a.value !== undefined ? String(a.value)
-                          : (a.optionIds ? a.optionIds.join("; ") : ""),
+            value:        resolveValue(a, fdef),
             sync_date:    TODAY,
           });
         }
@@ -504,8 +523,7 @@ async function main() {
             field_id:    fid,
             field_name:  fdef.name || fid,
             field_type:  fdef.type || "",
-            value:       a.value !== undefined ? String(a.value)
-                         : (a.optionIds ? a.optionIds.join("; ") : ""),
+            value:       resolveValue(a, fdef),
             option_id:   a.optionId || "",
             sync_date:   TODAY,
           });
@@ -633,8 +651,7 @@ async function main() {
             field_id:     fid,
             field_name:   fdef.name || fid,
             field_type:   fdef.type || "",
-            value:        a.value !== undefined ? String(a.value)
-                          : (a.optionIds ? a.optionIds.join("; ") : ""),
+            value:        resolveValue(a, fdef),
             option_id:    a.optionId || "",
             sync_date:    TODAY,
           });
