@@ -992,6 +992,10 @@
             </div>
           </div>
         </div>
+        <div style="display:flex;justify-content:flex-end;align-items:center;gap:10px;margin-top:14px;padding-top:14px;border-top:1px solid var(--border)">
+          <span id="tg-del-saved-badge" style="display:none;font-size:11px;color:var(--green)">&#10003; Branding saved</span>
+          <button id="tg-del-save-branding-btn" class="btn btn-secondary" style="font-size:12px;padding:6px 16px" onclick="tgDelSaveBranding()">&#128190; Save Branding</button>
+        </div>
       </div>
     </div>
 
@@ -8739,18 +8743,21 @@ function tgDelAutoDetectColors() {
 // Pre-fill delete branding fields when a client is selected
 function tgDelPrefillBranding() {
   if (!_tgClient) return;
-  const _meta  = (typeof CLIENT_META_MAP !== 'undefined') ? (CLIENT_META_MAP[_tgClient.key] || {}) : {};
-  const _setup = _meta.tg_setup || {};
-  const accent = _setup.tg_accent || '#3872B8';
-  const header = _setup.tg_header || '#283847';
+  const _meta     = (typeof CLIENT_META_MAP !== 'undefined') ? (CLIENT_META_MAP[_tgClient.key] || {}) : {};
+  const _delSetup = _meta.tg_delete_setup || {};
+  const _addSetup = (_meta.tg_templates?.length) ? _meta.tg_templates[0] : (_meta.tg_setup || {});
+  const accent    = _delSetup.tg_accent || _addSetup.tg_accent || '#3872B8';
+  const header    = _delSetup.tg_header || _addSetup.tg_header || '#283847';
   const ah = document.getElementById('tg-del-accent-hex');
   const ap = document.getElementById('tg-del-accent-picker');
   const hh = document.getElementById('tg-del-header-hex');
   const hp = document.getElementById('tg-del-header-picker');
   if (ah) ah.value = accent; if (ap) ap.value = accent;
   if (hh) hh.value = header; if (hp) hp.value = header;
+  const badge = document.getElementById('tg-del-saved-badge');
+  if (badge) badge.style.display = _delSetup.saved_at ? '' : 'none';
   // Pre-fill logo from saved setup
-  const savedLogo = _tgLogoData || _setup.tg_logo || _meta.logo_data || null;
+  const savedLogo = _tgDelLogoData || _delSetup.tg_logo || _addSetup.tg_logo || _meta.logo_data || null;
   if (savedLogo) {
     _tgDelLogoData = savedLogo;
     const lp  = document.getElementById('tg-del-logo-preview');
@@ -8760,6 +8767,37 @@ function tgDelPrefillBranding() {
     if (adb) adb.style.display = '';
   } else {
     tgDelClearLogo();
+  }
+}
+
+
+// ── DELETE FLOW — SAVE BRANDING ──────────────────────────────────────
+async function tgDelSaveBranding() {
+  if (!_tgClient) { toast('No client selected', 'error'); return; }
+  const btn   = document.getElementById('tg-del-save-branding-btn');
+  const badge = document.getElementById('tg-del-saved-badge');
+  if (btn) { btn.disabled = true; btn.textContent = 'Saving...'; }
+  try {
+    const key    = _tgClient.key;
+    const accent = document.getElementById('tg-del-accent-hex')?.value || '';
+    const header = document.getElementById('tg-del-header-hex')?.value || '';
+    const setup  = { tg_accent: accent, tg_header: header, tg_logo: _tgDelLogoData || null, saved_at: new Date().toISOString() };
+    const meta = CLIENT_META_MAP[key] || {};
+    meta.tg_delete_setup = setup;
+    CLIENT_META_MAP[key] = meta;
+    const updated = (_allClientsData || []).map(cl => {
+      if (cl.client_name !== key) return cl;
+      return Object.assign({}, cl, { tg_delete_setup: setup });
+    });
+    if (!updated.length) throw new Error('No clients data loaded - refresh first');
+    await saveClientsToConfig(updated);
+    _allClientsData = updated;
+    if (badge) badge.style.display = '';
+    toast('Delete branding saved for ' + _tgClient.name, 'success');
+  } catch(e) {
+    toast('Save failed: ' + e.message, 'error');
+  } finally {
+    if (btn) { btn.disabled = false; btn.textContent = '\u{1F4BE} Save Branding'; }
   }
 }
 
