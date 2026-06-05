@@ -8471,7 +8471,10 @@ function submitRequest() {
 }
 
 // Init count
-document.getElementById('results-count').textContent = ALL_PARTIES.length + ' active third parties \u2014 search or filter to browse';
+try {
+  console.log('HTML init: ALL_PARTIES=', ALL_PARTIES.length, 'CF keys=', Object.keys(CUSTOM_FIELDS));
+  document.getElementById('results-count').textContent = ALL_PARTIES.length + ' active third parties \u2014 search or filter to browse';
+} catch(e) { console.error('HTML init ERROR:', e.message); }
 <\/script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"><\/script>
 </body>
