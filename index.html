@@ -8212,6 +8212,9 @@ async function tgDelGenerate() {
     email:  r.primary_contact_email || r.email || r.primary_email || '',
     status: r.compliance_status || r.status || '',
   })).filter(r => r.name);
+  console.log('[DEL] allRows:', allRows.length, '| clientRows:', clientRows.length, '| allParties:', allParties.length);
+  console.log('[DEL] clientName filter:', JSON.stringify(clientName));
+  if (allRows.length > 0) console.log('[DEL] sample client field:', JSON.stringify(allRows[0].client || allRows[0].Client || 'MISSING'));
 
   // Build custom fields data for embedding
   const cfJson      = {};
