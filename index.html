@@ -8144,29 +8144,28 @@ let _tgDelCustomFields = {}; // field name → { values: Set, byId: {} } — set
 async function tgDelGenerate() {
   if (!_tgClient) return;
   const btn = document.getElementById('tg-filter-picker-continue');
-  if (btn) { btn.disabled = true; btn.textContent = 'Generating…'; }
+  if (btn) { btn.disabled = true; btn.textContent = 'Generating\u2026'; }
   try {
-  const isTL      = isTLClient(_tgClient.key);
+  const isTL       = isTLClient(_tgClient.key);
   const clientName = _tgClient.name;
-  const platform  = isTL ? 'TrustLayer' : 'Evident';
-  const today     = new Date().toLocaleDateString('en-US', { year:'numeric', month:'long', day:'numeric' });
-  // Read colors from DOM (set by tgSelectClient) with CLIENT_META_MAP as fallback
+  const platform   = isTL ? 'TrustLayer' : 'Evident';
+  const today      = new Date().toLocaleDateString('en-US', { year:'numeric', month:'long', day:'numeric' });
+
+  // Colors and logo
   const _meta      = (typeof CLIENT_META_MAP !== 'undefined' && _tgClient) ? (CLIENT_META_MAP[_tgClient.key] || {}) : {};
   const accentRaw  = document.getElementById('tg-accent-hex')?.value || _meta.accent_color || '#3872B8';
   const headerRaw  = document.getElementById('tg-header-hex')?.value || _meta.header_color || '#283847';
   const safeAccent = /^#[0-9a-fA-F]{6}$/.test(accentRaw) ? accentRaw : '#3872B8';
   const safeHeader = /^#[0-9a-fA-F]{6}$/.test(headerRaw) ? headerRaw : '#283847';
-  // Logo: use _tgLogoData (set by tgSelectClient) or fall back to meta.logo_data
   const logoSrc    = _tgLogoData || _meta.tg_setup?.tg_logo || _meta.logo_data || null;
-  const logoHtml   = logoSrc ? `<img src="${logoSrc}" style="max-height:44px;max-width:180px;object-fit:contain">` : '';
-  const filename  = `${clientName} - Delete Third-Party Request - ${new Date().toISOString().split('T')[0]}.xlsx`;
-  const hubEmail  = 'Client.CertSecure@hubinternational.com';
+  const logoHtml   = logoSrc ? '<img src="' + logoSrc + '" style="max-height:44px;max-width:180px;object-fit:contain">' : '';
+  const hubEmail   = 'Client.CertSecure@hubinternational.com';
 
   // Load all active parties from CSV
-  const s    = getSettings();
+  const s2   = getSettings();
   const path = isTL
-    ? (s.tlInsuredsPath || 'data/trustlayer/vendors.csv')
-    : (s.insuredsPath   || 'data/evident/insureds.csv');
+    ? (s2.tlInsuredsPath || 'data/trustlayer/vendors.csv')
+    : (s2.insuredsPath   || 'data/evident/insureds.csv');
   const allRows = await fetchCSV(path);
   const clientRows = allRows.filter(r => {
     if ((r.client || '').trim() !== clientName.trim()) return false;
@@ -8183,57 +8182,65 @@ async function tgDelGenerate() {
     status: r.compliance_status || r.status || '',
   })).filter(r => r.name);
 
-  // Build the rows HTML for the party list (all parties — client selects)
-  const rowsHtml = allParties.map((r, idx) => `
-    <tr>
-      <td style="padding:10px 14px;border-bottom:1px solid #E5E7EB;vertical-align:middle">
-        <label style="display:flex;align-items:center;gap:10px;cursor:pointer">
-          <input type="checkbox" name="del_party" value="${(r.id||r.name).replace(/"/g,'&quot;')}" data-name="${r.name.replace(/"/g,'&quot;')}" data-email="${(r.email||'').replace(/"/g,'&quot;')}" data-status="${(r.status||'').replace(/"/g,'&quot;')}" style="width:16px;height:16px;cursor:pointer" onchange="updateCount()">
-          <span style="font-weight:600;color:#1E2E3D">${r.name}</span>
-        </label>
-      </td>
-      <td style="padding:10px 14px;border-bottom:1px solid #E5E7EB;color:#6B7280;font-size:13px">${r.email || '—'}</td>
-      <td style="padding:10px 14px;border-bottom:1px solid #E5E7EB;text-align:center">
-        <span style="font-size:12px;padding:2px 10px;border-radius:10px;font-weight:600;${r.status.toUpperCase()==='NON_COMPLIANT'?'background:#FEE2E2;color:#DC2626':r.status.toUpperCase()==='COMPLIANT'?'background:#DCFCE7;color:#16A34A':'background:#F3F4F6;color:#6B7280'}">${r.status||'Unknown'}</span>
-      </td>
-    </tr>`).join('');
+  // Build custom fields data for embedding
+  const cfJson      = {};
+  const cfByIdJson  = {};
+  Object.entries(_tgDelCustomFields).forEach(([fn, fd]) => {
+    cfJson[fn]     = Array.from(fd.values).sort();
+    cfByIdJson[fn] = fd.byId;
+  });
+
+  const partyData = allParties.map(r => ({ id: r.id, name: r.name, email: r.email, status: r.status }));
 
   const html = `<!DOCTYPE html>
 <html lang="en">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>${clientName} — Delete Third-Party Request</title>
+<title>${clientName} \u2014 Delete Third-Party Request</title>
 <style>
-  *{box-sizing:border-box;margin:0;padding:0}
-  body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:#F4F6F9;color:#1E2E3D;min-height:100vh}
-  .page{max-width:860px;margin:0 auto;padding:32px 20px 60px}
-  .header{background:${safeHeader};border-radius:12px 12px 0 0;padding:28px 32px;display:flex;justify-content:space-between;align-items:center}
-  .header-title{color:white}
-  .header-title h1{font-size:22px;font-weight:800;margin-bottom:4px}
-  .header-title p{font-size:13px;opacity:.75}
-  .body{background:white;padding:28px 32px;border-radius:0 0 12px 12px;border:1px solid #E5E7EB;border-top:none}
-  .notice{background:#FFF8E1;border:1px solid #FBC02D;border-radius:8px;padding:14px 18px;font-size:13px;color:#7B5800;margin-bottom:24px;line-height:1.5}
-  .search-row{display:flex;gap:10px;margin-bottom:14px;flex-wrap:wrap;align-items:center}
-  .search-row input[type=text]{flex:1;min-width:200px;padding:8px 12px;border:1.5px solid #D1DCE8;border-radius:7px;font-size:13px;font-family:inherit}
-  .search-row select{padding:8px 10px;border:1.5px solid #D1DCE8;border-radius:7px;font-size:13px;font-family:inherit;background:white}
-  .toolbar{display:flex;gap:8px;margin-bottom:10px;align-items:center;flex-wrap:wrap}
-  .toolbar button{padding:6px 14px;border-radius:6px;font-size:12px;font-family:inherit;cursor:pointer;border:1.5px solid #D1DCE8;background:white;color:#1E2E3D}
-  .toolbar button:hover{background:#F4F6F9}
-  .count-badge{font-size:12px;color:#6B7280;margin-left:auto}
-  table{width:100%;border-collapse:collapse;font-size:13px}
-  thead th{background:#F8FAFC;padding:10px 14px;text-align:left;font-size:11px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:#6B7280;border-bottom:2px solid #E5E7EB}
-  tr.hidden{display:none}
-  .submit-section{margin-top:28px;padding:24px;background:#F8FAFC;border-radius:10px;border:1.5px solid #E5E7EB}
-  .submit-section h3{font-size:15px;font-weight:700;margin-bottom:8px;color:#1E2E3D}
-  .submit-section p{font-size:13px;color:#6B7280;margin-bottom:16px;line-height:1.5}
-  textarea{width:100%;padding:10px 14px;border:1.5px solid #D1DCE8;border-radius:7px;font-size:13px;font-family:inherit;resize:vertical;min-height:80px;margin-bottom:14px}
-  .btn-primary{display:inline-block;padding:11px 24px;background:${safeAccent};color:white;border:none;border-radius:8px;font-size:14px;font-weight:700;font-family:inherit;cursor:pointer;text-decoration:none}
-  .btn-primary:disabled{opacity:.5;cursor:not-allowed}
-  .btn-secondary{display:inline-block;padding:11px 24px;background:white;color:#1E2E3D;border:1.5px solid #D1DCE8;border-radius:8px;font-size:14px;font-weight:600;font-family:inherit;cursor:pointer;margin-right:10px}
-  .footer{margin-top:28px;font-size:11px;color:#9CA3AF;text-align:center;line-height:1.6}
-  .step-badge{display:inline-block;background:${safeAccent};color:white;border-radius:50%;width:22px;height:22px;font-size:12px;font-weight:700;text-align:center;line-height:22px;margin-right:6px;flex-shrink:0}
-  .step-row{display:flex;align-items:center;margin-bottom:6px}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:#F4F6F9;color:#1E2E3D;min-height:100vh}
+.page{max-width:900px;margin:0 auto;padding:32px 20px 60px}
+.header{background:${safeHeader};border-radius:12px 12px 0 0;padding:28px 32px;display:flex;justify-content:space-between;align-items:center}
+.header-title h1{color:white;font-size:22px;font-weight:800;margin-bottom:4px}
+.header-title p{color:rgba(255,255,255,.75);font-size:13px}
+.body{background:white;padding:28px 32px;border-radius:0 0 12px 12px;border:1px solid #E5E7EB;border-top:none}
+.notice{background:#FFF8E1;border:1px solid #FBC02D;border-radius:8px;padding:14px 18px;font-size:13px;color:#7B5800;margin-bottom:20px;line-height:1.5}
+.toolbar{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:12px}
+.toolbar input[type=text]{flex:1;min-width:200px;padding:8px 12px;border:1.5px solid #D1DCE8;border-radius:7px;font-size:13px;font-family:inherit}
+.toolbar select{padding:8px 10px;border:1.5px solid #D1DCE8;border-radius:7px;font-size:13px;font-family:inherit;background:white;color:#1E2E3D}
+.toolbar button{padding:7px 14px;border-radius:6px;font-size:12px;font-family:inherit;cursor:pointer;border:1.5px solid #D1DCE8;background:white;color:#1E2E3D}
+.toolbar button:hover{background:#F4F6F9}
+.results-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:8px}
+.results-count{font-size:12px;color:#6B7280}
+.party-list{border:1px solid #E5E7EB;border-radius:7px;overflow:hidden;max-height:380px;overflow-y:auto}
+.party-row{display:flex;align-items:center;gap:10px;padding:9px 14px;border-bottom:1px solid #F3F4F6;cursor:pointer;transition:background .1s}
+.party-row:hover{background:#F9FAFB}
+.party-row.selected{background:#FEF2F2}
+.party-row:last-child{border-bottom:none}
+.party-cb{width:16px;height:16px;flex-shrink:0;cursor:pointer}
+.party-name{flex:1;font-weight:600;font-size:13px;color:#1E2E3D;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.party-email{font-size:11px;color:#6B7280;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:220px}
+.status-badge{font-size:11px;padding:2px 8px;border-radius:10px;font-weight:600;white-space:nowrap;flex-shrink:0}
+.status-nc{background:#FEE2E2;color:#DC2626}
+.status-c{background:#DCFCE7;color:#16A34A}
+.status-p{background:#F3F4F6;color:#6B7280}
+.empty-msg{padding:32px;text-align:center;color:#9CA3AF;font-size:13px}
+.selected-panel{margin-top:16px;border:1.5px solid ${safeAccent};border-radius:8px;overflow:hidden}
+.selected-panel-hdr{background:${safeAccent};padding:10px 16px;display:flex;justify-content:space-between;align-items:center}
+.selected-panel-hdr span{color:white;font-size:13px;font-weight:700}
+.selected-panel-hdr button{background:rgba(255,255,255,.2);border:none;color:white;font-size:11px;padding:3px 10px;border-radius:4px;cursor:pointer;font-family:inherit}
+.selected-item{display:flex;align-items:center;justify-content:space-between;padding:7px 14px;border-bottom:1px solid #F3F4F6;font-size:12px}
+.selected-item:last-child{border-bottom:none}
+.selected-item button{background:none;border:none;color:#DC2626;font-size:14px;cursor:pointer;padding:0 4px;line-height:1}
+.submit-section{margin-top:20px;padding:20px 24px;background:#F8FAFC;border-radius:10px;border:1.5px solid #E5E7EB}
+.submit-section h3{font-size:15px;font-weight:700;margin-bottom:8px}
+.submit-section p{font-size:12px;color:#6B7280;margin-bottom:12px;line-height:1.5}
+textarea{width:100%;padding:10px 14px;border:1.5px solid #D1DCE8;border-radius:7px;font-size:13px;font-family:inherit;resize:vertical;min-height:70px;margin-bottom:14px}
+.btn-primary{display:inline-block;padding:10px 22px;background:${safeAccent};color:white;border:none;border-radius:8px;font-size:14px;font-weight:700;font-family:inherit;cursor:pointer}
+.btn-primary:disabled{opacity:.45;cursor:not-allowed}
+.footer{margin-top:24px;font-size:11px;color:#9CA3AF;text-align:center;line-height:1.6}
 </style>
 </head>
 <body>
@@ -8241,190 +8248,202 @@ async function tgDelGenerate() {
   <div class="header">
     <div class="header-title">
       <h1>Delete Third-Party Request</h1>
-      <p>${clientName} &nbsp;·&nbsp; ${today} &nbsp;·&nbsp; ${platform}</p>
+      <p>${clientName} &nbsp;\u00b7&nbsp; ${today} &nbsp;\u00b7&nbsp; ${platform}</p>
     </div>
     <div>${logoHtml}</div>
   </div>
   <div class="body">
     <div class="notice">
-      <strong>Instructions:</strong> Review the list below and check the box next to each third party you would like removed from the compliance platform.
-      When finished, click <strong>Download &amp; Email HUB</strong> — your Excel file will download automatically and your email client will open pre-addressed to your HUB account team.
-      Please attach the downloaded Excel file to the email before sending.
+      <strong>Instructions:</strong> Use the search and filters below to find third parties you want removed.
+      Check the box next to each one \u2014 they will appear in the <strong>Selected for Deletion</strong> panel below.
+      When done, add any notes and click <strong>Download &amp; Email HUB</strong>.
     </div>
 
-    <!-- Search + Filter row -->
-    <div class="search-row">
-      <input type="text" id="search-box" placeholder="Search by name or email…" oninput="filterList()">
-      <div id="filter-dropdowns" style="display:flex;gap:8px;flex-wrap:wrap"></div>
-    </div>
+    <!-- Search + filter toolbar -->
     <div class="toolbar">
-      <button onclick="selectAll()">Select All</button>
-      <button onclick="clearAll()">Clear</button>
-      <span class="count-badge" id="count-badge">0 selected</span>
+      <input type="text" id="search-box" placeholder="Search by name or email\u2026" oninput="applyFilters()">
+      <div id="filter-selects"></div>
+      <button onclick="selectAllVisible()">Select Visible</button>
+      <button onclick="clearAll()">Clear All</button>
     </div>
 
-    <table id="party-table">
-      <thead>
-        <tr>
-          <th>Third Party</th>
-          <th>Contact Email</th>
-          <th style="text-align:center">Compliance Status</th>
-        </tr>
-      </thead>
-      <tbody id="party-tbody">
-        ${rowsHtml}
-      </tbody>
-    </table>
+    <!-- Results -->
+    <div class="results-header">
+      <div class="results-count" id="results-count">Loading\u2026</div>
+    </div>
+    <div class="party-list" id="party-list">
+      <div class="empty-msg">Type a name or select a filter to see results.</div>
+    </div>
 
-    <!-- Submit section -->
+    <!-- Selected panel -->
+    <div class="selected-panel" id="selected-panel" style="display:none">
+      <div class="selected-panel-hdr">
+        <span id="selected-hdr-count">0 selected for deletion</span>
+        <button onclick="clearAll()">Clear all</button>
+      </div>
+      <div id="selected-list"></div>
+    </div>
+
+    <!-- Submit -->
     <div class="submit-section">
       <h3>&#9993; Submit Deletion Request</h3>
-      <p>
-        <span class="step-row"><span class="step-badge">1</span> Review and check all parties you want removed above.</span>
-        <span class="step-row"><span class="step-badge">2</span> Add any notes for your HUB account team below (optional).</span>
-        <span class="step-row"><span class="step-badge">3</span> Click <strong>Download &amp; Email HUB</strong> — attach the downloaded file to the email.</span>
-      </p>
-      <textarea id="notes-box" placeholder="Optional notes for HUB (e.g. reason for deletion, effective date, special instructions)…"></textarea>
-      <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">
-        <button class="btn-primary" id="submit-btn" onclick="submitRequest()" disabled>&#11015; Download &amp; Email HUB</button>
-        <span id="submit-msg" style="font-size:13px;color:#6B7280;display:none"></span>
-      </div>
+      <p>Review your selections above, add any notes, then click the button below.
+      Your Excel file will download and your email client will open pre-addressed to HUB \u2014 please attach the file before sending.</p>
+      <textarea id="notes-box" placeholder="Optional notes (reason for deletion, effective date, special instructions)\u2026"></textarea>
+      <button class="btn-primary" id="submit-btn" onclick="submitRequest()" disabled>&#11015; Download &amp; Email HUB</button>
     </div>
-
-    <div class="footer">
-      Confidential — For internal review purposes only. &nbsp;&#8212;&nbsp; ${clientName} &nbsp;&#8212;&nbsp; HUB CertSecure
-    </div>
+    <div class="footer">Confidential \u2014 For internal review purposes only &nbsp;\u2014&nbsp; ${clientName} &nbsp;\u2014&nbsp; HUB CertSecure</div>
   </div>
 </div>
 
 <script>
-// ── Custom field data embedded for filter dropdowns ──
+const ALL_PARTIES   = %%PARTY_DATA_JSON%%;
 const CUSTOM_FIELDS = %%CUSTOM_FIELDS_JSON%%;
-const PARTY_DATA    = %%PARTY_DATA_JSON%%;
+const CF_BY_ID      = %%CUSTOM_FIELDS_BY_ID_JSON%%;
+const selected      = new Set();
 
 // Build filter dropdowns
 (function() {
-  const container = document.getElementById('filter-dropdowns');
+  const container = document.getElementById('filter-selects');
   Object.entries(CUSTOM_FIELDS).forEach(([fn, vals]) => {
     const sel = document.createElement('select');
     sel.style.cssText = 'padding:7px 10px;border:1.5px solid #D1DCE8;border-radius:7px;font-size:13px;background:white';
-    sel.innerHTML = '<option value="">All ' + fn + '</option>' +
-      vals.map(v => '<option value="' + v.replace(/"/g,'&quot;') + '">' + v + '</option>').join('');
+    sel.innerHTML = '<option value="">All ' + fn + '<\/option>' +
+      vals.map(v => '<option value="' + v.replace(/"/g, '&quot;') + '">' + v + '<\/option>').join('');
     sel.dataset.field = fn;
-    sel.addEventListener('change', filterList);
+    sel.addEventListener('change', applyFilters);
     container.appendChild(sel);
   });
-  if (!Object.keys(CUSTOM_FIELDS).length) container.style.display = 'none';
 })();
 
-function getSelected() {
-  return Array.from(document.querySelectorAll('input[name="del_party"]:checked'));
-}
-function updateCount() {
-  const n = getSelected().length;
-  document.getElementById('count-badge').textContent = n + ' selected';
-  document.getElementById('submit-btn').disabled = n === 0;
-}
-function selectAll() {
-  document.querySelectorAll('input[name="del_party"]').forEach(cb => {
-    if (!cb.closest('tr').classList.contains('hidden')) cb.checked = true;
-  });
-  updateCount();
-}
-function clearAll() {
-  document.querySelectorAll('input[name="del_party"]').forEach(cb => cb.checked = false);
-  updateCount();
-}
-function filterList() {
-  const q = document.getElementById('search-box').value.toLowerCase();
+function getFiltered() {
+  const q = document.getElementById('search-box').value.toLowerCase().trim();
   const activeFilters = {};
-  document.querySelectorAll('#filter-dropdowns select').forEach(s => {
+  document.querySelectorAll('#filter-selects select').forEach(s => {
     if (s.value) activeFilters[s.dataset.field] = s.value;
   });
-  document.querySelectorAll('#party-tbody tr').forEach(row => {
-    const cb   = row.querySelector('input[name="del_party"]');
-    if (!cb) return;
-    const id   = cb.value;
-    const name = (cb.dataset.name || '').toLowerCase();
-    const email= (cb.dataset.email|| '').toLowerCase();
-    let show = true;
-    if (q && !name.includes(q) && !email.includes(q)) show = false;
-    Object.entries(activeFilters).forEach(([fn, fv]) => {
-      const byId = CUSTOM_FIELDS_BY_ID[fn] || {};
-      const vals = byId[id] || [];
-      if (!vals.includes(fv)) show = false;
-    });
-    row.classList.toggle('hidden', !show);
+  const hasFilter = q || Object.keys(activeFilters).length;
+  if (!hasFilter) return [];
+  return ALL_PARTIES.filter(r => {
+    if (q && !r.name.toLowerCase().includes(q) && !(r.email||'').toLowerCase().includes(q)) return false;
+    for (const [fn, fv] of Object.entries(activeFilters)) {
+      const vals = (CF_BY_ID[fn] || {})[r.id] || [];
+      if (!vals.includes(fv)) return false;
+    }
+    return true;
   });
 }
 
-// Custom fields by ID for filter logic
-const CUSTOM_FIELDS_BY_ID = %%CUSTOM_FIELDS_BY_ID_JSON%%;
+function applyFilters() {
+  const filtered = getFiltered();
+  const list = document.getElementById('party-list');
+  const countEl = document.getElementById('results-count');
+  const q = document.getElementById('search-box').value.trim();
+  const hasFilter = q || Array.from(document.querySelectorAll('#filter-selects select')).some(s => s.value);
+
+  if (!hasFilter) {
+    list.innerHTML = '<div class="empty-msg">Type a name or select a filter to see results.</div>';
+    countEl.textContent = ALL_PARTIES.length + ' total third parties \u2014 search or filter to browse';
+    return;
+  }
+  if (!filtered.length) {
+    list.innerHTML = '<div class="empty-msg">No matches found.</div>';
+    countEl.textContent = '0 results';
+    return;
+  }
+  countEl.textContent = filtered.length + ' result' + (filtered.length === 1 ? '' : 's');
+  list.innerHTML = filtered.map(r => {
+    const sel = selected.has(r.id || r.name);
+    const st  = (r.status || '').toUpperCase();
+    const stCls = st === 'NON_COMPLIANT' ? 'status-nc' : st === 'COMPLIANT' ? 'status-c' : 'status-p';
+    return '<div class="party-row' + (sel ? ' selected' : '') + '" onclick="toggleParty(' + JSON.stringify(r) + ',this)">' +
+      '<input type="checkbox" class="party-cb"' + (sel ? ' checked' : '') + ' onclick="event.stopPropagation();toggleParty(' + JSON.stringify(r) + ',this.closest(\'.party-row\'))">' +
+      '<div style="flex:1;min-width:0"><div class="party-name">' + r.name + '<\/div>' +
+      (r.email ? '<div class="party-email">' + r.email + '<\/div>' : '') + '<\/div>' +
+      '<span class="status-badge ' + stCls + '">' + (r.status || 'Unknown') + '<\/span>' +
+      '<\/div>';
+  }).join('');
+}
+
+function toggleParty(r, rowEl) {
+  const key = r.id || r.name;
+  if (selected.has(key)) {
+    selected.delete(key);
+    if (rowEl) { rowEl.classList.remove('selected'); const cb = rowEl.querySelector('.party-cb'); if(cb) cb.checked=false; }
+  } else {
+    selected.add(key);
+    if (rowEl) { rowEl.classList.add('selected'); const cb = rowEl.querySelector('.party-cb'); if(cb) cb.checked=true; }
+  }
+  updateSelectedPanel();
+  updateSubmitBtn();
+}
+
+function updateSelectedPanel() {
+  const panel = document.getElementById('selected-panel');
+  const list  = document.getElementById('selected-list');
+  const hdr   = document.getElementById('selected-hdr-count');
+  const selParties = ALL_PARTIES.filter(r => selected.has(r.id || r.name));
+  if (!selParties.length) { panel.style.display = 'none'; return; }
+  panel.style.display = '';
+  hdr.textContent = selParties.length + ' selected for deletion';
+  list.innerHTML = selParties.map(r =>
+    '<div class="selected-item"><span style="font-weight:600">' + r.name + '<\/span>' +
+    '<button onclick="toggleParty(' + JSON.stringify(r) + ',null)" title="Remove">\u00d7<\/button><\/div>'
+  ).join('');
+}
+
+function updateSubmitBtn() {
+  document.getElementById('submit-btn').disabled = selected.size === 0;
+}
+
+function selectAllVisible() {
+  getFiltered().forEach(r => selected.add(r.id || r.name));
+  applyFilters();
+  updateSelectedPanel();
+  updateSubmitBtn();
+}
+
+function clearAll() {
+  selected.clear();
+  applyFilters();
+  updateSelectedPanel();
+  updateSubmitBtn();
+}
 
 function submitRequest() {
-  const selected = getSelected();
-  if (!selected.length) return;
+  if (!selected.size) return;
   const notes    = (document.getElementById('notes-box').value || '').trim();
-  const today    = new Date().toLocaleDateString('en-US', {year:'numeric',month:'long',day:'numeric'});
-
-  // Build Excel with SheetJS (loaded below)
+  const today    = new Date().toLocaleDateString('en-US',{year:'numeric',month:'long',day:'numeric'});
+  const selParties = ALL_PARTIES.filter(r => selected.has(r.id || r.name));
   if (typeof XLSX === 'undefined') { alert('Excel library not loaded. Please reload the file.'); return; }
-
   const headers = ['Entity Name','Entity ID','Primary Contact Email','Compliance Status','Platform','Requested For Deletion','Client','Date Requested','Notes'];
-  const wsData  = [
-    headers,
-    ...selected.map(cb => [
-      cb.dataset.name || '',
-      cb.value || '',
-      cb.dataset.email || '',
-      cb.dataset.status || '',
-      '${platform}',
-      'Yes',
-      '${clientName.replace(/'/g, "\\'")}',
-      today,
-      notes,
-    ])
-  ];
+  const wsData  = [headers, ...selParties.map(r => [r.name, r.id||'', r.email||'', r.status||'', '${platform}', 'Yes', '${clientName}', today, notes])];
   const ws = XLSX.utils.aoa_to_sheet(wsData);
   ws['!cols'] = [{wch:40},{wch:38},{wch:35},{wch:18},{wch:14},{wch:22},{wch:35},{wch:18},{wch:40}];
   const wb = XLSX.utils.book_new();
   XLSX.utils.book_append_sheet(wb, ws, 'Delete Request');
-  const xlsxFilename = '${clientName.replace(/'/g, "\\'")} - Delete Third-Party Request - ' + new Date().toISOString().split('T')[0] + '.xlsx';
+  const xlsxFilename = '${clientName} - Delete Third-Party Request - ' + new Date().toISOString().split('T')[0] + '.xlsx';
   XLSX.writeFile(wb, xlsxFilename);
-
-  // Open pre-addressed email
-  const subject = encodeURIComponent('${clientName.replace(/'/g, "\\'")} — Delete Third-Party Request');
-  const body    = encodeURIComponent(
-    'Hi HUB CertSecure Team,\\n\\nPlease find attached the Delete Third-Party Request for ${clientName.replace(/'/g, "\\'")}.\\n\\n' +
-    selected.length + ' third ' + (selected.length === 1 ? 'party has' : 'parties have') + ' been selected for removal.\\n' +
-    (notes ? '\\nNotes: ' + notes + '\\n' : '') +
-    '\\nPlease see the attached Excel file for the full list.\\n\\nThank you'
-  );
-  const msg = document.getElementById('submit-msg');
-  msg.style.display = '';
-  msg.textContent = '\\u2713 Excel downloaded! Please attach it to the email that just opened.';
-  setTimeout(() => {
-    window.location.href = 'mailto:${hubEmail}?subject=' + subject + '&body=' + body;
-  }, 400);
+  const subject = encodeURIComponent('${clientName} \u2014 Delete Third-Party Request');
+  const body    = encodeURIComponent('Hi HUB CertSecure Team,\n\nPlease find attached the Delete Third-Party Request for ${clientName}.\n\n' + selParties.length + ' third ' + (selParties.length===1?'party has':'parties have') + ' been selected for removal.\n' + (notes?'\nNotes: '+notes+'\n':'') + '\nPlease see the attached Excel file for the full list.\n\nThank you');
+  const msg = document.getElementById('submit-btn');
+  msg.textContent = '\u2713 Downloaded! Attach to the email that just opened.';
+  setTimeout(() => { window.location.href = 'mailto:${hubEmail}?subject='+subject+'&body='+body; }, 400);
+  setTimeout(() => { msg.textContent = '\u2b07 Download & Email HUB'; msg.disabled = selected.size===0; }, 4000);
 }
+
+// Init count
+document.getElementById('results-count').textContent = ALL_PARTIES.length + ' active third parties \u2014 search or filter to browse';
 <\/script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"><\/script>
 </body>
-</html>`
-  const cfJson = {};
-  const cfByIdJson = {};
-  Object.entries(_tgDelCustomFields).forEach(([fn, fd]) => {
-    cfJson[fn] = Array.from(fd.values).sort();
-    cfByIdJson[fn] = fd.byId;
-  });
-  const partyData = allParties.map(r => ({ id: r.id, name: r.name, email: r.email, status: r.status }));
+</html>`;
 
   const finalHtml = html
-    .replace('%%CUSTOM_FIELDS_JSON%%', JSON.stringify(cfJson))
-    .replace('%%PARTY_DATA_JSON%%',    JSON.stringify(partyData))
+    .replace('%%PARTY_DATA_JSON%%',        JSON.stringify(partyData))
+    .replace('%%CUSTOM_FIELDS_JSON%%',     JSON.stringify(cfJson))
     .replace('%%CUSTOM_FIELDS_BY_ID_JSON%%', JSON.stringify(cfByIdJson));
 
-  // Download the HTML file
   const blob = new Blob([finalHtml], { type: 'text/html' });
   const url  = URL.createObjectURL(blob);
   const a    = document.createElement('a');
@@ -8433,13 +8452,12 @@ function submitRequest() {
   a.click();
   URL.revokeObjectURL(url);
 
-  // Log to audit + recent activity
-  auditLogAdd('Delete Third-Party Request Generated', `${clientName} · ${allParties.length} ${allParties.length === 1 ? 'party' : 'parties'} listed`);
-  const label = `${clientName} — Delete Request (${allParties.length} listed)`;
+  auditLogAdd('Delete Third-Party Request Generated', `${clientName} \u00b7 ${allParties.length} ${allParties.length === 1 ? 'party' : 'parties'} listed`);
+  const label = `${clientName} \u2014 Delete Request (${allParties.length} listed)`;
   _notifs.unshift({ msg: label, type: 'success', time: new Date() });
   if (_notifs.length > 15) _notifs.pop();
   renderNotifList();
-  toast(`\u2713 HTML file downloaded — send to ${clientName}`, 'success');
+  toast(`\u2713 HTML file downloaded \u2014 send to ${clientName}`, 'success');
   } catch(e) {
     toast('Failed to generate: ' + e.message, 'error');
   } finally {
