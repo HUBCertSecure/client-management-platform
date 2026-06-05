@@ -47,15 +47,11 @@ jobs:
           GOOGLE_SHEET_ID:              ${{ secrets.GOOGLE_SHEET_ID }}
         run: node sync.js
 
-      - name: Pull latest before commit
-        run: git pull --rebase origin main
-
       - name: Commit Evident data
         uses: stefanzweifel/git-auto-commit-action@v5
         with:
           commit_message: 'chore: evident sync [skip ci]'
           file_pattern: 'data/evident/** snapshots/**'
-          push_options: '--force-with-lease'
 
   sync-trustlayer:
     runs-on: ubuntu-latest
@@ -83,12 +79,8 @@ jobs:
           TL_TOKEN_DEMOCLIENT:          ${{ secrets.TL_TOKEN_DEMOCLIENT }}
         run: node sync.js && node transform.js
 
-      - name: Pull latest before commit
-        run: git pull --rebase origin main
-
       - name: Commit TrustLayer data
         uses: stefanzweifel/git-auto-commit-action@v5
         with:
           commit_message: 'chore: trustlayer sync [skip ci]'
           file_pattern: 'data/trustlayer/** snapshots/trustlayer/**'
-          push_options: '--force-with-lease'
