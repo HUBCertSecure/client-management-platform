@@ -943,10 +943,41 @@
           <div style="margin-top:16px"><button class="btn btn-primary" onclick="tgFilterPickerGenerate()">&#11015; Generate HTML File (search only)</button></div>
         </div>
       </div>
+
+      <!-- Branding card for delete flow -->
+      <div class="card" style="margin-top:14px">
+        <div class="card-title" style="margin-bottom:14px">&#127912; Branding</div>
+        <div style="font-size:12px;color:var(--muted);margin-bottom:14px">These are pre-filled from your client config. Adjust if needed before generating.</div>
+        <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:16px;align-items:end">
+          <div class="form-grp">
+            <label class="form-lbl">Accent Color</label>
+            <div style="display:flex;gap:6px;align-items:center">
+              <input type="color" id="tg-del-accent-picker" value="" oninput="tgDelSyncColor('accent')" style="width:36px;height:34px;padding:2px;border:1.5px solid var(--border);border-radius:6px;cursor:pointer">
+              <input type="text" id="tg-del-accent-hex" value="" oninput="tgDelSyncColorFromHex('accent')" style="flex:1;font-family:monospace" maxlength="7" placeholder="#3872B8">
+            </div>
+          </div>
+          <div class="form-grp">
+            <label class="form-lbl">Header Color</label>
+            <div style="display:flex;gap:6px;align-items:center">
+              <input type="color" id="tg-del-header-picker" value="" oninput="tgDelSyncColor('header')" style="width:36px;height:34px;padding:2px;border:1.5px solid var(--border);border-radius:6px;cursor:pointer">
+              <input type="text" id="tg-del-header-hex" value="" oninput="tgDelSyncColorFromHex('header')" style="flex:1;font-family:monospace" maxlength="7" placeholder="#283847">
+            </div>
+          </div>
+          <div class="form-grp">
+            <label class="form-lbl">Logo</label>
+            <div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap">
+              <input type="file" id="tg-del-logo-input" accept="image/png,image/jpeg,image/gif,image/svg+xml" style="display:none" onchange="tgDelHandleLogoUpload(this)">
+              <button class="btn btn-secondary" style="font-size:12px;padding:6px 12px;white-space:nowrap" onclick="document.getElementById('tg-del-logo-input').click()">&#128247; Upload Logo</button>
+              <button id="tg-del-autodetect-btn" class="btn btn-secondary" style="font-size:12px;padding:6px 12px;white-space:nowrap;display:none" onclick="tgDelAutoDetectColors()">&#127752; Auto-Detect</button>
+            </div>
+            <div id="tg-del-logo-preview-wrap" style="display:none;margin-top:8px">
+              <img id="tg-del-logo-preview" style="max-height:40px;max-width:180px;border:1px solid var(--border);border-radius:6px;padding:4px">
+              <button onclick="tgDelClearLogo()" style="background:none;border:none;color:var(--muted);cursor:pointer;font-size:18px;vertical-align:middle;margin-left:4px" title="Remove logo">&#215;</button>
+            </div>
+          </div>
+        </div>
+      </div>
     </div>
-
-
-
 
     <!-- STEP 2: Configure -->
     <div id="tg-step-2" style="display:none">
@@ -5250,6 +5281,7 @@ function tgGoStep(n) {
       if (bs) bs.textContent = STRUCT[_tgClient.structure]?.label || '';
     });
     tgFilterPickerLoad();
+    tgDelPrefillBranding();
   }
 }
 
@@ -8151,16 +8183,12 @@ async function tgDelGenerate() {
   const platform   = isTL ? 'TrustLayer' : 'Evident';
   const today      = new Date().toLocaleDateString('en-US', { year:'numeric', month:'long', day:'numeric' });
 
-  // Colors and logo — mirror exactly how tgSelectClient reads them
-  const _meta      = (typeof CLIENT_META_MAP !== 'undefined' && _tgClient) ? (CLIENT_META_MAP[_tgClient.key] || {}) : {};
-  const _setup     = _meta.tg_setup || {};
-  // Priority: DOM inputs (set by tgSelectClient) → tg_setup → defaults
-  const accentRaw  = document.getElementById('tg-accent-hex')?.value || _setup.tg_accent || '#3872B8';
-  const headerRaw  = document.getElementById('tg-header-hex')?.value || _setup.tg_header || '#283847';
+  // Colors and logo — read from the dedicated delete branding inputs in step 2.5
+  const accentRaw  = document.getElementById('tg-del-accent-hex')?.value || '#3872B8';
+  const headerRaw  = document.getElementById('tg-del-header-hex')?.value || '#283847';
   const safeAccent = /^#[0-9a-fA-F]{6}$/.test(accentRaw) ? accentRaw : '#3872B8';
   const safeHeader = /^#[0-9a-fA-F]{6}$/.test(headerRaw) ? headerRaw : '#283847';
-  // Logo: _tgLogoData is set by tgSelectClient via extractDominantColors
-  const logoSrc    = _tgLogoData || _setup.tg_logo || _meta.logo_data || null;
+  const logoSrc    = _tgDelLogoData || null;
   const logoHtml   = logoSrc ? '<img src="' + logoSrc + '" style="max-height:44px;max-width:180px;object-fit:contain">' : '';
   const hubEmail   = 'Client.CertSecure@hubinternational.com';
 
@@ -8583,6 +8611,91 @@ function tgFilterPickerGenerate() {
     }
   });
   tgDelGenerate();
+}
+
+
+// ── DELETE FLOW — BRANDING CONTROLS ──────────────────────────────────
+let _tgDelLogoData = null;
+
+function tgDelSyncColor(type) {
+  const picker = document.getElementById('tg-del-' + type + '-picker');
+  const hex    = document.getElementById('tg-del-' + type + '-hex');
+  if (picker && hex) hex.value = picker.value;
+}
+function tgDelSyncColorFromHex(type) {
+  const hex    = document.getElementById('tg-del-' + type + '-hex');
+  const picker = document.getElementById('tg-del-' + type + '-picker');
+  if (hex && picker && /^#[0-9a-fA-F]{6}$/.test(hex.value)) picker.value = hex.value;
+}
+
+function tgDelHandleLogoUpload(input) {
+  const file = input.files[0]; if (!file) return;
+  const reader = new FileReader();
+  reader.onload = e => {
+    _tgDelLogoData = e.target.result;
+    const lp  = document.getElementById('tg-del-logo-preview');
+    const lpw = document.getElementById('tg-del-logo-preview-wrap');
+    const adb = document.getElementById('tg-del-autodetect-btn');
+    if (lp)  { lp.src = _tgDelLogoData; lpw.style.display = ''; }
+    if (adb) adb.style.display = '';
+    toast('Logo uploaded ✓', 'success');
+  };
+  reader.readAsDataURL(file);
+}
+
+function tgDelClearLogo() {
+  _tgDelLogoData = null;
+  const lp  = document.getElementById('tg-del-logo-preview');
+  const lpw = document.getElementById('tg-del-logo-preview-wrap');
+  const adb = document.getElementById('tg-del-autodetect-btn');
+  const inp = document.getElementById('tg-del-logo-input');
+  if (lp)  lp.src = '';
+  if (lpw) lpw.style.display = 'none';
+  if (adb) adb.style.display = 'none';
+  if (inp) inp.value = '';
+}
+
+function tgDelAutoDetectColors() {
+  if (!_tgDelLogoData) return;
+  extractDominantColors(_tgDelLogoData, colors => {
+    if (!colors?.length) { toast('Could not detect colors', 'error'); return; }
+    const accent = colors[0];
+    const header = colors[1] || colors[0];
+    const ah = document.getElementById('tg-del-accent-hex');
+    const ap = document.getElementById('tg-del-accent-picker');
+    const hh = document.getElementById('tg-del-header-hex');
+    const hp = document.getElementById('tg-del-header-picker');
+    if (ah) { ah.value = accent; } if (ap) { ap.value = accent; }
+    if (hh) { hh.value = header; } if (hp) { hp.value = header; }
+    toast('Colors detected ✓', 'success');
+  });
+}
+
+// Pre-fill delete branding fields when a client is selected
+function tgDelPrefillBranding() {
+  if (!_tgClient) return;
+  const _meta  = (typeof CLIENT_META_MAP !== 'undefined') ? (CLIENT_META_MAP[_tgClient.key] || {}) : {};
+  const _setup = _meta.tg_setup || {};
+  const accent = _setup.tg_accent || '#3872B8';
+  const header = _setup.tg_header || '#283847';
+  const ah = document.getElementById('tg-del-accent-hex');
+  const ap = document.getElementById('tg-del-accent-picker');
+  const hh = document.getElementById('tg-del-header-hex');
+  const hp = document.getElementById('tg-del-header-picker');
+  if (ah) ah.value = accent; if (ap) ap.value = accent;
+  if (hh) hh.value = header; if (hp) hp.value = header;
+  // Pre-fill logo from saved setup
+  const savedLogo = _tgLogoData || _setup.tg_logo || _meta.logo_data || null;
+  if (savedLogo) {
+    _tgDelLogoData = savedLogo;
+    const lp  = document.getElementById('tg-del-logo-preview');
+    const lpw = document.getElementById('tg-del-logo-preview-wrap');
+    const adb = document.getElementById('tg-del-autodetect-btn');
+    if (lp)  { lp.src = savedLogo; lpw.style.display = ''; }
+    if (adb) adb.style.display = '';
+  } else {
+    tgDelClearLogo();
+  }
 }
 
 </script>
