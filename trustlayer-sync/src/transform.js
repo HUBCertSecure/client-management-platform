@@ -22,8 +22,8 @@
 const fs   = require("fs");
 const path = require("path");
 
-const DATA_DIR      = path.join(__dirname, "..", "data");
-const SNAPSHOT_BASE = path.join(__dirname, "..", "snapshots", "trustlayer");
+const DATA_DIR      = path.join(__dirname, "..", "..", "data", "trustlayer");
+const SNAPSHOT_BASE = path.join(__dirname, "..", "..", "snapshots", "trustlayer");
 const TODAY         = new Date().toISOString().split("T")[0];
 
 // ------------------------------------------------------------
