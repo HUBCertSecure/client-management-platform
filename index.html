@@ -8593,40 +8593,59 @@ async function tgFilterPickerLoad() {
   _tgFilterPickerFields = {};
 
   try {
-    const s    = getSettings();
-    const isTL = isTLClient(_tgClient.key);
+    const s          = getSettings();
+    const isTL       = isTLClient(_tgClient.key);
     const clientName = _tgClient.name;
+    const fieldMap   = {};
 
-    const cpPath = isTL
-      ? 'data/trustlayer/vendor_attributes.csv'
-      : (s.customPropsPath || 'data/evident/custom_properties.csv');
+    if (isTL) {
+      // ── TrustLayer: merge all three attribute CSVs ─────────────
+      // Each CSV has different ID columns; use vendor_id where available,
+      // fall back to context_id, then request_id
+      const tlPaths = [
+        { path: 'data/trustlayer/vendor_attributes.csv',         idKey: 'vendor_id'  },
+        { path: 'data/trustlayer/request_record_attributes.csv', idKey: 'vendor_id'  },
+        { path: 'data/trustlayer/context_record_attributes.csv', idKey: 'context_id' },
+      ];
 
-    const cpRows = await fetchCSV(cpPath);
-    const clientCp = cpRows.filter(r => (r.client || '').trim() === clientName.trim());
-
-    const nameKey = 'field_name';
-    const valKey  = isTL ? 'value' : 'field_value';
-    const idKey   = isTL ? 'vendor_id' : 'insured_id';
-    const fieldMap = {};
-
-    clientCp.forEach(r => {
-      const fn  = (r[nameKey] || '').trim();
-      const fv  = (r[valKey]  || '').trim();
-      const fid = (r[idKey]   || '').trim();
-      if (!fn || !fv) return;
-      if (!fieldMap[fn]) fieldMap[fn] = { values: new Set(), byId: {} };
-      fieldMap[fn].values.add(fv);
-      if (!fieldMap[fn].byId[fid]) fieldMap[fn].byId[fid] = [];
-      fieldMap[fn].byId[fid].push(fv);
-    });
+      for (const { path, idKey } of tlPaths) {
+        let rows;
+        try { rows = await fetchCSV(path); } catch(e) { continue; }
+        const clientRows = rows.filter(r => (r.client || '').trim() === clientName.trim());
+        clientRows.forEach(r => {
+          const fn  = (r.field_name || '').trim();
+          const fv  = (r.value      || '').trim();
+          const fid = (r[idKey]     || '').trim();
+          if (!fn || !fv || !fid) return;
+          if (!fieldMap[fn]) fieldMap[fn] = { values: new Set(), byId: {} };
+          fieldMap[fn].values.add(fv);
+          if (!fieldMap[fn].byId[fid]) fieldMap[fn].byId[fid] = [];
+          if (!fieldMap[fn].byId[fid].includes(fv)) fieldMap[fn].byId[fid].push(fv);
+        });
+      }
+    } else {
+      // ── Evident: single custom_properties.csv ──────────────────
+      const cpRows   = await fetchCSV(s.customPropsPath || 'data/evident/custom_properties.csv');
+      const clientCp = cpRows.filter(r => (r.client || '').trim() === clientName.trim());
+      clientCp.forEach(r => {
+        const fn  = (r.field_name  || '').trim();
+        const fv  = (r.field_value || '').trim();
+        const fid = (r.insured_id  || '').trim();
+        if (!fn || !fv || !fid) return;
+        if (!fieldMap[fn]) fieldMap[fn] = { values: new Set(), byId: {} };
+        fieldMap[fn].values.add(fv);
+        if (!fieldMap[fn].byId[fid]) fieldMap[fn].byId[fid] = [];
+        fieldMap[fn].byId[fid].push(fv);
+      });
+    }
 
     // Keep fields with 2–20 unique values
     Object.entries(fieldMap).forEach(([fn, fd]) => {
       if (fd.values.size >= 2 && fd.values.size <= 20) {
         _tgFilterPickerFields[fn] = {
-          values: Array.from(fd.values).sort(),
-          byId:   fd.byId,
-          selected: true, // default all on
+          values:   Array.from(fd.values).sort(),
+          byId:     fd.byId,
+          selected: true,
         };
       }
     });
@@ -8644,14 +8663,17 @@ async function tgFilterPickerLoad() {
       Object.keys(_tgFilterPickerFields).forEach(fn => {
         _tgFilterPickerFields[fn].selected = _tgDelSavedFields.includes(fn);
       });
-      _tgDelSavedFields = null; // clear after applying
+      _tgDelSavedFields = null;
     }
     // Render toggle cards
     tgFilterPickerRender();
     if (listEl) listEl.style.display = '';
 
   } catch(e) {
-    if (loading) loading.textContent = 'Could not load custom fields: ' + e.message;
+    if (loading) {
+      loading.style.display = '';
+      loading.innerHTML = '<div style="padding:16px;color:var(--red);font-size:13px">Could not load custom fields: ' + e.message + '</div>';
+    }
   }
 }
 
