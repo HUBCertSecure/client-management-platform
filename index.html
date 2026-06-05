@@ -8524,10 +8524,13 @@ document.addEventListener('DOMContentLoaded', function() {
 </body>
 </html>`;
 
+  // Escape forward slashes so any </script> in data can't break the HTML parser
+  const safeJSON = obj => JSON.stringify(obj).replace(/\//g, '\\/');
   const finalHtml = html
-    .replace('%%PARTY_DATA_JSON%%',        JSON.stringify(partyData))
-    .replace('%%CUSTOM_FIELDS_JSON%%',     JSON.stringify(cfJson))
-    .replace('%%CUSTOM_FIELDS_BY_ID_JSON%%', JSON.stringify(cfByIdJson));
+    .replace('%%PARTY_DATA_JSON%%',          safeJSON(partyData))
+    .replace('%%CUSTOM_FIELDS_JSON%%',       safeJSON(cfJson))
+    .replace('%%CUSTOM_FIELDS_BY_ID_JSON%%', safeJSON(cfByIdJson));
+  console.log('[DEL] finalHtml placeholders cleared:', !finalHtml.includes('%%PARTY'), 'parties:', partyData.length, 'cfKeys:', Object.keys(cfJson));
 
   const filename = `${clientName} - Delete Third-Party Request - ${new Date().toISOString().split('T')[0]}.html`;
   const blob = new Blob([finalHtml], { type: 'text/html' });
