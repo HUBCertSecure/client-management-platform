@@ -5218,7 +5218,9 @@ async function tgSelectClient(key) {
 
   // Set banner
   document.getElementById('tg-banner-name').textContent = _tgClient.name;
-  _tgActiveTemplateIdx = null; // reset — fresh template
+  _tgActiveTemplateIdx  = null; // reset — fresh template
+  _tgDelLogoData        = null; // reset delete logo on client switch
+  _tgDelSavedFields     = null; // reset delete field selection on switch
   const _tmplNameEl = document.getElementById('tg-tmpl-name');
   if (_tmplNameEl) _tmplNameEl.value = _tgClient.name + ' - New Third-Party Request';
   document.getElementById('tg-banner-struct').textContent = STRUCT[_tgClient.structure]?.label || '';
