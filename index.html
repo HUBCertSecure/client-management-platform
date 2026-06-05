@@ -8511,7 +8511,7 @@ function submitRequest() {
   const xlsxFilename = '${clientName} - Delete Third-Party Request - ' + new Date().toISOString().split('T')[0] + '.xlsx';
   XLSX.writeFile(wb, xlsxFilename);
   const subject = encodeURIComponent('${clientName} \u2014 Delete Third-Party Request');
-  const body    = encodeURIComponent('Hi HUB CertSecure Team,\n\nPlease find attached the Delete Third-Party Request for ${clientName}.\n\n' + selParties.length + ' third ' + (selParties.length===1?'party has':'parties have') + ' been selected for removal.\n' + (notes?'\nNotes: '+notes+'\n':'') + '\nPlease see the attached Excel file for the full list.\n\nThank you');
+  const body    = encodeURIComponent('Hi HUB CertSecure Team,\\n\\nPlease find attached the Delete Third-Party Request for ${clientName}.\\n\\n' + selParties.length + ' third ' + (selParties.length===1?'party has':'parties have') + ' been selected for removal.\\n' + (notes?'\\nNotes: '+notes+'\\n':'') + '\\nPlease see the attached Excel file for the full list.\\n\\nThank you');
   const msg = document.getElementById('submit-btn');
   msg.textContent = '\u2713 Downloaded! Attach to the email that just opened.';
   setTimeout(() => { window.location.href = 'mailto:${hubEmail}?subject='+subject+'&body='+body; }, 400);
