@@ -8221,6 +8221,9 @@ async function tgDelGenerate() {
     cfJson[fn]     = Array.isArray(fd.values) ? fd.values : Array.from(fd.values).sort();
     cfByIdJson[fn] = fd.byId || {};
   });
+  console.log('[DEL] _tgDelCustomFields keys:', Object.keys(_tgDelCustomFields));
+  console.log('[DEL] cfJson:', JSON.stringify(cfJson).substring(0, 200));
+  console.log('[DEL] _tgFilterPickerFields keys:', Object.keys(_tgFilterPickerFields || {}));
 
   const partyData = allParties.map(r => ({ id: r.id, name: r.name, email: r.email, status: r.status }));
 
@@ -8610,6 +8613,9 @@ function tgFilterPickerGenerate() {
       _tgDelCustomFields[fn] = { values: fd.values, byId: fd.byId };
     }
   });
+  console.log('[PICKER] _tgFilterPickerFields:', Object.keys(_tgFilterPickerFields));
+  console.log('[PICKER] selected fields:', Object.keys(_tgDelCustomFields));
+  console.log('[PICKER] sample values:', JSON.stringify(_tgDelCustomFields).substring(0, 300));
   tgDelGenerate();
 }
 
