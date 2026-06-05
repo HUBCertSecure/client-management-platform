@@ -6124,6 +6124,7 @@ function tgBuildFormHTML(title,subtitle,accent,header){
   title=(title||'').replace(/[\u2013\u2014\u2015]/g,'-').replace(/[\u2018\u2019]/g,"'").replace(/[\u201C\u201D]/g,'"');
   subtitle=(subtitle||'').replace(/[\u2013\u2014\u2015]/g,'-');
   const clientName=_tgClient?_tgClient.name:'';
+  const platform  = _tgClient ? (isTLClient(_tgClient.key) ? 'TrustLayer' : 'Evident') : 'Evident';
   const stamp=new Date().toLocaleDateString('en-US',{month:'long',day:'numeric',year:'numeric'});
   const logoHtml=_tgLogoData?'<img src="'+_tgLogoData+'" style="max-height:40px;max-width:180px;object-fit:contain">':'';
 
@@ -6417,32 +6418,40 @@ function tgBuildFormHTML(title,subtitle,accent,header){
 
     // Send all vendors in one sectioned email
     'function sendAll(){',
-    '  // Save current form first if it has data',
     '  var cur=collectFields();',
     '  if(Object.keys(cur).length>0){',
     '    var curName=cur["Entity Name"]||cur["Legal Name"]||"Vendor "+(_vendors.length+1);',
-    '    if(_activeIdx>=0&&_activeIdx<_vendors.length){',
-    '      _vendors[_activeIdx]={fields:cur,name:curName};',
-    '    } else {',
-    '      _vendors.push({fields:cur,name:curName});',
-    '    }',
+    '    if(_activeIdx>=0&&_activeIdx<_vendors.length){_vendors[_activeIdx]={fields:cur,name:curName};}',
+    '    else{_vendors.push({fields:cur,name:curName});}',
     '  }',
     '  if(_vendors.length===0){alert("Please save at least one vendor before sending.");return;}',
+    '  if(typeof XLSX==="undefined"){alert("Excel library not loaded. Please reload.");return;}',
     '  var cn='+JSON.stringify(clientName)+';',
-    '  var div="========================================";',
-    '  var lines=["CLIENT: "+cn,"Submitted: "+new Date().toLocaleDateString("en-US",{month:"long",day:"numeric",year:"numeric"}),"","Total Vendors: "+_vendors.length,""];',
-    '  _vendors.forEach(function(v,i){',
-    '    lines.push(div);',
-    '    lines.push("VENDOR "+(i+1)+": "+(v.name||""));',
-    '    lines.push(div);',
-    '    Object.keys(v.fields).forEach(function(k){lines.push("  "+k+": "+v.fields[k]);});',
-    '    lines.push("");',
+    '  var plat='+JSON.stringify(platform)+';',
+    '  var today=new Date().toLocaleDateString("en-US",{month:"long",day:"numeric",year:"numeric"});',
+    '  var allKeys=[];',
+    '  _vendors.forEach(function(v){Object.keys(v.fields).forEach(function(k){if(allKeys.indexOf(k)<0)allKeys.push(k);});});',
+    '  allKeys.sort();',
+    '  var headers=["Vendor Name","Client","Platform","Date Submitted"].concat(allKeys);',
+    '  var rows=[headers];',
+    '  _vendors.forEach(function(v){',
+    '    var row=[v.name||"",cn,plat,today];',
+    '    allKeys.forEach(function(k){row.push(v.fields[k]||"");});',
+    '    rows.push(row);',
     '  });',
-    '  lines.push(div);',
-    '  lines.push("Submitted via HUB CertSecure Template");',
+    '  var ws=XLSX.utils.aoa_to_sheet(rows);',
+    '  var colWidths=[{wch:35},{wch:30},{wch:12},{wch:18}];',
+    '  allKeys.forEach(function(){colWidths.push({wch:28});});',
+    '  ws["!cols"]=colWidths;',
+    '  var wb=XLSX.utils.book_new();',
+    '  XLSX.utils.book_append_sheet(wb,ws,"Third-Party Request");',
+    '  var fname=cn+" - Third-Party Request - "+new Date().toISOString().split("T")[0]+".xlsx";',
+    '  XLSX.writeFile(wb,fname);',
     '  var sub=encodeURIComponent("Third-Party Request - "+cn+" ("+_vendors.length+" vendor"+(_vendors.length!==1?"s":"")+")");',
-    '  var bod=encodeURIComponent(lines.join("\\n"));',
-    '  window.location.href="mailto:Client.CertSecure@hubinternational.com?subject="+sub+"&body="+bod;',
+    '  var bod=encodeURIComponent("Hi HUB CertSecure Team,\\n\\nPlease find attached the Third-Party Request for "+cn+".\\n\\n"+_vendors.length+" vendor"+(_vendors.length!==1?"s have":" has")+" been submitted.\\n\\nPlease see the attached Excel file for the full details.\\n\\nThank you");',
+    '  setTimeout(function(){window.location.href="mailto:Client.CertSecure@hubinternational.com?subject="+sub+"&body="+bod;},600);',
+    '  var btn=document.getElementById("send-btn");',
+    '  if(btn){btn.textContent="\u2713 Downloaded! Attach Excel to the email that opens.";setTimeout(function(){btn.innerHTML="\u2709 Send All <span class=send-badge id=send-badge>("+_vendors.length+")</span>";},4000);}',
     '}',
 
     // Init — start in new vendor mode
@@ -6457,6 +6466,7 @@ function tgBuildFormHTML(title,subtitle,accent,header){
     '<link rel="preconnect" href="https://fonts.googleapis.com">',
     '<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">',
     '<style>'+css+'</style>',
+    '<'+'script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"><'+'/script>',
     '<'+'script>'+formJS+'<'+'/script>',
     '</head><body>',
     // Instruction banner - full width
