@@ -8627,6 +8627,13 @@ async function tgFilterPickerLoad() {
       return;
     }
 
+    // Restore saved field selection if available
+    if (_tgDelSavedFields?.length) {
+      Object.keys(_tgFilterPickerFields).forEach(fn => {
+        _tgFilterPickerFields[fn].selected = _tgDelSavedFields.includes(fn);
+      });
+      _tgDelSavedFields = null; // clear after applying
+    }
     // Render toggle cards
     tgFilterPickerRender();
     if (listEl) listEl.style.display = '';
@@ -8687,7 +8694,8 @@ function tgFilterPickerGenerate() {
 
 
 // ── DELETE FLOW — BRANDING CONTROLS ──────────────────────────────────
-let _tgDelLogoData = null;
+let _tgDelLogoData    = null;
+let _tgDelSavedFields = null;  // saved filter field selection
 
 function tgDelSyncColor(type) {
   const picker = document.getElementById('tg-del-' + type + '-picker');
@@ -8759,6 +8767,11 @@ function tgDelPrefillBranding() {
   if (hh) hh.value = header; if (hp) hp.value = header;
   const badge = document.getElementById('tg-del-saved-badge');
   if (badge) badge.style.display = _delSetup.saved_at ? '' : 'none';
+  // Restore saved field selection after picker loads
+  if (_delSetup.tg_fields?.length) {
+    // Store for use after tgFilterPickerLoad completes
+    _tgDelSavedFields = _delSetup.tg_fields;
+  }
   // Pre-fill logo from saved setup
   const savedLogo = _tgDelLogoData || _delSetup.tg_logo || _addSetup.tg_logo || _meta.logo_data || null;
   if (savedLogo) {
@@ -8784,7 +8797,17 @@ async function tgDelSaveBranding() {
     const key    = _tgClient.key;
     const accent = document.getElementById('tg-del-accent-hex')?.value || '';
     const header = document.getElementById('tg-del-header-hex')?.value || '';
-    const setup  = { tg_accent: accent, tg_header: header, tg_logo: _tgDelLogoData || null, saved_at: new Date().toISOString() };
+    // Also save the currently selected filter fields
+    const selectedFields = Object.entries(_tgFilterPickerFields || {})
+      .filter(([fn, fd]) => fd.selected)
+      .map(([fn]) => fn);
+    const setup  = {
+      tg_accent:  accent,
+      tg_header:  header,
+      tg_logo:    _tgDelLogoData || null,
+      tg_fields:  selectedFields,
+      saved_at:   new Date().toISOString(),
+    };
     const meta = CLIENT_META_MAP[key] || {};
     meta.tg_delete_setup = setup;
     CLIENT_META_MAP[key] = meta;
