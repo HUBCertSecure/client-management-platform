@@ -8485,20 +8485,26 @@ try {
     .replace('%%CUSTOM_FIELDS_JSON%%',     JSON.stringify(cfJson))
     .replace('%%CUSTOM_FIELDS_BY_ID_JSON%%', JSON.stringify(cfByIdJson));
 
+  const filename = `${clientName} - Delete Third-Party Request - ${new Date().toISOString().split('T')[0]}.html`;
   const blob = new Blob([finalHtml], { type: 'text/html' });
   const url  = URL.createObjectURL(blob);
   const a    = document.createElement('a');
   a.href     = url;
-  a.download = `${clientName} - Delete Third-Party Request - ${new Date().toISOString().split('T')[0]}.html`;
+  a.download = filename;
+  document.body.appendChild(a);
   a.click();
-  URL.revokeObjectURL(url);
+  document.body.removeChild(a);
+  setTimeout(() => URL.revokeObjectURL(url), 2000);
 
-  auditLogAdd('Delete Third-Party Request Generated', `${clientName} \u00b7 ${allParties.length} ${allParties.length === 1 ? 'party' : 'parties'} listed`);
+  // Save to Recent Activity with re-download support
   const label = `${clientName} \u2014 Delete Request (${allParties.length} listed)`;
-  _notifs.unshift({ msg: label, type: 'success', time: new Date() });
+  auditLogAdd('Delete Third-Party Request Generated', `${clientName} \u00b7 ${allParties.length} ${allParties.length === 1 ? 'party' : 'parties'} listed`);
+  _notifs.unshift({ msg: label, type: 'success', time: new Date(), _download: { type: 'html', html: finalHtml, _blobUrl: url, filename } });
   if (_notifs.length > 15) _notifs.pop();
   renderNotifList();
-  toast(`\u2713 HTML file downloaded \u2014 send to ${clientName}`, 'success');
+  const drawer = document.getElementById('notif-drawer');
+  if (drawer) { drawer.style.display = ''; _unread = 0; updateNotifBadge(); }
+  toast(`\u2713 Delete Request downloaded \u2014 send to ${clientName}`, 'success');
   } catch(e) {
     toast('Failed to generate: ' + e.message, 'error');
   } finally {
