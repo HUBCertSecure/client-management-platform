@@ -8378,10 +8378,13 @@ textarea{width:100%;padding:10px 14px;border:1.5px solid #D1DCE8;border-radius:7
   </div>
 </div>
 
+<script id="d-parties" type="application/json">%%PARTY_DATA_JSON%%</script>
+<script id="d-fields" type="application/json">%%CUSTOM_FIELDS_JSON%%</script>
+<script id="d-byid" type="application/json">%%CUSTOM_FIELDS_BY_ID_JSON%%</script>
 <script>
-const ALL_PARTIES   = %%PARTY_DATA_JSON%%;
-const CUSTOM_FIELDS = %%CUSTOM_FIELDS_JSON%%;
-const CF_BY_ID      = %%CUSTOM_FIELDS_BY_ID_JSON%%;
+const ALL_PARTIES   = JSON.parse(document.getElementById('d-parties').textContent);
+const CUSTOM_FIELDS = JSON.parse(document.getElementById('d-fields').textContent);
+const CF_BY_ID      = JSON.parse(document.getElementById('d-byid').textContent);
 const selected      = new Set();
 
 // Build filter dropdowns + init after DOM ready
@@ -8527,7 +8530,7 @@ document.addEventListener('DOMContentLoaded', function() {
 <\/html>`;
 
   // Escape forward slashes so any <\/script> in data can't break the HTML parser
-  const safeJSON = obj => JSON.stringify(obj).replace(/</g, '\\u003c').replace(/>/g, '\\u003e');
+  const safeJSON = obj => JSON.stringify(obj)
   const finalHtml = html
     .replace('%%PARTY_DATA_JSON%%',          safeJSON(partyData))
     .replace('%%CUSTOM_FIELDS_JSON%%',       safeJSON(cfJson))
