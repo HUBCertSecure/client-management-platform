@@ -8325,7 +8325,8 @@ textarea{width:100%;padding:10px 14px;border:1.5px solid #D1DCE8;border-radius:7
 .btn-primary:disabled{opacity:.45;cursor:not-allowed}
 .footer{margin-top:24px;font-size:11px;color:#9CA3AF;text-align:center;line-height:1.6}
 <\/style>
-<\/head>y>
+<\/head>
+<body>
 <div class="page">
   <div class="header">
     <div class="header-title">
@@ -8378,9 +8379,9 @@ textarea{width:100%;padding:10px 14px;border:1.5px solid #D1DCE8;border-radius:7
   </div>
 </div>
 
-<script id="d-parties" type="application/json">%%PARTY_DATA_JSON%%\u003c/script>
-<script id="d-fields" type="application/json">%%CUSTOM_FIELDS_JSON%%\u003c/script>
-<script id="d-byid" type="application/json">%%CUSTOM_FIELDS_BY_ID_JSON%%\u003c/script>
+<script id="d-parties" type="application/json">%%PARTY_DATA_JSON%%%%END_SCRIPT%%
+<script id="d-fields" type="application/json">%%CUSTOM_FIELDS_JSON%%%%END_SCRIPT%%
+<script id="d-byid" type="application/json">%%CUSTOM_FIELDS_BY_ID_JSON%%%%END_SCRIPT%%
 <script>
 const ALL_PARTIES   = JSON.parse(document.getElementById('d-parties').textContent);
 const CUSTOM_FIELDS = JSON.parse(document.getElementById('d-fields').textContent);
@@ -8534,7 +8535,8 @@ document.addEventListener('DOMContentLoaded', function() {
   const finalHtml = html
     .replace('%%PARTY_DATA_JSON%%',          safeJSON(partyData))
     .replace('%%CUSTOM_FIELDS_JSON%%',       safeJSON(cfJson))
-    .replace('%%CUSTOM_FIELDS_BY_ID_JSON%%', safeJSON(cfByIdJson));
+    .replace('%%CUSTOM_FIELDS_BY_ID_JSON%%', safeJSON(cfByIdJson))
+    .replace(/%%END_SCRIPT%%/g,              '</scr'+'ipt>');
   console.log('[DEL] finalHtml placeholders cleared:', !finalHtml.includes('%%PARTY'), 'parties:', partyData.length, 'cfKeys:', Object.keys(cfJson));
 
   const filename = `${clientName} - Delete Third-Party Request - ${new Date().toISOString().split('T')[0]}.html`;
