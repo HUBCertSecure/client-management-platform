@@ -8527,7 +8527,7 @@ document.addEventListener('DOMContentLoaded', function() {
 <\/html>`;
 
   // Escape forward slashes so any <\/script> in data can't break the HTML parser
-  const safeJSON = obj => JSON.stringify(obj).replace(/\//g, '\\/');
+  const safeJSON = obj => JSON.stringify(obj).replace(/</g, '\\u003c').replace(/>/g, '\\u003e');
   const finalHtml = html
     .replace('%%PARTY_DATA_JSON%%',          safeJSON(partyData))
     .replace('%%CUSTOM_FIELDS_JSON%%',       safeJSON(cfJson))
