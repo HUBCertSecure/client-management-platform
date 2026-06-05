@@ -56,6 +56,7 @@ jobs:
         with:
           commit_message: 'chore: evident sync [skip ci]'
           file_pattern: 'data/evident/** snapshots/**'
+          push_options: '--force-with-lease'
 
   sync-trustlayer:
     runs-on: ubuntu-latest
@@ -88,3 +89,4 @@ jobs:
         with:
           commit_message: 'chore: trustlayer sync [skip ci]'
           file_pattern: 'data/trustlayer/** snapshots/trustlayer/**'
+          push_options: '--force-with-lease'
