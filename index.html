@@ -3109,8 +3109,23 @@ async function triggerHubWide() {
     const lastSnap = monthlySnapshots.length ? monthlySnapshots[monthlySnapshots.length - 1] : null;
     const firstSnap = monthlySnapshots.length ? monthlySnapshots[0] : null;
 
+    // Build a reusable row-matcher that handles both exact client_name and rp_common_name
+    const makeClientMatcher = ck => {
+      const meta = (typeof CLIENT_META_MAP !== 'undefined' && CLIENT_META_MAP[ck]) || {};
+      const rpName = (meta.rp_common_name || '').toLowerCase().replace(/[^a-z0-9]/g, '');
+      return r => {
+        if (r[C.client] === ck) return true;
+        if (rpName && r[C.client]) {
+          const rv = r[C.client].toLowerCase().replace(/[^a-z0-9]/g, '');
+          if (rv === rpName || rv.includes(rpName) || rpName.includes(rv)) return true;
+        }
+        return false;
+      };
+    };
+
     for (const ck of allClients) {
-      const liveRows   = liveIns.filter(r => r[C.client] === ck);
+      const matchRow = makeClientMatcher(ck);
+      const liveRows   = liveIns.filter(matchRow);
       if (!liveRows.length) continue;
       const liveActive = liveRows.filter(r => r[C.active] !== 'false' && r[C.paused] !== 'true');
       if (!liveActive.length) continue;
@@ -3118,12 +3133,12 @@ async function triggerHubWide() {
       const lNC   = liveActive.filter(r => normStatus(r[C.status]) === 'non_compliant').length;
       const lRate = liveActive.length ? Math.round(lComp / liveActive.length * 100) : 0;
 
-      const snapRows = lastSnap ? lastSnap.ins.filter(r => r[C.client] === ck) : [];
+      const snapRows = lastSnap ? lastSnap.ins.filter(matchRow) : [];
       const snapActive = snapRows.filter(r => r[C.active] !== 'false' && r[C.paused] !== 'true');
       const snapComp = snapActive.filter(r => normStatus(r[C.status]) === 'compliant').length;
       const snapRate = snapActive.length ? Math.round(snapComp / snapActive.length * 100) : null;
 
-      const firstSnapRows = firstSnap ? firstSnap.ins.filter(r => r[C.client] === ck) : [];
+      const firstSnapRows = firstSnap ? firstSnap.ins.filter(matchRow) : [];
       const firstActive = firstSnapRows.filter(r => r[C.active] !== 'false' && r[C.paused] !== 'true');
       const firstComp = firstActive.filter(r => normStatus(r[C.status]) === 'compliant').length;
       const firstClientRate = firstActive.length ? Math.round(firstComp / firstActive.length * 100) : null;
