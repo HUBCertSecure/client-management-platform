@@ -58,6 +58,28 @@ jobs:
           GOOGLE_SHEET_ID:              ${{ secrets.GOOGLE_SHEET_ID }}
         run: node sync-engagement.js
 
+      - name: Run Custom Properties sync
+        working-directory: evident-sync/src
+        env:
+          EVIDENT_KEY_AGEQUIPMENT:      ${{ secrets.EVIDENT_KEY_AGEQUIPMENT }}
+          EVIDENT_KEY_ACTIONPLUMBING:   ${{ secrets.EVIDENT_KEY_ACTIONPLUMBING }}
+          EVIDENT_KEY_BAUERFOUNDATION:  ${{ secrets.EVIDENT_KEY_BAUERFOUNDATION }}
+          EVIDENT_KEY_CPKANSASCITY:     ${{ secrets.EVIDENT_KEY_CPKANSASCITY }}
+          EVIDENT_KEY_CAPITALROAD:      ${{ secrets.EVIDENT_KEY_CAPITALROAD }}
+          EVIDENT_KEY_EMMES:            ${{ secrets.EVIDENT_KEY_EMMES }}
+          EVIDENT_KEY_EMERYSAPPANDSONS: ${{ secrets.EVIDENT_KEY_EMERYSAPPANDSONS }}
+          EVIDENT_KEY_GARTPROPERTIES:   ${{ secrets.EVIDENT_KEY_GARTPROPERTIES }}
+          EVIDENT_KEY_KOLBGRADING:      ${{ secrets.EVIDENT_KEY_KOLBGRADING }}
+          EVIDENT_KEY_MIZUHOBANK:       ${{ secrets.EVIDENT_KEY_MIZUHOBANK }}
+          EVIDENT_KEY_MUSSELMANHALL:    ${{ secrets.EVIDENT_KEY_MUSSELMANHALL }}
+          EVIDENT_KEY_PARAGONGEO:       ${{ secrets.EVIDENT_KEY_PARAGONGEO }}
+          EVIDENT_KEY_SCANDROLI:        ${{ secrets.EVIDENT_KEY_SCANDROLI }}
+          EVIDENT_KEY_SKYLINE:          ${{ secrets.EVIDENT_KEY_SKYLINE }}
+          EVIDENT_KEY_THEABBEYCOMPANY:  ${{ secrets.EVIDENT_KEY_THEABBEYCOMPANY }}
+          EVIDENT_KEY_TRINITYCHEMICAL:  ${{ secrets.EVIDENT_KEY_TRINITYCHEMICAL }}
+          EVIDENT_KEY_UNITEDCOAL:       ${{ secrets.EVIDENT_KEY_UNITEDCOAL }}
+        run: node sync-custom-properties.js
+
       - name: Commit Evident data
         uses: stefanzweifel/git-auto-commit-action@v5
         with:
