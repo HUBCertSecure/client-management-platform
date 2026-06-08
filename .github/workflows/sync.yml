@@ -51,6 +51,13 @@ jobs:
           GOOGLE_SHEET_ID:              ${{ secrets.GOOGLE_SHEET_ID }}
         run: node sync.js
 
+      - name: Run Engagement sync
+        working-directory: evident-sync/src
+        env:
+          GOOGLE_SERVICE_ACCOUNT_KEY:   ${{ secrets.GOOGLE_SERVICE_ACCOUNT_KEY }}
+          GOOGLE_SHEET_ID:              ${{ secrets.GOOGLE_SHEET_ID }}
+        run: node sync-engagement.js
+
       - name: Commit Evident data
         uses: stefanzweifel/git-auto-commit-action@v5
         with:
