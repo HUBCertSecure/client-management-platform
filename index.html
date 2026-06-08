@@ -2935,17 +2935,14 @@ async function prtCheckPaths() {
       // Get row count from content or blob
       let raw = '';
       if (meta.content && meta.content.trim()) {
-        raw = atob(meta.content.replace(/
-/g, ''));
+        raw = atob(meta.content.replace(/\n/g, ''));
       } else if (meta.sha) {
         try {
           const blob = await (await fetch(`https://api.github.com/repos/${s.owner}/${s.repo}/git/blobs/${meta.sha}`, auth)).json();
-          raw = atob(blob.content.replace(/
-/g, ''));
+          raw = atob(blob.content.replace(/\n/g, ''));
         } catch(_) { return { label, path, ok: true, detail: 'exists (size unknown)' }; }
       }
-      const rows = raw.trim() ? raw.trim().split('
-').length - 1 : 0;
+      const rows = raw.trim() ? raw.trim().split('\n').length - 1 : 0;
       // Sample client values from first 3 columns
       let sample = '';
       if (rows > 0 && typeof Papa !== 'undefined') {
