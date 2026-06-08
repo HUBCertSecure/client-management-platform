@@ -2040,13 +2040,45 @@ function prtRenderFiltered(d) {
     ].map(k => `<div class="prt-kpi ${k.cls}"><div class="prt-kpi-lbl">${k.lbl}</div><div class="prt-kpi-val">${k.val}</div><div class="prt-kpi-sub">${k.sub}</div></div>`).join('');
   }
 
-  // Trend — filter monthly snapshots by summing only matching clients
+  // Trend — aggregate per-client monthlyRates for filtered subset
   const trendEl = document.getElementById('prt-trend-bars');
   const trendMeta = document.getElementById('prt-trend-meta');
   if (trendEl) {
-    // We don't have per-client monthly data stored; show a note if filtered
-    trendEl.innerHTML = `<div style="font-size:12px;color:var(--muted);padding:16px 0;font-style:italic">Monthly trend shows all programs. Filter applies to scorecard and client grid only.</div>`;
-    if (trendMeta) trendMeta.textContent = '';
+    // Collect all months that appear in any filtered client
+    const monthMap = {};
+    filtered.forEach(c => {
+      (c.monthlyRates || []).forEach(pt => {
+        if (!monthMap[pt.month]) monthMap[pt.month] = { comp: 0, total: 0 };
+        const compN = Math.round(pt.rate / 100 * pt.total);
+        monthMap[pt.month].comp  += compN;
+        monthMap[pt.month].total += pt.total;
+      });
+    });
+    const filteredTrend = Object.entries(monthMap)
+      .sort((a, b) => a[0].localeCompare(b[0]))
+      .map(([month, v]) => ({ month, rate: v.total ? Math.round(v.comp / v.total * 100) : 0, total: v.total }));
+
+    if (!filteredTrend.length) {
+      trendEl.innerHTML = `<div style="font-size:12px;color:var(--muted);padding:16px 0;font-style:italic">No snapshot data yet for this filter.</div>`;
+      if (trendMeta) trendMeta.textContent = '';
+    } else {
+      const moNames = {1:'Jan',2:'Feb',3:'Mar',4:'Apr',5:'May',6:'Jun',7:'Jul',8:'Aug',9:'Sep',10:'Oct',11:'Nov',12:'Dec'};
+      trendEl.innerHTML = filteredTrend.map(pt => {
+        const color = pt.rate >= 80 ? '#3EBD3E' : pt.rate >= 60 ? '#D97706' : '#AC1534';
+        const mo = moNames[parseInt(pt.month.split('-')[1])] || pt.month.split('-')[1];
+        const h = Math.max(3, Math.round(pt.rate / 100 * 56));
+        return `<div class="prt-trend-bar-wrap" title="${pt.month}: ${pt.rate}% (${pt.total} vendors)">
+          <div class="prt-trend-bar-val" style="color:${color}">${pt.rate}%</div>
+          <div class="prt-trend-bar-bg"><div class="prt-trend-bar-fill" style="height:${h}px;background:${color}"></div></div>
+          <div class="prt-trend-bar-lbl">${mo}</div>
+        </div>`;
+      }).join('');
+      if (trendMeta && filteredTrend.length > 1) {
+        const best  = filteredTrend.reduce((a, b) => a.rate > b.rate ? a : b);
+        const worst = filteredTrend.reduce((a, b) => a.rate < b.rate ? a : b);
+        trendMeta.textContent = `${filterLabel} · Best: ${d.fmtYM(best.month)} ${best.rate}%  ·  Worst: ${d.fmtYM(worst.month)} ${worst.rate}%`;
+      }
+    }
   }
 
   // Criteria — re-derive from filtered clients' vendors using stored clientTopNC
@@ -2274,12 +2306,16 @@ async function prtLoad() {
       const lRate = liveActive.length ? Math.round(lComp / liveActive.length * 100) : 0;
       const clientExpired = expiredEntities.filter(matchRow);
       const clientNoCOI   = noCOIEntities.filter(matchRow);
-      const firstSnapRows = firstSnap ? firstSnap.ins.filter(matchRow).filter(r => r[C.active] !== 'false' && r[C.paused] !== 'true') : [];
-      const firstComp = firstSnapRows.filter(r => normStatus(r[C.status]) === 'compliant').length;
-      const firstClientRate = firstSnapRows.length ? Math.round(firstComp / firstSnapRows.length * 100) : null;
-      const lastSnapRows = lastSnap ? lastSnap.ins.filter(matchRow).filter(r => r[C.active] !== 'false' && r[C.paused] !== 'true') : [];
-      const lastComp = lastSnapRows.filter(r => normStatus(r[C.status]) === 'compliant').length;
-      const lastClientRate = lastSnapRows.length ? Math.round(lastComp / lastSnapRows.length * 100) : null;
+      // Build full monthly sparkline data for this client across all snapshots
+      const monthlyRates = monthlySnapshots.map(snap => {
+        const rows = snap.ins.filter(matchRow).filter(r => r[C.active] !== 'false' && r[C.paused] !== 'true');
+        if (!rows.length) return null;
+        const comp = rows.filter(r => normStatus(r[C.status]) === 'compliant').length;
+        return { month: snap.month, rate: Math.round(comp / rows.length * 100), total: rows.length };
+      }).filter(Boolean);
+
+      const firstClientRate = monthlyRates.length ? monthlyRates[0].rate : null;
+      const lastClientRate  = monthlyRates.length ? monthlyRates[monthlyRates.length - 1].rate : null;
       const improvement = (firstClientRate !== null && lastClientRate !== null) ? lastClientRate - firstClientRate : null;
       const clientCritRows = liveCrit.filter(matchRow);
       const clientNCMap = {};
@@ -2299,7 +2335,7 @@ async function prtLoad() {
         structure: clientDef.structure || meta.structure || 'general',
         total: liveActive.length, comp: lComp, nc: lNC, rate: lRate,
         expired: clientExpired, noCOI: clientNoCOI,
-        vendors: liveActive, improvement, clientTopNC
+        vendors: liveActive, improvement, clientTopNC, monthlyRates
       });
     }
     const trendWord = rateChange > 2 ? 'improving' : rateChange < -2 ? 'declining' : 'stable';
@@ -2392,6 +2428,32 @@ function prtRender(d) {
   if (!_prtActiveClient) { const drill = document.getElementById('prt-drill-panel'); if (drill) drill.style.display = 'none'; }
 }
 
+// Build a small inline SVG sparkline from an array of {rate} points
+function prtSparkline(monthlyRates, currentRate, color) {
+  if (!monthlyRates || !monthlyRates.length) {
+    // No snapshot data yet — just show a single dot at current rate
+    return `<svg width="100%" height="28" viewBox="0 0 80 28" preserveAspectRatio="none" style="display:block;margin-top:6px">
+      <circle cx="40" cy="${28 - Math.round(currentRate / 100 * 24)}" r="2.5" fill="${color}" opacity="0.7"/>
+    </svg>`;
+  }
+  // Add current live rate as the last point
+  const pts = [...monthlyRates.map(m => m.rate), currentRate];
+  const W = 80, H = 28, pad = 3;
+  const minR = Math.max(0,  Math.min(...pts) - 5);
+  const maxR = Math.min(100, Math.max(...pts) + 5);
+  const range = maxR - minR || 1;
+  const xs = pts.map((_, i) => pad + (i / Math.max(pts.length - 1, 1)) * (W - pad * 2));
+  const ys = pts.map(r => H - pad - ((r - minR) / range) * (H - pad * 2));
+  const polyline = xs.map((x, i) => `${x.toFixed(1)},${ys[i].toFixed(1)}`).join(' ');
+  // Fill area under line
+  const fillPts = `${xs[0].toFixed(1)},${H} ${polyline} ${xs[xs.length-1].toFixed(1)},${H}`;
+  return `<svg width="100%" height="28" viewBox="0 0 ${W} ${H}" preserveAspectRatio="none" style="display:block;margin-top:6px">
+    <polygon points="${fillPts}" fill="${color}" opacity="0.12"/>
+    <polyline points="${polyline}" fill="none" stroke="${color}" stroke-width="1.5" stroke-linejoin="round" stroke-linecap="round" opacity="0.8"/>
+    <circle cx="${xs[xs.length-1].toFixed(1)}" cy="${ys[ys.length-1].toFixed(1)}" r="2.5" fill="${color}"/>
+  </svg>`;
+}
+
 function prtRenderClients(d) {
   const gridEl = document.getElementById('prt-clients-grid');
   const clientsMeta = document.getElementById('prt-clients-meta');
@@ -2436,11 +2498,17 @@ function prtRenderClients(d) {
       const chgStr = c.improvement !== null
         ? `<span style="color:${c.improvement>=0?'#3EBD3E':'#AC1534'};font-weight:600">${c.improvement>=0?'▲':'▼'}${Math.abs(c.improvement)}%</span>`
         : '';
+      const sparkline = prtSparkline(c.monthlyRates, c.rate, color);
+      const sparkLabel = c.monthlyRates && c.monthlyRates.length > 1
+        ? `<div style="font-size:9px;color:var(--muted);margin-top:2px;display:flex;justify-content:space-between"><span>${c.monthlyRates[0].month.slice(0,7)}</span><span>now</span></div>`
+        : c.monthlyRates && c.monthlyRates.length === 1
+          ? `<div style="font-size:9px;color:var(--muted);margin-top:2px">1 snapshot</div>`
+          : `<div style="font-size:9px;color:var(--muted);margin-top:2px;font-style:italic">live only</div>`;
       return `<div class="prt-client-card${_prtActiveClient===c.name?' active':''}" onclick="prtShowClient('${c.name.replace(/'/g,"\'")}')">
         <div style="display:flex;align-items:center;gap:4px;margin-bottom:6px;flex-wrap:wrap">${platBadge}${structBadge}<div class="prt-client-card-name" style="flex:1;font-size:12px;margin-left:2px">${esc(c.name)}</div>${chgStr}</div>
         <div class="prt-client-card-rate" style="color:${color}">${c.rate}%</div>
         <div class="prt-client-card-meta">${c.total.toLocaleString()} vendors &nbsp;&middot;&nbsp; ${c.comp} compliant &nbsp;&middot;&nbsp; ${c.nc} NC</div>
-        <div class="prt-client-card-bar"><div class="prt-client-card-bar-fill" style="width:${c.rate}%;background:${color}"></div></div>
+        ${sparkline}${sparkLabel}
         ${c.expired.length || c.noCOI.length ? `<div style="font-size:10px;margin-top:6px;color:var(--muted)">${c.expired.length?`<span style="color:#EA580C">${c.expired.length} expired</span>`:''}${c.expired.length&&c.noCOI.length?' &nbsp;&middot;&nbsp; ':''}${c.noCOI.length?`<span style="color:#D97706">${c.noCOI.length} no COI</span>`:''}</div>` : ''}
       </div>`;
     }).join('');
@@ -2495,9 +2563,10 @@ function prtShowClient(clientName) {
     ).join('')}</div>` : '';
   drill.innerHTML = `<div class="prt-drill">
     <div class="prt-drill-hdr">
-      <div>
+      <div style="flex:1;min-width:0">
         <div class="prt-drill-name">${esc(clientName)}</div>
         <div style="font-size:12px;color:var(--muted);margin-top:2px">${client.total.toLocaleString()} active vendors &nbsp;&middot;&nbsp; <span style="font-weight:700;color:${rateColor}">${client.rate}% compliant</span> &nbsp;&middot;&nbsp; ${({'general':'General','project':'Subcontractors','location':'Tenants'})[client.structure]||'General'} &nbsp;&middot;&nbsp; ${client.platform==='trustlayer'?'TrustLayer':'Evident'} &nbsp;&middot;&nbsp; ${chgStr}</div>
+        ${client.monthlyRates && client.monthlyRates.length ? `<div style="margin-top:10px;max-width:320px">${prtSparkline(client.monthlyRates, client.rate, rateColor)}<div style="font-size:9px;color:var(--muted);display:flex;justify-content:space-between;margin-top:2px"><span>${client.monthlyRates[0].month}</span><span>${client.monthlyRates[client.monthlyRates.length-1].month} → now</span></div></div>` : ''}
       </div>
       <button class="prt-drill-close" onclick="prtShowClient('${clientName.replace(/'/g,"\\'")}')" title="Close">&#10005;</button>
     </div>
