@@ -2585,14 +2585,348 @@ function prtShowClient(clientName) {
   </div>`;
 }
 
-function prtDownloadPDF() {
-  if (!_prtData) { toast('Load data first', 'error'); return; }
-  printHTMLasPDF(buildPHRHTML(_prtData));
+// ── PRT EXPORTS ──────────────────────────────────────────────────────────────
+function buildPRTHTML(d) {
+  const stamp = new Date().toLocaleString('en-US',{month:'long',day:'numeric',year:'numeric',hour:'numeric',minute:'2-digit',timeZoneName:'short'});
+  const logoSrc = (document.querySelector('.header-logo')?.src?.startsWith('data:')) ? document.querySelector('.header-logo').src : null;
+  const logoTag = logoSrc ? `<img src="${logoSrc}" style="height:32px;object-fit:contain">` : `<div style="font-family:Arial,sans-serif;font-size:16px;font-weight:700;color:#1E2E3D">CERT<span style="background:#3872B8;color:white;padding:1px 6px;border-radius:3px">SECURE</span></div>`;
+  const moNames = {1:'Jan',2:'Feb',3:'Mar',4:'Apr',5:'May',6:'Jun',7:'Jul',8:'Aug',9:'Sep',10:'Oct',11:'Nov',12:'Dec'};
+  const fmtYM = ym => { const [y,m] = ym.split('-'); return `${moNames[parseInt(m)]} ${y}`; };
+  const rateColor = d.overallRate >= 80 ? '#16A34A' : d.overallRate >= 60 ? '#D97706' : '#DC2626';
+  const chgColor  = d.rateChange >= 0 ? '#16A34A' : '#DC2626';
+  const pctStr = (n, t) => t ? Math.round(n / t * 100) + '%' : '—';
+
+  // Filter label
+  const structLabels = { general:'General', project:'Subcontractors', location:'Tenants' };
+  const filterParts = [];
+  if (_prtFilter.struct !== 'all') filterParts.push(structLabels[_prtFilter.struct] || _prtFilter.struct);
+  if (_prtFilter.plat  !== 'all') filterParts.push(_prtFilter.plat === 'trustlayer' ? 'TrustLayer' : 'Evident');
+  const filterLabel = filterParts.length ? filterParts.join(' / ') : 'All Programs';
+
+  // Monthly trend bars
+  const trendBars = d.monthlyTrend.map(pt => {
+    const color = pt.rate >= 80 ? '#16A34A' : pt.rate >= 60 ? '#D97706' : '#DC2626';
+    const mo = moNames[parseInt(pt.month.split('-')[1])] || pt.month.split('-')[1];
+    const h = Math.max(2, Math.round(pt.rate / 100 * 44));
+    return `<div style="display:flex;flex-direction:column;align-items:center;flex:1;gap:2px">
+      <div style="font-size:8px;font-weight:700;color:${color}">${pt.rate}%</div>
+      <div style="width:100%;background:#F1F5F9;border-radius:2px 2px 0 0;height:44px;display:flex;align-items:flex-end">
+        <div style="width:100%;background:${color};border-radius:2px 2px 0 0;height:${h}px"></div>
+      </div>
+      <div style="font-size:7px;color:#8A94A8">${mo}</div>
+    </div>`;
+  }).join('');
+
+  // Criteria table rows
+  const maxNC = d.criteriaSorted[0]?.nonCompliant || 1;
+  const criteriaRows = d.criteriaSorted.slice(0, 12).map((c, i) => {
+    const typeReasons = (d.ncReasonsByType || {})[c.name] || {};
+    const topReason = Object.entries(typeReasons).sort((a,b) => b[1]-a[1])[0]?.[0] || '—';
+    const barW = Math.round(c.nonCompliant / maxNC * 100);
+    return `<tr style="background:${i%2===0?'#FAFBFC':'white'}">
+      <td style="font-weight:600;font-size:10px;padding:5px 8px">${esc(c.name)}</td>
+      <td style="text-align:center;font-weight:700;color:#DC2626;font-size:10px;padding:5px 8px">${c.nonCompliant.toLocaleString()}</td>
+      <td style="padding:5px 8px;width:100px"><div style="background:#F1F5F9;border-radius:2px;height:5px"><div style="background:#DC2626;height:100%;width:${barW}%;border-radius:2px"></div></div></td>
+      <td style="font-size:9px;color:#6B7280;padding:5px 8px">${esc(topReason.length > 45 ? topReason.slice(0,45)+'…' : topReason)}</td>
+    </tr>`;
+  }).join('');
+
+  // Client rows — apply current filter
+  const filteredClients = d.clientStats.filter(c => {
+    if (_prtFilter.struct !== 'all' && c.structure !== _prtFilter.struct) return false;
+    if (_prtFilter.plat  !== 'all' && c.platform  !== _prtFilter.plat)   return false;
+    return true;
+  }).sort((a, b) => a.rate - b.rate);
+
+  const structLabelMap = { general:'General', project:'Subcontractors', location:'Tenants' };
+  const clientRows = filteredClients.map((c, i) => {
+    const rColor = c.rate >= 80 ? '#16A34A' : c.rate >= 60 ? '#D97706' : '#DC2626';
+    const chgStr = c.improvement !== null
+      ? (c.improvement > 0 ? `<span style="color:#16A34A">▲${c.improvement}%</span>`
+       : c.improvement < 0 ? `<span style="color:#DC2626">▼${Math.abs(c.improvement)}%</span>`
+       : '<span style="color:#8A94A8">—</span>')
+      : '<span style="color:#8A94A8">—</span>';
+    const plat = c.platform === 'trustlayer' ? 'TL' : 'EV';
+    const struct = structLabelMap[c.structure] || 'General';
+    return `<tr style="background:${i%2===0?'#FAFBFC':'white'}">
+      <td style="font-weight:600;font-size:10px;padding:5px 8px">${esc(c.name)}</td>
+      <td style="text-align:center;font-size:9px;padding:5px 8px">${plat}</td>
+      <td style="text-align:center;font-size:9px;padding:5px 8px">${struct}</td>
+      <td style="text-align:center;font-size:10px;padding:5px 8px">${c.total.toLocaleString()}</td>
+      <td style="text-align:center;color:#16A34A;font-weight:600;font-size:10px;padding:5px 8px">${c.comp}</td>
+      <td style="text-align:center;color:${c.nc>0?'#DC2626':'#16A34A'};font-weight:600;font-size:10px;padding:5px 8px">${c.nc}</td>
+      <td style="text-align:center;color:${c.expired.length>0?'#D97706':'#6B7280'};font-size:10px;padding:5px 8px">${c.expired.length}</td>
+      <td style="text-align:center;color:${c.noCOI.length>0?'#D97706':'#6B7280'};font-size:10px;padding:5px 8px">${c.noCOI.length}</td>
+      <td style="text-align:center;font-weight:800;color:${rColor};font-size:11px;padding:5px 8px">${c.rate}%</td>
+      <td style="text-align:center;font-size:10px;padding:5px 8px">${chgStr}</td>
+    </tr>`;
+  }).join('');
+
+  const engSection = d.sentSet && d.sentSet.size ? `
+    <div class="sec"><div class="sec-lbl">Vendor Engagement &amp; Outreach</div><div class="sec-line"></div></div>
+    <div class="kpi4" style="grid-template-columns:repeat(4,1fr)">
+      <div class="kpi grey"><div class="kpi-lbl">Contacts Reached</div><div class="kpi-val" style="color:#0678D5">${d.sentSet.size.toLocaleString()}</div></div>
+      <div class="kpi grey"><div class="kpi-lbl">Opened</div><div class="kpi-val" style="color:#0678D5">${d.openSet.size.toLocaleString()}</div></div>
+      <div class="kpi ${d.engRate>=50?'green':d.engRate>=25?'amber':'red'}"><div class="kpi-lbl">Open Rate</div><div class="kpi-val">${d.engRate}%</div></div>
+      <div class="kpi ${d.issueSet.size===0?'green':'red'}"><div class="kpi-lbl">Delivery Issues</div><div class="kpi-val">${d.issueSet.size}</div></div>
+    </div>` : '';
+
+  return `<!DOCTYPE html><html><head><meta charset="UTF-8">
+<title>HUB CertSecure — Program Review</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800;900&display=swap');
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'Outfit',Arial,sans-serif;background:white;color:#1E2E3D;width:960px;padding:28px 32px 24px;-webkit-print-color-adjust:exact;print-color-adjust:exact}
+.hdr{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:22px;padding-bottom:16px;border-bottom:3px solid #1E2E3D}
+.pill{display:inline-block;font-size:8px;font-weight:700;letter-spacing:.14em;text-transform:uppercase;padding:3px 10px;border-radius:20px;background:#EEF1F8;color:#1E2E3D;margin-bottom:7px}
+.sec{display:flex;align-items:center;gap:8px;margin:16px 0 10px}
+.sec-line{flex:1;height:2px;background:#E8ECF5}
+.sec-lbl{font-size:9px;font-weight:700;letter-spacing:.13em;text-transform:uppercase;color:#1E2E3D;white-space:nowrap;padding-left:8px;border-left:3px solid #3872B8}
+.kpi4{display:grid;gap:10px}
+.kpi{border-radius:8px;padding:13px;border:1px solid rgba(6,120,213,0.1)}
+.kpi.grey{background:#F0F4F8}.kpi.green{background:rgba(62,189,62,0.1)}.kpi.red{background:rgba(172,21,52,0.08)}.kpi.blue{background:#EBF4FF}.kpi.amber{background:rgba(243,185,33,0.1)}
+.kpi-lbl{font-size:8px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;margin-bottom:5px}
+.kpi.grey .kpi-lbl{color:#5A6B7B}.kpi.green .kpi-lbl{color:#2E8B2E}.kpi.red .kpi-lbl{color:#8B0E22}.kpi.blue .kpi-lbl{color:#0678D5}.kpi.amber .kpi-lbl{color:#9B6A00}
+.kpi-val{font-size:26px;font-weight:800;line-height:1}
+.kpi.grey .kpi-val{color:#263746}.kpi.green .kpi-val{color:#3EBD3E}.kpi.red .kpi-val{color:#AC1534}.kpi.blue .kpi-val{color:#0678D5}.kpi.amber .kpi-val{color:#F3B921}
+.kpi-sub{font-size:10px;font-weight:600;margin-top:3px;color:#8A94A8}
+table{width:100%;border-collapse:collapse}
+th{font-size:8px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;color:white;background:#2B3A52;padding:7px 8px;text-align:left}
+th:not(:first-child){text-align:center}
+td{padding:5px 8px;border-bottom:1px solid #F0F2F6;vertical-align:middle}
+.footer{margin-top:18px;padding-top:10px;border-top:1px solid #E8ECF5;display:flex;justify-content:space-between;font-size:8.5px;color:#B0B8C8}
+@media print{body{-webkit-print-color-adjust:exact;print-color-adjust:exact}@page{size:A3 landscape;margin:8mm}}
+</style></head><body>
+<div class="hdr">
+  <div>
+    ${logoTag}
+    <div style="margin-top:10px">
+      <div class="pill">Internal Use Only</div>
+      <div style="font-size:22px;font-weight:900;line-height:1.1">Program Review</div>
+      <div style="font-size:12px;color:#5A6B7B;margin-top:4px">${filterLabel} &nbsp;&middot;&nbsp; ${fmtYM(d.fromYM)} &rarr; ${fmtYM(d.toYM)} &nbsp;&middot;&nbsp; ${d.clientStats.length} programs</div>
+    </div>
+  </div>
+  <div style="text-align:right">
+    <div style="font-size:9px;color:#8A94A8">${stamp}</div>
+    <div style="font-size:28px;font-weight:900;color:${rateColor};margin-top:6px">${d.overallRate}%</div>
+    <div style="font-size:10px;color:#8A94A8">Overall Compliance</div>
+    ${d.rateChange !== 0 ? `<div style="font-size:11px;font-weight:700;color:${chgColor};margin-top:3px">${d.rateChange>0?'▲':'▼'}${Math.abs(d.rateChange)}% vs period start</div>` : ''}
+  </div>
+</div>
+
+<div style="font-size:11px;line-height:1.7;color:#374151;background:#EFF6FF;border:1px solid #BFDBFE;border-radius:6px;padding:10px 14px;margin-bottom:16px">${esc(d.narrative)}</div>
+
+<div class="sec"><div class="sec-lbl">Program Scorecard</div><div class="sec-line"></div></div>
+<div class="kpi4" style="grid-template-columns:repeat(5,1fr)">
+  <div class="kpi grey"><div class="kpi-lbl">Total Active</div><div class="kpi-val">${d.totalActive.toLocaleString()}</div><div class="kpi-sub">${d.clientStats.length} programs</div></div>
+  <div class="kpi green"><div class="kpi-lbl">Compliant</div><div class="kpi-val">${d.countCompliant.toLocaleString()}</div><div class="kpi-sub">${pctStr(d.countCompliant,d.totalActive)} of active</div></div>
+  <div class="kpi red"><div class="kpi-lbl">Non-Compliant</div><div class="kpi-val">${d.countNC.toLocaleString()}</div><div class="kpi-sub">${pctStr(d.countNC,d.totalActive)} of active</div></div>
+  <div class="kpi amber"><div class="kpi-lbl">Expired COI</div><div class="kpi-val">${d.countExpired.toLocaleString()}</div><div class="kpi-sub">${pctStr(d.countExpired,d.totalActive)} of active</div></div>
+  <div class="kpi amber"><div class="kpi-lbl">No COI on File</div><div class="kpi-val">${d.countNoCOI.toLocaleString()}</div><div class="kpi-sub">${pctStr(d.countNoCOI,d.totalActive)} of active</div></div>
+</div>
+
+${d.monthlyTrend.length ? `
+<div class="sec"><div class="sec-lbl">Monthly Compliance Trend</div><div class="sec-line"></div></div>
+<div style="display:flex;gap:4px;align-items:flex-end;height:60px;padding:0 2px">${trendBars}</div>` : ''}
+
+<div class="sec"><div class="sec-lbl">Compliance by Coverage Criteria</div><div class="sec-line"></div></div>
+<table>
+  <thead><tr><th style="width:36%">Coverage Type</th><th style="width:90px">Non-Compliant</th><th style="width:110px">Volume</th><th>Top NC Reason</th></tr></thead>
+  <tbody>${criteriaRows || '<tr><td colspan="4" style="text-align:center;color:#6B7280;padding:12px">No criteria data</td></tr>'}</tbody>
+</table>
+
+${engSection}
+
+<div class="sec"><div class="sec-lbl">Client Programs (${filteredClients.length})</div><div class="sec-line"></div></div>
+<table>
+  <thead><tr><th>Client</th><th>Plat</th><th>Type</th><th>Vendors</th><th>Compliant</th><th>NC</th><th>Expired</th><th>No COI</th><th>Rate</th><th>Change</th></tr></thead>
+  <tbody>${clientRows || '<tr><td colspan="10" style="text-align:center;color:#6B7280;padding:12px">No clients match current filter</td></tr>'}</tbody>
+</table>
+
+<div class="footer">
+  <span>HUB CertSecure &nbsp;&middot;&nbsp; Program Review &nbsp;&middot;&nbsp; ${stamp}</span>
+  <span>Internal Use Only &nbsp;&middot;&nbsp; Not for distribution</span>
+</div>
+</body></html>`;
 }
 
-function prtDownloadExcel() {
+async function buildPRTExcel(d) {
+  if (typeof ExcelJS === 'undefined') throw new Error('ExcelJS library not loaded. Refresh and try again.');
+  const wb = new ExcelJS.Workbook();
+  wb.creator = 'HUB CertSecure';
+  wb.created = new Date();
+  const stamp = new Date().toLocaleString('en-US',{month:'long',day:'numeric',year:'numeric'});
+  const structLabelMap = { general:'General', project:'Subcontractors', location:'Tenants' };
+
+  // Filter label
+  const structLabels = { general:'General', project:'Subcontractors', location:'Tenants' };
+  const filterParts = [];
+  if (_prtFilter.struct !== 'all') filterParts.push(structLabels[_prtFilter.struct] || _prtFilter.struct);
+  if (_prtFilter.plat   !== 'all') filterParts.push(_prtFilter.plat === 'trustlayer' ? 'TrustLayer' : 'Evident');
+  const filterLabel = filterParts.length ? filterParts.join(' / ') : 'All Programs';
+
+  const filteredClients = d.clientStats.filter(c => {
+    if (_prtFilter.struct !== 'all' && c.structure !== _prtFilter.struct) return false;
+    if (_prtFilter.plat   !== 'all' && c.platform  !== _prtFilter.plat)  return false;
+    return true;
+  }).sort((a, b) => a.rate - b.rate);
+
+  // ── Sheet 1: Scorecard ───────────────────────────────────────────────
+  const ws1 = wb.addWorksheet('Scorecard');
+  ws1.columns = [{width:32},{width:18},{width:18}];
+  const s1title = ws1.addRow(['HUB CertSecure — Program Review', '', '']);
+  s1title.height = 26;
+  s1title.getCell(1).font = xlFont(XL.NAVY, true, 14);
+  ws1.addRow(['Generated: ' + stamp + '  ·  Filter: ' + filterLabel]);
+  ws1.addRow([]);
+  const s1hdr = ws1.addRow(['Metric','Count','%  of Active']); s1hdr.height = 20;
+  s1hdr.eachCell(cell => applyHdr(cell));
+  [
+    ['Total Active Vendors', d.totalActive, null],
+    ['Compliant',            d.countCompliant, d.totalActive ? Math.round(d.countCompliant/d.totalActive*100)+'%' : '—'],
+    ['Non-Compliant',        d.countNC,        d.totalActive ? Math.round(d.countNC/d.totalActive*100)+'%' : '—'],
+    ['Expired COI',          d.countExpired,   d.totalActive ? Math.round(d.countExpired/d.totalActive*100)+'%' : '—'],
+    ['No COI on File',       d.countNoCOI,     d.totalActive ? Math.round(d.countNoCOI/d.totalActive*100)+'%' : '—'],
+    ['Overall Rate',         d.overallRate+'%', d.rateChange !== null ? (d.rateChange>=0?'+':'')+d.rateChange+'% vs period start' : '—'],
+  ].forEach(([l,v,p], i) => {
+    const row = ws1.addRow([l, v, p || '—']); row.height = 18;
+    applyData(row.getCell(1), i%2===0); applyData(row.getCell(2), i%2===0); applyData(row.getCell(3), i%2===0);
+    row.getCell(2).alignment = {horizontal:'right',vertical:'middle'};
+    row.getCell(3).alignment = {horizontal:'right',vertical:'middle'};
+  });
+  ws1.addRow([]);
+  if (d.monthlyTrend.length) {
+    const moNames = {1:'Jan',2:'Feb',3:'Mar',4:'Apr',5:'May',6:'Jun',7:'Jul',8:'Aug',9:'Sep',10:'Oct',11:'Nov',12:'Dec'};
+    const tHdr = ws1.addRow(['Month','Compliance Rate','Total Active']); tHdr.height = 20;
+    tHdr.eachCell(cell => applyHdr(cell));
+    d.monthlyTrend.forEach((pt, i) => {
+      const [y, m] = pt.month.split('-');
+      const row = ws1.addRow([`${moNames[parseInt(m)]} ${y}`, pt.rate+'%', pt.total]); row.height = 18;
+      applyData(row.getCell(1), i%2===0); applyData(row.getCell(2), i%2===0); applyData(row.getCell(3), i%2===0);
+    });
+  }
+
+  // ── Sheet 2: Criteria Breakdown ──────────────────────────────────────
+  const ws2 = wb.addWorksheet('Coverage Criteria');
+  ws2.columns = [{width:36},{width:16},{width:16},{width:52}];
+  const c2hdr = ws2.addRow(['Coverage Type','Non-Compliant','% of NC Total','Top NC Reason']); c2hdr.height = 20;
+  c2hdr.eachCell(cell => applyHdr(cell));
+  const totalNCAll = d.criteriaSorted.reduce((s,c) => s+c.nonCompliant, 0) || 1;
+  d.criteriaSorted.forEach((c, i) => {
+    const typeReasons = (d.ncReasonsByType || {})[c.name] || {};
+    const topReason = Object.entries(typeReasons).sort((a,b) => b[1]-a[1])[0]?.[0] || '—';
+    const row = ws2.addRow([c.name, c.nonCompliant, Math.round(c.nonCompliant/totalNCAll*100)+'%', topReason]);
+    row.height = 18;
+    applyData(row.getCell(1), i%2===0); applyData(row.getCell(2), i%2===0);
+    applyData(row.getCell(3), i%2===0); applyData(row.getCell(4), i%2===0);
+    row.getCell(2).alignment = {horizontal:'right',vertical:'middle'};
+    row.getCell(3).alignment = {horizontal:'right',vertical:'middle'};
+    if (c.nonCompliant > 0) { row.getCell(2).font = xlFont(XL.RED, true); }
+  });
+
+  // ── Sheet 3: Client Summary ──────────────────────────────────────────
+  const ws3 = wb.addWorksheet('Client Summary');
+  ws3.columns = [{width:36},{width:12},{width:16},{width:14},{width:14},{width:12},{width:12},{width:12},{width:14},{width:14}];
+  const c3hdr = ws3.addRow(['Client','Platform','Type','Total','Compliant','NC','Expired','No COI','Rate','Change']); c3hdr.height = 20;
+  c3hdr.eachCell(cell => applyHdr(cell));
+  filteredClients.forEach((c, i) => {
+    const alt = i%2===0;
+    const chgStr = c.improvement !== null ? (c.improvement>=0?'+':'')+c.improvement+'%' : '—';
+    const row = ws3.addRow([
+      c.name,
+      c.platform === 'trustlayer' ? 'TrustLayer' : 'Evident',
+      structLabelMap[c.structure] || 'General',
+      c.total, c.comp, c.nc, c.expired.length, c.noCOI.length,
+      c.rate+'%', chgStr
+    ]);
+    row.height = 18;
+    [1,2,3,4,5,6,7,8,9,10].forEach(n => { applyData(row.getCell(n), alt); row.getCell(n).alignment={vertical:'middle',horizontal:n>3?'right':'left'}; });
+    if (c.nc > 0) row.getCell(6).font = xlFont(XL.RED, true);
+    if (c.expired.length > 0) row.getCell(7).font = xlFont('FFC97A00', true);
+    if (c.noCOI.length > 0) row.getCell(8).font = xlFont('FFC97A00', true);
+    const rColor = c.rate >= 80 ? XL.GREEN : c.rate >= 60 ? 'FFC97A00' : XL.RED;
+    row.getCell(9).font = xlFont(rColor, true, 10);
+    if (c.improvement !== null && c.improvement > 0)  row.getCell(10).font = xlFont(XL.GREEN, true);
+    if (c.improvement !== null && c.improvement < 0)  row.getCell(10).font = xlFont(XL.RED, true);
+  });
+
+  // ── Sheet 4: Vendor NC Detail ────────────────────────────────────────
+  const ws4 = wb.addWorksheet('Vendor NC Detail');
+  ws4.columns = [{width:36},{width:30},{width:32},{width:18},{width:14}];
+  const c4hdr = ws4.addRow(['Client','Vendor / Entity','Contact Email','Status','NC Sub-Status']); c4hdr.height = 20;
+  c4hdr.eachCell(cell => applyHdr(cell));
+  let rowIdx = 0;
+  filteredClients.forEach(c => {
+    c.vendors
+      .filter(r => normStatus(r[C.status]) === 'non_compliant')
+      .sort((a, b) => (a[C.entity_name]||'').localeCompare(b[C.entity_name]||''))
+      .forEach(r => {
+        const name  = r[C.entity_name] || r['insured_name'] || '—';
+        const email = r[C.email] || r['primary_contact_email'] || '—';
+        const nm = name.trim().toLowerCase();
+        const isNoCOI = c.noCOI.some(e => (e[C.entity_name]||e['insured_name']||'').trim().toLowerCase()===nm);
+        const isExp   = c.expired.some(e => (e[C.entity_name]||e['insured_name']||'').trim().toLowerCase()===nm);
+        const sub = isNoCOI ? 'No COI on File' : isExp ? 'Expired COI' : 'Non-Compliant';
+        const alt = rowIdx++ % 2 === 0;
+        const row = ws4.addRow([c.name, name, email, 'Non-Compliant', sub]);
+        row.height = 18;
+        [1,2,3,4,5].forEach(n => applyData(row.getCell(n), alt));
+        row.getCell(4).font = xlFont(XL.RED, true);
+        if (sub === 'Expired COI' || sub === 'No COI on File') row.getCell(5).font = xlFont('FFC97A00', true);
+      });
+  });
+  if (rowIdx === 0) ws4.addRow(['No non-compliant vendors in this filter.']);
+
+  // ── Sheet 5: Monthly Trend (per-client) ─────────────────────────────
+  const ws5 = wb.addWorksheet('Monthly Trend');
+  const clientsWithRates = filteredClients.filter(c => c.monthlyRates && c.monthlyRates.length);
+  if (clientsWithRates.length) {
+    const allMonths = [...new Set(clientsWithRates.flatMap(c => c.monthlyRates.map(m => m.month)))].sort();
+    const moNames2 = {1:'Jan',2:'Feb',3:'Mar',4:'Apr',5:'May',6:'Jun',7:'Jul',8:'Aug',9:'Sep',10:'Oct',11:'Nov',12:'Dec'};
+    const hdrRow = ws5.addRow(['Client', ...allMonths.map(m => { const [y,mo] = m.split('-'); return `${moNames2[parseInt(mo)]} ${y}`; }), 'Current']); hdrRow.height = 20;
+    hdrRow.eachCell(cell => applyHdr(cell));
+    ws5.getColumn(1).width = 36;
+    allMonths.forEach((_, i) => { ws5.getColumn(i+2).width = 10; });
+    ws5.getColumn(allMonths.length+2).width = 10;
+    clientsWithRates.forEach((c, i) => {
+      const rateByMonth = {};
+      c.monthlyRates.forEach(m => { rateByMonth[m.month] = m.rate; });
+      const row = ws5.addRow([c.name, ...allMonths.map(m => rateByMonth[m] != null ? rateByMonth[m]+'%' : '—'), c.rate+'%']);
+      row.height = 18;
+      row.eachCell(cell => applyData(cell, i%2===0));
+      row.getCell(1).alignment = {vertical:'middle'};
+    });
+  } else {
+    ws5.addRow(['No snapshot data available for the selected filter.']);
+  }
+
+  return xlBlob(wb);
+}
+// ── END PRT EXPORTS ───────────────────────────────────────────────────────────
+
+function prtDownloadPDF() {
   if (!_prtData) { toast('Load data first', 'error'); return; }
-  buildPHRExcel(_prtData);
+  printHTMLasPDF(buildPRTHTML(_prtData));
+}
+
+async function prtDownloadExcel() {
+  if (!_prtData) { toast('Load data first', 'error'); return; }
+  const btn = document.querySelector('.prt-dl-btn.xl');
+  if (btn) { btn.textContent = '⏳ Building…'; btn.disabled = true; }
+  try {
+    const blob = await buildPRTExcel(_prtData);
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = `HUB CertSecure - Program Review - ${new Date().toISOString().split('T')[0]}.xlsx`;
+    document.body.appendChild(a); a.click(); document.body.removeChild(a);
+    setTimeout(() => URL.revokeObjectURL(a.href), 10000);
+    toast('Excel downloaded', 'success');
+  } catch(e) {
+    toast('Excel build failed: ' + e.message, 'error');
+    console.error('[PRT Excel]', e);
+  } finally {
+    if (btn) { btn.textContent = '⬇ Excel'; btn.disabled = false; }
+  }
 }
 // ── END PROGRAM REVIEW TOOL ──────────────────────────────────────────────────
 
