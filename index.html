@@ -1976,6 +1976,7 @@ function prtSetPreset(btn, preset) {
 
 function prtSetFilter(axis, val) {
   _prtFilter[axis] = val;
+  _prtActiveClient = null; // clear drill when filter changes
   // Update button active states
   if (axis === 'struct') {
     ['all','general','project','location'].forEach(v => {
@@ -1989,7 +1990,126 @@ function prtSetFilter(axis, val) {
       if (btn) btn.classList.toggle('active', bval === val);
     });
   }
-  if (_prtData) prtRenderClients(_prtData);
+  if (_prtData) prtRenderFiltered(_prtData);
+}
+
+// Re-render all PRT sections using the current filter
+// Derives filtered totals from per-client stats rather than re-loading CSVs
+function prtRenderFiltered(d) {
+  const isFiltered = _prtFilter.struct !== 'all' || _prtFilter.plat !== 'all';
+  if (!isFiltered) { prtRender(d); return; }
+
+  const filtered = d.clientStats.filter(c => {
+    if (_prtFilter.struct !== 'all' && c.structure !== _prtFilter.struct) return false;
+    if (_prtFilter.plat  !== 'all' && c.platform  !== _prtFilter.plat)   return false;
+    return true;
+  });
+
+  // Derive filtered scorecard totals from per-client data
+  let fTotal = 0, fComp = 0, fNC = 0, fExpired = 0, fNoCOI = 0;
+  filtered.forEach(c => {
+    fTotal   += c.total;
+    fComp    += c.comp;
+    fNC      += c.nc;
+    fExpired += c.expired.length;
+    fNoCOI   += c.noCOI.length;
+  });
+  const fRate = fTotal ? Math.round(fComp / fTotal * 100) : 0;
+
+  // Build filter label for narrative
+  const structLabels = { general:'General', project:'Subcontractors', location:'Tenants' };
+  const filterParts = [];
+  if (_prtFilter.struct !== 'all') filterParts.push(structLabels[_prtFilter.struct] || _prtFilter.struct);
+  if (_prtFilter.plat   !== 'all') filterParts.push(_prtFilter.plat === 'trustlayer' ? 'TrustLayer' : 'Evident');
+  const filterLabel = filterParts.join(' / ');
+
+  // Narrative
+  const narEl = document.getElementById('prt-narrative');
+  if (narEl) narEl.textContent = `Filtered view: ${filterLabel} — ${filtered.length} of ${d.clientStats.length} programs, ${fTotal.toLocaleString()} active vendors. Overall compliance ${fRate}% — ${fComp.toLocaleString()} compliant, ${fNC.toLocaleString()} non-compliant, ${fExpired.toLocaleString()} expired COI, ${fNoCOI.toLocaleString()} no COI on file.`;
+
+  // Scorecard
+  const pct = (n, t) => t ? Math.round(n/t*100)+'%' : '0%';
+  const scoreEl = document.getElementById('prt-scorecard');
+  if (scoreEl) {
+    scoreEl.innerHTML = [
+      { cls:'grey',   lbl:'Total Active',   val: fTotal.toLocaleString(),   sub: `${filtered.length} programs` },
+      { cls:'green',  lbl:'Compliant',      val: fComp.toLocaleString(),    sub: pct(fComp,fTotal) + ' of active' },
+      { cls:'red',    lbl:'Non-Compliant',  val: fNC.toLocaleString(),      sub: pct(fNC,fTotal) + ' of active' },
+      { cls:'orange', lbl:'Expired COI',    val: fExpired.toLocaleString(), sub: pct(fExpired,fTotal) + ' of active' },
+      { cls:'amber',  lbl:'No COI on File', val: fNoCOI.toLocaleString(),   sub: pct(fNoCOI,fTotal) + ' of active' },
+    ].map(k => `<div class="prt-kpi ${k.cls}"><div class="prt-kpi-lbl">${k.lbl}</div><div class="prt-kpi-val">${k.val}</div><div class="prt-kpi-sub">${k.sub}</div></div>`).join('');
+  }
+
+  // Trend — filter monthly snapshots by summing only matching clients
+  const trendEl = document.getElementById('prt-trend-bars');
+  const trendMeta = document.getElementById('prt-trend-meta');
+  if (trendEl) {
+    // We don't have per-client monthly data stored; show a note if filtered
+    trendEl.innerHTML = `<div style="font-size:12px;color:var(--muted);padding:16px 0;font-style:italic">Monthly trend shows all programs. Filter applies to scorecard and client grid only.</div>`;
+    if (trendMeta) trendMeta.textContent = '';
+  }
+
+  // Criteria — re-derive from filtered clients' vendors using stored clientTopNC
+  const critEl = document.getElementById('prt-criteria');
+  if (critEl) {
+    const filteredNCMap = {};
+    const filteredNCByType = {};
+    filtered.forEach(c => {
+      c.clientTopNC.forEach(([cov, n]) => {
+        filteredNCMap[cov] = (filteredNCMap[cov] || 0) + n;
+        if (!filteredNCByType[cov]) filteredNCByType[cov] = {};
+        filteredNCByType[cov]['(see client drill)'] = (filteredNCByType[cov]['(see client drill)'] || 0) + n;
+      });
+    });
+    // Also aggregate full vendor NC counts from client vendor lists
+    const fullNCMap = {};
+    const fullNCByType = {};
+    filtered.forEach(c => {
+      c.vendors.filter(r => {
+        try { return (r['overall_compliance']||r[Object.keys(r).find(k=>k.toLowerCase().includes('overall'))||'']||'').toString().toLowerCase() === 'non_compliant'; } catch(_) { return false; }
+      });
+      // Use stored clientTopNC as proxy for criteria breakdown
+      c.clientTopNC.forEach(([cov, n]) => {
+        fullNCMap[cov] = (fullNCMap[cov] || 0) + n;
+      });
+    });
+    const sorted = Object.entries(fullNCMap).sort((a,b) => b[1]-a[1]);
+    if (!sorted.length) {
+      critEl.innerHTML = '<div style="font-size:12px;color:var(--muted);padding:8px 0">No criteria data for this filter.</div>';
+    } else {
+      const maxNC = sorted[0][1] || 1;
+      critEl.innerHTML = `<div style="font-size:11px;color:var(--muted);margin-bottom:8px;font-style:italic">Showing aggregated NC counts from ${filtered.length} filtered program(s).</div>
+        <table class="prt-vendor-table">
+        <thead><tr><th style="width:35%">Coverage Type</th><th>Non-Compliant</th><th style="width:120px">Volume</th></tr></thead>
+        <tbody>${sorted.slice(0,12).map(([name, n]) => {
+          const barW = Math.round(n / maxNC * 100);
+          return `<tr><td style="font-weight:600">${esc(name)}</td><td><span style="font-weight:700;color:#AC1534">${n}</span></td><td><div style="background:var(--border);border-radius:3px;height:6px"><div style="background:#AC1534;border-radius:3px;height:100%;width:${barW}%"></div></div></td></tr>`;
+        }).join('')}</tbody></table>`;
+    }
+  }
+
+  // Engagement — keep showing full engagement (not filterable by client type)
+  const engEl = document.getElementById('prt-engagement');
+  const engWrap = document.getElementById('prt-eng-wrap');
+  if (engEl && engWrap) {
+    engWrap.style.display = '';
+    const noEng = !d.sentSet.size;
+    engEl.innerHTML = noEng
+      ? `<div style="font-size:12px;color:var(--muted);padding:10px 0;font-style:italic">No engagement data loaded for this period.</div>`
+      : `<div style="display:grid;grid-template-columns:repeat(4,1fr);gap:12px">
+        <div class="prt-kpi grey"><div class="prt-kpi-lbl">Contacts Reached</div><div class="prt-kpi-val" style="color:#0678D5">${d.sentSet.size.toLocaleString()}</div></div>
+        <div class="prt-kpi grey"><div class="prt-kpi-lbl">Opened</div><div class="prt-kpi-val" style="color:#0678D5">${d.openSet.size.toLocaleString()}</div></div>
+        <div class="prt-kpi ${d.engRate>=50?'green':d.engRate>=25?'amber':'red'}"><div class="prt-kpi-lbl">Open Rate</div><div class="prt-kpi-val">${d.engRate}%</div></div>
+        <div class="prt-kpi ${d.issueSet.size===0?'green':'red'}"><div class="prt-kpi-lbl">Delivery Issues</div><div class="prt-kpi-val">${d.issueSet.size}</div></div>
+      </div>`;
+  }
+
+  // Drill panel — close since active client may be out of filter
+  const drill = document.getElementById('prt-drill-panel');
+  if (drill) { drill.style.display = 'none'; drill.innerHTML = ''; }
+
+  // Client grid
+  prtRenderClients(d);
 }
 
 function prtGetDateRange() {
@@ -7344,7 +7464,7 @@ function ceAutoDetectColors() {
 </style>
 
 <!-- ═══ DEBUG PANEL ═══ -->
-<div id="cs-debug-panel" style="display:none;position:fixed;bottom:12px;right:12px;background:#1a1a2e;color:#e0e0e0;font-family:monospace;font-size:11px;padding:10px 12px;border-radius:8px;z-index:99999;min-width:280px;max-width:340px;box-shadow:0 4px 20px rgba(0,0,0,.5);border:1px solid #333;max-height:380px;overflow:hidden;display:flex;flex-direction:column">
+<div id="cs-debug-panel" style="display:none;position:fixed;bottom:12px;right:12px;background:#1a1a2e;color:#e0e0e0;font-family:monospace;font-size:11px;padding:10px 12px;border-radius:8px;z-index:99999;min-width:280px;max-width:340px;box-shadow:0 4px 20px rgba(0,0,0,.5);border:1px solid #333;max-height:380px;overflow:hidden;flex-direction:column">
   <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px">
     <span style="font-weight:700;color:#00AEEF;font-size:12px">&#128295; Debug v0.60</span>
     <div style="display:flex;gap:6px">
