@@ -488,12 +488,34 @@
 </div>
 
 <div class="overlay" id="hubwide-overlay">
-  <div class="modal" style="max-width:440px">
-    <div class="modal-hdr"><span class="modal-title">&#127962; HUB-Wide Annual Review</span><button class="modal-close" onclick="closeHubWide()">&#10005;</button></div>
-    <div style="font-size:12px;color:var(--muted);margin-bottom:18px;line-height:1.5">Generates a full annual review across all clients using snapshot data. Runs entirely in the browser &#8212; no waiting.</div>
-    <div class="form-grp"><label class="form-lbl">Report Year</label><input type="text" id="hw-year" placeholder="e.g. 2026" maxlength="4" style="width:140px"><div class="form-hint">Leave blank to use the most recent snapshot year.</div></div>
+  <div class="modal" style="max-width:480px">
+    <div class="modal-hdr"><span class="modal-title">&#128200; CertSecure Program Health Report</span><button class="modal-close" onclick="closeHubWide()">&#10005;</button></div>
+    <div style="font-size:12px;color:var(--muted);margin-bottom:18px;line-height:1.5">Generates a full program health report across all clients and platforms. Combines snapshot trends with live data. Runs entirely in the browser &#8212; no waiting.</div>
+    <div class="form-grp" style="margin-bottom:14px">
+      <label class="form-lbl">Date Range</label>
+      <div style="display:flex;gap:7px;flex-wrap:wrap;margin-bottom:10px">
+        <button class="btn btn-secondary hw-preset active" data-preset="last12" onclick="hwSetPreset(this,'last12')" style="font-size:12px;padding:5px 12px">Last 12 Months</button>
+        <button class="btn btn-secondary hw-preset" data-preset="ytd" onclick="hwSetPreset(this,'ytd')" style="font-size:12px;padding:5px 12px">This Year</button>
+        <button class="btn btn-secondary hw-preset" data-preset="last6" onclick="hwSetPreset(this,'last6')" style="font-size:12px;padding:5px 12px">Last 6 Months</button>
+        <button class="btn btn-secondary hw-preset" data-preset="custom" onclick="hwSetPreset(this,'custom')" style="font-size:12px;padding:5px 12px">Custom</button>
+      </div>
+      <div id="hw-custom-range" style="display:none;gap:10px;align-items:center;flex-wrap:wrap">
+        <div>
+          <label class="form-lbl" style="margin-bottom:3px">From</label>
+          <input type="month" id="hw-from" style="font-family:var(--font);font-size:13px;padding:6px 10px;border:1.5px solid var(--border);border-radius:6px;color:var(--text);background:var(--card)">
+        </div>
+        <div>
+          <label class="form-lbl" style="margin-bottom:3px">To</label>
+          <input type="month" id="hw-to" style="font-family:var(--font);font-size:13px;padding:6px 10px;border:1.5px solid var(--border);border-radius:6px;color:var(--text);background:var(--card)">
+        </div>
+      </div>
+      <div class="form-hint" id="hw-range-hint">Snapshot trends will cover this window. Live data always reflects the current state.</div>
+    </div>
     <div id="hw-msg" style="display:none;font-size:12px;padding:8px 12px;border-radius:7px;margin-top:10px"></div>
-    <div style="display:flex;gap:10px;justify-content:flex-end;margin-top:20px"><button class="btn btn-secondary" onclick="closeHubWide()">Cancel</button><button class="btn btn-primary" id="hw-btn" onclick="triggerHubWide()">&#11015; Generate</button></div>
+    <div style="display:flex;gap:10px;justify-content:flex-end;margin-top:20px">
+      <button class="btn btn-secondary" onclick="closeHubWide()">Cancel</button>
+      <button class="btn btn-primary" id="hw-btn" onclick="triggerHubWide()">&#11015; Generate PDF + Excel</button>
+    </div>
   </div>
 </div>
 
@@ -643,7 +665,7 @@
   <div id="tab-reports">
   <div id="rg-sub-generate">
   <div id="step-1" class="step-panel">
-    <div style="display:flex;justify-content:flex-end;gap:8px;margin-bottom:16px;flex-shrink:0"><button class="btn btn-secondary" id="rg-monday-btn" onclick="reportGeneratorSyncMonday()" style="white-space:nowrap;display:none;border-color:rgba(0,174,239,0.5);color:#00AEEF">&#8679; Monday</button><button class="btn btn-secondary" onclick="openHubWide()" style="gap:6px;white-space:nowrap;border-color:rgba(0,174,239,0.5);color:#00AEEF">&#127962; HUB-Wide Annual</button></div>
+    <div style="display:flex;justify-content:flex-end;gap:8px;margin-bottom:16px;flex-shrink:0"><button class="btn btn-secondary" id="rg-monday-btn" onclick="reportGeneratorSyncMonday()" style="white-space:nowrap;display:none;border-color:rgba(0,174,239,0.5);color:#00AEEF">&#8679; Monday</button><button class="btn btn-secondary" onclick="openHubWide()" style="gap:6px;white-space:nowrap;border-color:rgba(0,174,239,0.5);color:#00AEEF">&#128200; Program Health Report</button></div>
     <div id="pat-warning" style="display:none;align-items:center;gap:12px;padding:11px 16px;margin-bottom:14px;background:rgba(243,185,33,0.1);border:1px solid rgba(243,185,33,0.4);border-radius:8px;font-size:13px;color:#7A5500">
       <span>&#9888;</span>
       <span><strong>No Access Token configured.</strong> Data cannot load without a GitHub PAT. <button onclick="openSettings()" style="background:none;border:none;color:var(--blue);cursor:pointer;font-weight:600;font-size:13px;padding:0;text-decoration:underline">Open Settings</button> to add one.</span>
@@ -2877,157 +2899,342 @@ function renderSidebarActivity(notifs) {
 }
 function clearNotifs() { _notifs = []; _unread = 0; updateNotifBadge(); renderNotifList(); }
 document.addEventListener('click', e => { if (!e.target.closest('#fixed-bell')) { const d = document.getElementById('notif-drawer'); if (d) d.style.display = 'none'; } });
+function hwSetPreset(btn, preset) {
+  document.querySelectorAll('.hw-preset').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  const custom = document.getElementById('hw-custom-range');
+  const hint = document.getElementById('hw-range-hint');
+  if (preset === 'custom') {
+    custom.style.display = 'flex';
+    hint.textContent = 'Select a start and end month for the report window.';
+  } else {
+    custom.style.display = 'none';
+    const now = new Date();
+    const yr = now.getFullYear(), mo = now.getMonth()+1;
+    if (preset === 'last12') hint.textContent = `Last 12 months of snapshots (${new Date(now-365*24*3600*1000).toLocaleString('en-US',{month:'short',year:'numeric'})} – ${now.toLocaleString('en-US',{month:'short',year:'numeric'})}).`;
+    else if (preset === 'ytd') hint.textContent = `Jan ${yr} – ${now.toLocaleString('en-US',{month:'short',year:'numeric'})} (year-to-date).`;
+    else if (preset === 'last6') hint.textContent = `Last 6 months of snapshots.`;
+  }
+}
+function hwGetDateRange() {
+  const preset = document.querySelector('.hw-preset.active')?.dataset?.preset || 'last12';
+  const now = new Date();
+  let fromYM, toYM;
+  const fmt = d => `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}`;
+  if (preset === 'custom') {
+    fromYM = document.getElementById('hw-from')?.value || fmt(new Date(now - 365*24*3600*1000));
+    toYM   = document.getElementById('hw-to')?.value   || fmt(now);
+  } else if (preset === 'ytd') {
+    fromYM = `${now.getFullYear()}-01`;
+    toYM   = fmt(now);
+  } else if (preset === 'last6') {
+    const from = new Date(now); from.setMonth(from.getMonth()-5);
+    fromYM = fmt(from); toYM = fmt(now);
+  } else { // last12 default
+    const from = new Date(now); from.setMonth(from.getMonth()-11);
+    fromYM = fmt(from); toYM = fmt(now);
+  }
+  return { fromYM, toYM };
+}
 function openHubWide() {
   document.getElementById('hubwide-overlay').classList.add('open');
-  const yr = document.getElementById('hw-year'); if (yr && !yr.value) yr.value = String(new Date().getFullYear());
+  // Default to Last 12 Months preset active
+  const defaultBtn = document.querySelector('.hw-preset[data-preset="last12"]');
+  if (defaultBtn) hwSetPreset(defaultBtn, 'last12');
 }
 function closeHubWide() { document.getElementById('hubwide-overlay').classList.remove('open'); document.getElementById('hw-msg').style.display = 'none'; }
 async function triggerHubWide() {
-  csDebug.log("REPORT","triggerHubWide","HUB-Wide Annual triggered");
-  const year = document.getElementById('hw-year').value.trim() || String(new Date().getFullYear());
-  const btn = document.getElementById('hw-btn'); const msg = document.getElementById('hw-msg');
+  csDebug.log("REPORT","triggerHubWide","Program Health Report triggered");
+  const btn = document.getElementById('hw-btn');
+  const msg = document.getElementById('hw-msg');
   btn.disabled = true; btn.textContent = 'Generating\u2026'; msg.style.display = 'none';
   try {
-    const months = await listSnapshotMonths(year);
-    if (!months.length) {
-      // No snapshots — will use live data, set placeholder months
-      months.push('live');
+    const { fromYM, toYM } = hwGetDateRange();
+    const s = getSettings();
+
+    // ── 1. Collect all snapshot months in range ──────────────────────────────
+    btn.textContent = 'Scanning snapshots\u2026';
+    const fromYear = parseInt(fromYM.split('-')[0]);
+    const toYear   = parseInt(toYM.split('-')[0]);
+    const yearsNeeded = [];
+    for (let y = fromYear; y <= toYear; y++) yearsNeeded.push(y);
+
+    let allSnapshotMonths = [];
+    for (const yr of yearsNeeded) {
+      const months = await listSnapshotMonths(String(yr)).catch(() => []);
+      allSnapshotMonths.push(...months);
     }
-    const firstMonth = months[0], lastMonth = months[months.length - 1];
-    btn.textContent = 'Fetching data\u2026';
+    allSnapshotMonths = allSnapshotMonths.filter(m => m >= fromYM && m <= toYM).sort();
+
+    // ── 2. Load snapshot data for trend ─────────────────────────────────────
     const monthlySnapshots = [];
-    for (const m of months) {
-      btn.textContent = `Loading ${m}\u2026`;
+    for (const m of allSnapshotMonths) {
+      btn.textContent = `Loading snapshot ${m}\u2026`;
+      const yr = m.split('-')[0];
       try {
-        const ins  = await fetchCSV(`snapshots/${year}/${m}/insureds.csv`).catch(()=>[]);
-        const crit = await fetchCSV(`snapshots/${year}/${m}/criteria.csv`).catch(()=>[]);
-        // Merge TrustLayer snapshots (snapshots/trustlayer/YYYY/YYYY-MM/)
-        const tlIns  = await fetchCSV(`snapshots/trustlayer/${year}/${m}/insureds.csv`).catch(()=>[]);
-        const tlCrit = await fetchCSV(`snapshots/trustlayer/${year}/${m}/criteria.csv`).catch(()=>[]);
-        monthlySnapshots.push({ month: m, ins: [...ins, ...tlIns], crit: [...crit, ...tlCrit] });
+        const evIns  = await fetchCSV(`snapshots/${yr}/${m}/insureds.csv`).catch(()=>[]);
+        const evCrit = await fetchCSV(`snapshots/${yr}/${m}/criteria.csv`).catch(()=>[]);
+        const tlIns  = await fetchCSV(`snapshots/trustlayer/${yr}/${m}/insureds.csv`).catch(()=>[]);
+        const tlCrit = await fetchCSV(`snapshots/trustlayer/${yr}/${m}/criteria.csv`).catch(()=>[]);
+        monthlySnapshots.push({ month: m, ins: [...evIns,...tlIns], crit: [...evCrit,...tlCrit] });
       } catch(e) {}
     }
-    let engAll = []; try { engAll = await fetchCSV(`snapshots/${year}/${lastMonth}/engagement.csv`); } catch(e) {}
-    const allClients = CLIENTS.map(c => c.key);
-    const firstSnap = monthlySnapshots.find(s => s.month === firstMonth);
-    const lastSnap  = monthlySnapshots.find(s => s.month === lastMonth);
-    const clientStats = [];
-    // If snapshots are empty (corrupted), load live data for each client
-    const snapshotsHaveData = allClients.some(ck => {
-      const ins = lastSnap ? lastSnap.ins.filter(r => r[C.client] === ck) : [];
-      return ins.some(r => r[C.active] !== 'false' && r[C.paused] !== 'true');
+
+    // ── 3. Load LIVE data (current state) ────────────────────────────────────
+    btn.textContent = 'Loading live data\u2026';
+    let liveIns = [], liveCrit = [], liveCov = [], liveEng = [];
+    try { liveIns  = await fetchCSV(s.insuredsPath  || 'data/evident/insureds.csv'); }  catch(e) {}
+    try { liveCrit = await fetchCSV(s.criteriaPath  || 'data/evident/criteria.csv'); }  catch(e) {}
+    try { liveCov  = await fetchCSV(s.coveragesPath || 'data/evident/coverages.csv'); } catch(e) {}
+    try { liveEng  = await fetchCSV(s.notificationsPath || 'data/evident/engagement.csv'); } catch(e) {}
+    try { const tlI = await fetchCSV(s.tlInsuredsPath  || 'data/trustlayer/insureds.csv');  liveIns  = [...liveIns,  ...tlI]; } catch(e) {}
+    try { const tlC = await fetchCSV(s.tlCriteriaPath  || 'data/trustlayer/criteria.csv');  liveCrit = [...liveCrit, ...tlC]; } catch(e) {}
+    try { const tlV = await fetchCSV(s.tlCoveragesPath || 'data/trustlayer/coverages.csv'); liveCov  = [...liveCov,  ...tlV]; } catch(e) {}
+
+    // ── 4. Current-state 4-bucket breakdown ──────────────────────────────────
+    btn.textContent = 'Calculating compliance\u2026';
+    const activeAll = liveIns.filter(r => r[C.active] !== 'false' && r[C.paused] !== 'true');
+    const totalActive = activeAll.length;
+
+    // Compliant / Non-Compliant from criteria
+    const critMap = {};
+    liveCrit.forEach(r => { critMap[(r[C.crit_name]||'').trim().toLowerCase()] = normStatus(r[C.overall_comp]); });
+
+    let countCompliant = 0, countNC = 0;
+    activeAll.forEach(r => {
+      const st = normStatus(r[C.status]);
+      if (st === 'compliant') countCompliant++;
+      else if (st === 'non_compliant') countNC++;
     });
-    // Use combined CSV (one fetch) instead of 19 individual client loads
-    let combinedLiveIns = [], combinedCritLive = [];
-    if (!snapshotsHaveData) {
-      btn.textContent = 'Loading live data…';
-      try { combinedLiveIns = await fetchCSV(s.insuredsPath); } catch(e) {}
-      try { combinedCritLive = await fetchCSV(s.criteriaPath || 'data/evident/criteria.csv'); } catch(e) {}
-      // Merge TrustLayer live data
-      try { const tlIns = await fetchCSV(s.tlInsuredsPath || 'data/trustlayer/insureds.csv'); combinedLiveIns = [...combinedLiveIns, ...tlIns]; } catch(e) {}
-      try { const tlCrit = await fetchCSV(s.tlCriteriaPath || 'data/trustlayer/criteria.csv'); combinedCritLive = [...combinedCritLive, ...tlCrit]; } catch(e) {}
-    }
-    for (const clientKey of allClients) {
-      const getStats = (snap, clientKey2) => {
-        const ins = snapshotsHaveData
-          ? (snap ? snap.ins.filter(r => r[C.client] === clientKey2) : [])
-          : combinedLiveIns.filter(r => r[C.client] === clientKey2);
-        if (!ins.length) return null;
-        const active = ins.filter(r => r[C.active] !== 'false' && r[C.paused] !== 'true');
-        const comp = active.filter(r => normStatus(r[C.status]) === 'compliant').length;
-        const nc   = active.filter(r => normStatus(r[C.status]) === 'non_compliant').length;
-        const rate = active.length ? Math.round(comp/active.length*100) : 0;
-        return { total: active.length, comp, nc, rate };
-      };
-      const start = getStats(firstSnap, clientKey), end = getStats(lastSnap, clientKey);
-      if (!end || !end.total) continue;
-      const improvement = (start && start.rate > 0) ? end.rate - start.rate : null;
-      clientStats.push({ name: clientKey, start, end, improvement });
-    }
-    const totalActive = clientStats.reduce((s,c) => s+c.end.total, 0);
-    const totalComp   = clientStats.reduce((s,c) => s+c.end.comp, 0);
-    const totalNC     = clientStats.reduce((s,c) => s+c.end.nc, 0);
-    const overallRate = totalActive ? Math.round(totalComp/totalActive*100) : 0;
-    const firstTotal  = clientStats.filter(c=>c.start).reduce((s,c)=>s+(c.start?.total||0),0);
-    const firstComp   = clientStats.filter(c=>c.start).reduce((s,c)=>s+(c.start?.comp||0),0);
-    const firstRate   = firstTotal ? Math.round(firstComp/firstTotal*100) : 0;
-    const rateChange  = overallRate - firstRate;
-    const monthlyTrend = monthlySnapshots.map(s => {
-      const active = s.ins.filter(r => r[C.active] !== 'false' && r[C.paused] !== 'true');
+
+    // Expired COIs: active entities where coverage exists but all coverages are expired
+    const today = new Date(); today.setHours(0,0,0,0);
+    const covByEntity = {};
+    liveCov.forEach(r => {
+      const name = (r[C.entity_name] || r['insured_name'] || '').trim().toLowerCase();
+      if (!name) return;
+      if (!covByEntity[name]) covByEntity[name] = [];
+      covByEntity[name].push(r);
+    });
+
+    const expiredEntities = [];
+    const noCOIEntities   = [];
+
+    activeAll.forEach(r => {
+      const st = normStatus(r[C.status]);
+      if (st === 'compliant') return; // already compliant, skip
+      const name = (r[C.entity_name] || r['insured_name'] || '').trim().toLowerCase();
+      const covRows = covByEntity[name] || [];
+      if (!covRows.length) {
+        noCOIEntities.push(r);
+      } else {
+        const allExp = covRows.every(c => {
+          const d = c[C.exp_date] || c['expiration_date'] || '';
+          if (!d) return false;
+          return new Date(d) < today;
+        });
+        if (allExp) expiredEntities.push(r);
+      }
+    });
+
+    const countExpired = expiredEntities.length;
+    const countNoCOI   = noCOIEntities.length;
+    const overallRate  = totalActive ? Math.round(countCompliant / totalActive * 100) : 0;
+
+    // ── 5. Monthly trend from snapshots ──────────────────────────────────────
+    const monthlyTrend = monthlySnapshots.map(snap => {
+      const active = snap.ins.filter(r => r[C.active] !== 'false' && r[C.paused] !== 'true');
       const comp   = active.filter(r => normStatus(r[C.status]) === 'compliant').length;
-      const rate   = active.length ? Math.round(comp/active.length*100) : 0;
-      return { month: s.month, total: active.length, comp, rate };
+      const rate   = active.length ? Math.round(comp / active.length * 100) : 0;
+      return { month: snap.month, total: active.length, comp, rate };
     });
-    const normEm  = n => (n[C.notif_email]||'').trim().toLowerCase();
-    const sentSet = new Set(engAll.filter(isEngSend).map(normEm).filter(Boolean));
-    const openSet = new Set(engAll.filter(isEngOpen).map(normEm).filter(Boolean));
-    const issueSet= new Set(engAll.filter(isEngIssue).map(normEm).filter(Boolean));
-    const engRate = sentSet.size ? Math.round(openSet.size/sentSet.size*100) : 0;
-    const improved = clientStats.filter(c => c.improvement !== null && c.improvement > 0).sort((a,b) => b.improvement - a.improvement).slice(0, 5);
-    const ncMapAll = {};
-    const critSource = snapshotsHaveData ? (lastSnap ? lastSnap.crit : []) : combinedCritLive;
-    if (critSource.length) { critSource.filter(r => normStatus(r[C.overall_comp]) === 'non_compliant').forEach(r => { (r[C.nc_reasons]||'').split(' | ').forEach(p => { const ci = p.indexOf(':'); if (ci < 0) return; const reason = mapNCReason(p.slice(ci+1).trim()); if (!reason) return; ncMapAll[reason] = (ncMapAll[reason]||0) + 1; }); }); }
-    const topNCAll = Object.entries(ncMapAll).sort((a,b)=>b[1]-a[1]).slice(0,6);
-    const ncByCovType = {};
-    if (critSource.length) { critSource.filter(r => normStatus(r[C.overall_comp]) === 'non_compliant').forEach(r => { (r[C.nc_reasons]||'').split(' | ').forEach(p => { const ci = p.indexOf(':'); if (ci < 0) return; const covType = fmtCoverage(p.slice(0, ci).trim()); if (!covType) return; if (!ncByCovType[covType]) ncByCovType[covType] = { count: 0, reasons: {} }; ncByCovType[covType].count++; const reason = mapNCReason(p.slice(ci+1).trim()); if (reason) ncByCovType[covType].reasons[reason] = (ncByCovType[covType].reasons[reason]||0)+1; }); }); }
-    const ncByCovSorted = Object.entries(ncByCovType).sort((a,b) => b[1].count - a[1].count).slice(0,8).map(([type, d]) => ({ type, count: d.count, topReason: Object.entries(d.reasons).sort((a,b)=>b[1]-a[1])[0]?.[0] || '' }));
+
+    // Rate at start vs end of range for trend arrow
+    const firstRate = monthlyTrend.length ? monthlyTrend[0].rate : overallRate;
+    const rateChange = overallRate - firstRate;
+
+    // ── 6. Criteria breakdown ─────────────────────────────────────────────────
+    btn.textContent = 'Analysing criteria\u2026';
+    // Build: criteriaName -> { compliant, nonCompliant }
+    const criteriaStats = {};
+    liveCrit.forEach(r => {
+      const overall = normStatus(r[C.overall_comp]);
+      // Parse individual criteria from nc_reasons for non-compliant entries
+      if (overall === 'non_compliant') {
+        (r[C.nc_reasons] || '').split(' | ').forEach(p => {
+          const ci = p.indexOf(':');
+          if (ci < 0) return;
+          const covType = fmtCoverage(p.slice(0, ci).trim());
+          if (!covType) return;
+          if (!criteriaStats[covType]) criteriaStats[covType] = { compliant: 0, nonCompliant: 0 };
+          criteriaStats[covType].nonCompliant++;
+        });
+      } else if (overall === 'compliant') {
+        // We don't have per-criteria compliant breakdown easily, track overall
+        if (!criteriaStats['__overall_compliant__']) criteriaStats['__overall_compliant__'] = { compliant: 0, nonCompliant: 0 };
+        criteriaStats['__overall_compliant__'].compliant++;
+      }
+    });
+    delete criteriaStats['__overall_compliant__'];
+    const criteriaSorted = Object.entries(criteriaStats)
+      .map(([name, d]) => {
+        const total = d.compliant + d.nonCompliant;
+        return { name, compliant: d.compliant, nonCompliant: d.nonCompliant, total, rate: total ? Math.round(d.compliant / total * 100) : 0 };
+      })
+      .sort((a, b) => b.nonCompliant - a.nonCompliant);
+
+    // Top NC reasons
+    const ncReasonMap = {};
+    liveCrit.filter(r => normStatus(r[C.overall_comp]) === 'non_compliant').forEach(r => {
+      (r[C.nc_reasons] || '').split(' | ').forEach(p => {
+        const ci = p.indexOf(':');
+        if (ci < 0) return;
+        const reason = mapNCReason(p.slice(ci + 1).trim());
+        if (!reason) return;
+        ncReasonMap[reason] = (ncReasonMap[reason] || 0) + 1;
+      });
+    });
+    const topNCReasons = Object.entries(ncReasonMap).sort((a, b) => b[1] - a[1]).slice(0, 8);
+
+    // ── 7. Engagement ─────────────────────────────────────────────────────────
+    const normEm   = n => (n[C.notif_email] || '').trim().toLowerCase();
+    const sentSet  = new Set(liveEng.filter(isEngSend).map(normEm).filter(Boolean));
+    const openSet  = new Set(liveEng.filter(isEngOpen).map(normEm).filter(Boolean));
+    const issueSet = new Set(liveEng.filter(isEngIssue).map(normEm).filter(Boolean));
+    const engRate  = sentSet.size ? Math.round(openSet.size / sentSet.size * 100) : 0;
+
+    // ── 8. Per-client breakdown ───────────────────────────────────────────────
+    const allClients = CLIENTS.map(c => c.key);
+    const clientStats = [];
+    const lastSnap = monthlySnapshots.length ? monthlySnapshots[monthlySnapshots.length - 1] : null;
+    const firstSnap = monthlySnapshots.length ? monthlySnapshots[0] : null;
+
+    for (const ck of allClients) {
+      const liveRows   = liveIns.filter(r => r[C.client] === ck);
+      if (!liveRows.length) continue;
+      const liveActive = liveRows.filter(r => r[C.active] !== 'false' && r[C.paused] !== 'true');
+      if (!liveActive.length) continue;
+      const lComp = liveActive.filter(r => normStatus(r[C.status]) === 'compliant').length;
+      const lNC   = liveActive.filter(r => normStatus(r[C.status]) === 'non_compliant').length;
+      const lRate = liveActive.length ? Math.round(lComp / liveActive.length * 100) : 0;
+
+      const snapRows = lastSnap ? lastSnap.ins.filter(r => r[C.client] === ck) : [];
+      const snapActive = snapRows.filter(r => r[C.active] !== 'false' && r[C.paused] !== 'true');
+      const snapComp = snapActive.filter(r => normStatus(r[C.status]) === 'compliant').length;
+      const snapRate = snapActive.length ? Math.round(snapComp / snapActive.length * 100) : null;
+
+      const firstSnapRows = firstSnap ? firstSnap.ins.filter(r => r[C.client] === ck) : [];
+      const firstActive = firstSnapRows.filter(r => r[C.active] !== 'false' && r[C.paused] !== 'true');
+      const firstComp = firstActive.filter(r => normStatus(r[C.status]) === 'compliant').length;
+      const firstClientRate = firstActive.length ? Math.round(firstComp / firstActive.length * 100) : null;
+      const improvement = (firstClientRate !== null && snapRate !== null) ? snapRate - firstClientRate : null;
+
+      const meta = (typeof CLIENT_META_MAP !== 'undefined' && CLIENT_META_MAP[ck]) || {};
+      clientStats.push({ name: ck, platform: meta.platform || 'evident', total: liveActive.length, comp: lComp, nc: lNC, rate: lRate, improvement });
+    }
+
+    // ── 9. Build narrative ────────────────────────────────────────────────────
+    const trendWord = rateChange > 2 ? 'improving' : rateChange < -2 ? 'declining' : 'stable';
+    const narrative = `As of ${new Date().toLocaleDateString('en-US',{month:'long',day:'numeric',year:'numeric'})}, the CertSecure program manages ${clientStats.length} active client programs across ${totalActive.toLocaleString()} tracked vendors and subcontractors. Overall compliance stands at ${overallRate}% \u2014 with ${countCompliant.toLocaleString()} compliant, ${countNC.toLocaleString()} non-compliant, ${countExpired.toLocaleString()} with expired coverage, and ${countNoCOI.toLocaleString()} with no certificate on file. Program compliance is ${trendWord} over the reporting period${rateChange !== 0 ? ' (' + (rateChange > 0 ? '+' : '') + rateChange + '% from start of range)' : ''}.`;
+
+    // ── 10. Build outputs ─────────────────────────────────────────────────────
     btn.textContent = 'Building report\u2026';
-    const htmlOut = buildHubWideHTML(year, { firstMonth, lastMonth, months, clientStats, monthlyTrend, totalActive, totalComp, totalNC, overallRate, firstRate, rateChange, sentSet, openSet, issueSet, engRate, improved, topNCAll, ncByCovSorted });
-    const blobUrl = URL.createObjectURL(new Blob([htmlOut], { type: 'text/html' }));
+    const reportData = { fromYM, toYM, monthlyTrend, totalActive, countCompliant, countNC, countExpired, countNoCOI, overallRate, firstRate, rateChange, criteriaSorted, topNCReasons, sentSet, openSet, issueSet, engRate, clientStats, expiredEntities, noCOIEntities, narrative };
+
+    const htmlOut = buildPHRHTML(reportData);
     printHTMLasPDF(htmlOut);
-    _notifs.unshift({ msg: `HUB-Wide Annual Review ${year}`, type: 'success', time: new Date(), _download: { type: 'pdf', html: htmlOut, _blobUrl: blobUrl, filename: `HUB-Wide Annual Review ${year} - ${new Date().toISOString().split('T')[0]}.pdf` } });
+
+    // Excel export
+    buildPHRExcel(reportData);
+
+    const blobUrl = URL.createObjectURL(new Blob([htmlOut], { type: 'text/html' }));
+    const dateStr = new Date().toISOString().split('T')[0];
+    _notifs.unshift({ msg: `CertSecure Program Health Report \u2014 ${fromYM} to ${toYM}`, type: 'success', time: new Date(), _download: { type: 'pdf', html: htmlOut, _blobUrl: blobUrl, filename: `CertSecure Program Health Report ${dateStr}.pdf` } });
     if (_notifs.length > 15) _notifs.pop(); renderNotifList();
     const drawer = document.getElementById('notif-drawer'); if (drawer) { drawer.style.display = ''; _unread = 0; updateNotifBadge(); }
-    auditLogAdd('HUB-Wide Annual Report', `Year ${year} · ${clientStats.length} clients`);
-    msg.textContent = '\u2713 Print dialog opening \u2014 save as PDF. Also in Recent Activity.';
+    auditLogAdd('Program Health Report', `${fromYM} \u2013 ${toYM} \u00b7 ${clientStats.length} clients`);
+
+    msg.textContent = '\u2713 Print dialog opening \u2014 save as PDF. Excel download started. Also in Recent Activity.';
     msg.style.cssText = 'display:block;font-size:12px;padding:8px 12px;border-radius:7px;background:var(--green-bg);color:var(--green);margin-top:10px';
-    setTimeout(() => closeHubWide(), 3000);
+    setTimeout(() => closeHubWide(), 3500);
   } catch(e) {
     msg.textContent = 'Failed: ' + e.message;
     msg.style.cssText = 'display:block;font-size:12px;padding:8px 12px;border-radius:7px;background:var(--red-bg);color:var(--red);margin-top:10px';
+    console.error('[PHR]', e);
   }
-  btn.textContent = '\u2b07 Generate'; btn.disabled = false;
+  btn.textContent = '\u2b07 Generate PDF + Excel'; btn.disabled = false;
 }
-</script>
-<script>
-function buildHubWideHTML(year, data) {
-  const { firstMonth, lastMonth, months, clientStats, monthlyTrend, totalActive, totalComp, totalNC, overallRate, firstRate, rateChange, sentSet, openSet, issueSet, engRate, improved, topNCAll, ncByCovSorted } = data;
-  const moNames = {1:'Jan',2:'Feb',3:'Mar',4:'Apr',5:'May',6:'Jun',7:'Jul',8:'Aug',9:'Sep',10:'Oct',11:'Nov',12:'Dec'};
-  const stamp   = new Date().toLocaleString('en-US',{month:'long',day:'numeric',year:'numeric',hour:'numeric',minute:'2-digit',timeZoneName:'short'});
-  const logoSrc = (document.querySelector('.header-logo')?.src?.startsWith('data:')) ? document.querySelector('.header-logo').src : null;
-  const logoTag = logoSrc ? `<img src="${logoSrc}" style="height:38px;object-fit:contain">` : `<div style="font-family:Arial,sans-serif;font-size:18px;font-weight:700;color:#1E2E3D">CERT<span style="background:#3872B8;color:white;padding:1px 7px;border-radius:3px">SECURE</span></div>`;
+
+function buildPHRHTML(data) {
+  const { fromYM, toYM, monthlyTrend, totalActive, countCompliant, countNC, countExpired, countNoCOI, overallRate, firstRate, rateChange, criteriaSorted, topNCReasons, sentSet, openSet, issueSet, engRate, clientStats, expiredEntities, noCOIEntities, narrative } = data;
+  const stamp = new Date().toLocaleString('en-US',{month:'long',day:'numeric',year:'numeric',hour:'numeric',minute:'2-digit',timeZoneName:'short'});
+  const logoSrc = typeof CERTSECURE_LOGO_SRC !== 'undefined' ? CERTSECURE_LOGO_SRC : (document.querySelector('.header-logo')?.src?.startsWith('data:') ? document.querySelector('.header-logo').src : null);
+  const logoTag = logoSrc ? `<img src="${logoSrc}" style="height:36px;object-fit:contain">` : `<div style="font-family:Arial,sans-serif;font-size:18px;font-weight:700;color:#1E2E3D">CERT<span style="background:#3872B8;color:white;padding:1px 7px;border-radius:3px">SECURE</span></div>`;
   const rateColor = overallRate >= 80 ? '#16A34A' : overallRate >= 60 ? '#D97706' : '#DC2626';
   const chgColor  = rateChange >= 0 ? '#16A34A' : '#DC2626';
+  const moNames = {1:'Jan',2:'Feb',3:'Mar',4:'Apr',5:'May',6:'Jun',7:'Jul',8:'Aug',9:'Sep',10:'Oct',11:'Nov',12:'Dec'};
+  const fmtYM = ym => { const [y,m] = ym.split('-'); return `${moNames[parseInt(m)]} ${y}`; };
+
+  // Trend bars
   const trendBars = monthlyTrend.map(d => {
     const color = d.rate >= 80 ? '#16A34A' : d.rate >= 60 ? '#D97706' : '#DC2626';
     const mo = d.month.split('-')[1];
-    return `<div style="display:flex;flex-direction:column;align-items:center;flex:1;gap:2px"><div style="font-size:9px;font-weight:700;color:${color}">${d.rate}%</div><div style="width:100%;background:#F1F5F9;border-radius:2px 2px 0 0;height:50px;display:flex;align-items:flex-end"><div style="width:100%;background:${color};border-radius:2px 2px 0 0;height:${Math.max(2,Math.round(d.rate/100*50))}px"></div></div><div style="font-size:8px;color:#8A94A8">${moNames[parseInt(mo)]||mo}</div></div>`;
+    return `<div style="display:flex;flex-direction:column;align-items:center;flex:1;gap:2px"><div style="font-size:9px;font-weight:700;color:${color}">${d.rate}%</div><div style="width:100%;background:#F1F5F9;border-radius:2px 2px 0 0;height:52px;display:flex;align-items:flex-end"><div style="width:100%;background:${color};border-radius:2px 2px 0 0;height:${Math.max(2,Math.round(d.rate/100*52))}px"></div></div><div style="font-size:8px;color:#8A94A8">${moNames[parseInt(mo)]||mo}</div></div>`;
   }).join('');
-  const clientRows = clientStats.map((c,i) => {
-    const rate = c.end.rate, rColor = rate >= 80 ? '#16A34A' : rate >= 60 ? '#D97706' : '#DC2626', chg = c.improvement;
+
+  // Criteria table rows
+  const criteriaRows = criteriaSorted.slice(0, 15).map((c, i) => {
+    const ncColor = c.nonCompliant > 0 ? '#DC2626' : '#16A34A';
+    const barW = criteriaSorted[0]?.nonCompliant ? Math.round(c.nonCompliant / criteriaSorted[0].nonCompliant * 100) : 0;
+    return `<tr style="background:${i%2===0?'#FAFBFC':'white'}"><td style="font-weight:600;font-size:10px">${esc(c.name)}</td><td style="text-align:center;color:#16A34A;font-weight:600">${c.compliant}</td><td style="text-align:center;color:${ncColor};font-weight:600">${c.nonCompliant}</td><td style="text-align:center;font-weight:700;color:${ncColor}">${c.nonCompliant}</td><td><div style="background:#F1F5F9;border-radius:3px;height:6px;width:80px"><div style="background:${ncColor};border-radius:3px;height:100%;width:${barW}%"></div></div></td></tr>`;
+  }).join('');
+
+  // Client rows
+  const clientRows = clientStats.map((c, i) => {
+    const rColor = c.rate >= 80 ? '#16A34A' : c.rate >= 60 ? '#D97706' : '#DC2626';
+    const chg = c.improvement;
     const chgStr = chg === null ? '\u2014' : (chg > 0 ? `<span style="color:#16A34A">\u25b2${chg}%</span>` : chg < 0 ? `<span style="color:#DC2626">\u25bc${Math.abs(chg)}%</span>` : '<span style="color:#8A94A8">\u2014</span>');
-    return `<tr style="background:${i%2===0?'#FAFBFC':'white'}"><td style="font-weight:600;font-size:10px">${esc(c.name)}</td><td style="text-align:center">${c.end.total}</td><td style="text-align:center;color:#16A34A;font-weight:600">${c.end.comp}</td><td style="text-align:center;color:${c.end.nc>0?'#DC2626':'#16A34A'};font-weight:600">${c.end.nc}</td><td style="text-align:center;font-weight:800;color:${rColor}">${rate}%</td><td style="text-align:center">${chgStr}</td></tr>`;
+    const platBadge = c.platform === 'trustlayer' ? `<span style="font-size:8px;background:rgba(62,189,62,.15);color:#2a9e2a;padding:1px 5px;border-radius:3px;font-weight:700;margin-left:4px">TL</span>` : `<span style="font-size:8px;background:rgba(6,120,213,.12);color:#0678D5;padding:1px 5px;border-radius:3px;font-weight:700;margin-left:4px">EV</span>`;
+    return `<tr style="background:${i%2===0?'#FAFBFC':'white'}"><td style="font-weight:600;font-size:10px">${esc(c.name)}${platBadge}</td><td style="text-align:center">${c.total}</td><td style="text-align:center;color:#16A34A;font-weight:600">${c.comp}</td><td style="text-align:center;color:${c.nc>0?'#DC2626':'#16A34A'};font-weight:600">${c.nc}</td><td style="text-align:center;font-weight:800;color:${rColor}">${c.rate}%</td><td style="text-align:center">${chgStr}</td></tr>`;
+  }).join('');
+
+  // Expired entities (up to 30)
+  const expRows = expiredEntities.slice(0, 30).map((r, i) => {
+    const name  = r[C.entity_name] || r['insured_name'] || '\u2014';
+    const email = r[C.email] || r['primary_contact_email'] || '\u2014';
+    const client = r[C.client] || '\u2014';
+    return `<tr style="background:${i%2===0?'#FAFBFC':'white'}"><td style="font-size:10px;font-weight:600">${esc(name)}</td><td style="font-size:10px">${esc(client)}</td><td style="font-size:10px;color:#8A94A8">${esc(email)}</td></tr>`;
+  }).join('');
+
+  // No COI entities (up to 30)
+  const noCOIRows = noCOIEntities.slice(0, 30).map((r, i) => {
+    const name  = r[C.entity_name] || r['insured_name'] || '\u2014';
+    const email = r[C.email] || r['primary_contact_email'] || '\u2014';
+    const client = r[C.client] || '\u2014';
+    return `<tr style="background:${i%2===0?'#FAFBFC':'white'}"><td style="font-size:10px;font-weight:600">${esc(name)}</td><td style="font-size:10px">${esc(client)}</td><td style="font-size:10px;color:#8A94A8">${esc(email)}</td></tr>`;
   }).join('');
 
   return `<!DOCTYPE html><html><head><meta charset="UTF-8">
-<title>HUB-Wide Annual Review ${year}</title>
+<title>CertSecure Program Health Report</title>
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800;900&display=swap');
 *{box-sizing:border-box;margin:0;padding:0}
 body{font-family:'Outfit',Arial,sans-serif;background:white;color:#1E2E3D;width:960px;padding:28px 32px 24px;-webkit-print-color-adjust:exact;print-color-adjust:exact}
-.hdr{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:22px;padding-bottom:18px;border-bottom:3px solid #1E2E3D}
+.hdr{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:20px;padding-bottom:16px;border-bottom:3px solid #1E2E3D}
 .pill{display:inline-block;font-size:8px;font-weight:700;letter-spacing:.14em;text-transform:uppercase;padding:3px 10px;border-radius:20px;background:#EEF1F8;color:#1E2E3D;margin-bottom:7px}
 .sec{display:flex;align-items:center;gap:8px;margin:16px 0 10px}.sec-line{flex:1;height:2px;background:#E8ECF5}
 .sec-lbl{font-size:9px;font-weight:700;letter-spacing:.13em;text-transform:uppercase;color:#1E2E3D;white-space:nowrap;padding-left:8px;border-left:3px solid #3872B8}
-.kpi4{display:grid;grid-template-columns:repeat(4,1fr);gap:10px}.kpi{border-radius:8px;padding:13px;border:1px solid rgba(6,120,213,0.1)}
-.kpi.grey{background:#F0F4F8}.kpi.green{background:rgba(62,189,62,0.1)}.kpi.red{background:rgba(172,21,52,0.08)}.kpi.blue{background:#EBF4FF}.kpi.amber{background:rgba(243,185,33,0.1)}
-.kpi-lbl{font-size:8px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;margin-bottom:5px}
-.kpi.grey .kpi-lbl{color:#5A6B7B}.kpi.green .kpi-lbl{color:#2E8B2E}.kpi.red .kpi-lbl{color:#8B0E22}.kpi.blue .kpi-lbl{color:#0678D5}.kpi.amber .kpi-lbl{color:#9B6A00}
-.kpi-val{font-size:26px;font-weight:800;line-height:1}
-.kpi.grey .kpi-val{color:#263746}.kpi.green .kpi-val{color:#3EBD3E}.kpi.red .kpi-val{color:#AC1534}.kpi.blue .kpi-val{color:#0678D5}.kpi.amber .kpi-val{color:#F3B921}
-.kpi-sub{font-size:10px;font-weight:600;margin-top:3px}
-.kpi.green .kpi-sub{color:#3EBD3E}.kpi.red .kpi-sub{color:#AC1534}.kpi.blue .kpi-sub{color:#0678D5}.kpi.amber .kpi-sub{color:#F3B921}
-.two-col{display:grid;grid-template-columns:1fr 1fr;gap:12px}.bcard{border:1px solid #E8ECF5;border-radius:8px;padding:13px 15px}
+.kpi5{display:grid;grid-template-columns:repeat(5,1fr);gap:9px}
+.kpi4{display:grid;grid-template-columns:repeat(4,1fr);gap:10px}
+.kpi{border-radius:8px;padding:12px;border:1px solid rgba(6,120,213,0.1)}
+.kpi.grey{background:#F0F4F8}.kpi.green{background:rgba(62,189,62,0.1)}.kpi.red{background:rgba(172,21,52,0.08)}.kpi.blue{background:#EBF4FF}.kpi.amber{background:rgba(243,185,33,0.1)}.kpi.orange{background:rgba(234,88,12,0.08)}
+.kpi-lbl{font-size:8px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;margin-bottom:4px}
+.kpi.grey .kpi-lbl{color:#5A6B7B}.kpi.green .kpi-lbl{color:#2E8B2E}.kpi.red .kpi-lbl{color:#8B0E22}.kpi.blue .kpi-lbl{color:#0678D5}.kpi.amber .kpi-lbl{color:#9B6A00}.kpi.orange .kpi-lbl{color:#9A3412}
+.kpi-val{font-size:24px;font-weight:800;line-height:1}
+.kpi.grey .kpi-val{color:#263746}.kpi.green .kpi-val{color:#3EBD3E}.kpi.red .kpi-val{color:#AC1534}.kpi.blue .kpi-val{color:#0678D5}.kpi.amber .kpi-val{color:#F3B921}.kpi.orange .kpi-val{color:#EA580C}
+.kpi-sub{font-size:9px;font-weight:600;margin-top:3px;color:#8A94A8}
+.bcard{border:1px solid #E8ECF5;border-radius:8px;padding:13px 15px}
+.narrative{background:linear-gradient(135deg,rgba(6,120,213,.05),rgba(0,174,239,.04));border:1px solid rgba(0,174,239,.2);border-radius:8px;padding:14px 18px;font-size:11.5px;line-height:1.7;color:#263746;margin-bottom:18px}
 table{width:100%;border-collapse:collapse}
 th{font-size:8px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;color:white;background:#2B3A52;padding:7px 9px;text-align:left}
 th:not(:first-child){text-align:center}
@@ -3037,103 +3244,180 @@ td{padding:5px 9px;border-bottom:1px solid #F0F2F6;font-size:10px;vertical-align
 .footer{margin-top:18px;padding-top:10px;border-top:1px solid #E8ECF5;display:flex;justify-content:space-between;font-size:8.5px;color:#B0B8C8;line-height:1.4}
 @media print{body{-webkit-print-color-adjust:exact;print-color-adjust:exact}@page{size:A3 landscape;margin:8mm}}
 <\/style><\/head><body>
+
 <div class="hdr">
   <div>
     ${logoTag}
-    <div style="margin-top:12px">
-      <div class="pill">Internal Use Only</div>
-      <div style="font-size:24px;font-weight:900;color:#1E2E3D;line-height:1.1">HUB-Wide Annual Review</div>
-      <div style="font-size:13px;color:#5A6B7B;margin-top:4px">${clientStats.length} clients &nbsp;&middot;&nbsp; ${firstMonth} &rarr; ${lastMonth} &nbsp;&middot;&nbsp; ${months.length} snapshots</div>
+    <div style="margin-top:10px">
+      <div class="pill">Confidential \u2014 Internal Use Only</div>
+      <div style="font-size:22px;font-weight:900;color:#1E2E3D;line-height:1.1">CertSecure Program Health Report</div>
+      <div style="font-size:12px;color:#5A6B7B;margin-top:4px">${fmtYM(fromYM)} \u2013 ${fmtYM(toYM)} &nbsp;&middot;&nbsp; ${clientStats.length} clients &nbsp;&middot;&nbsp; ${totalActive.toLocaleString()} active vendors</div>
     </div>
   </div>
   <div style="text-align:right">
-    <div style="font-size:52px;font-weight:900;color:#3872B8;line-height:1">${year}</div>
-    <div style="margin-top:8px;display:flex;gap:8px;justify-content:flex-end">
-      <div style="text-align:center;background:${overallRate>=80?'#E6F5EF':'#FDF0EE'};border-radius:10px;padding:10px 16px">
-        <div style="font-size:8px;font-weight:700;color:${rateColor};letter-spacing:.1em;text-transform:uppercase">Book Rate</div>
-        <div style="font-size:34px;font-weight:900;color:${rateColor};line-height:1">${overallRate}%</div>
+    <div style="display:flex;gap:8px;justify-content:flex-end">
+      <div style="text-align:center;background:${overallRate>=80?'#E6F5EF':'#FDF0EE'};border-radius:10px;padding:10px 14px">
+        <div style="font-size:8px;font-weight:700;color:${rateColor};letter-spacing:.1em;text-transform:uppercase">Overall Rate</div>
+        <div style="font-size:32px;font-weight:900;color:${rateColor};line-height:1">${overallRate}%</div>
       </div>
-      <div style="text-align:center;background:${rateChange>=0?'#E6F5EF':'#FDF0EE'};border-radius:10px;padding:10px 16px">
-        <div style="font-size:8px;font-weight:700;color:${chgColor};letter-spacing:.1em;text-transform:uppercase">YoY Change</div>
-        <div style="font-size:34px;font-weight:900;color:${chgColor};line-height:1">${rateChange>=0?'+':''}${rateChange}%</div>
+      <div style="text-align:center;background:${rateChange>=0?'#E6F5EF':'#FDF0EE'};border-radius:10px;padding:10px 14px">
+        <div style="font-size:8px;font-weight:700;color:${chgColor};letter-spacing:.1em;text-transform:uppercase">Period Change</div>
+        <div style="font-size:32px;font-weight:900;color:${chgColor};line-height:1">${rateChange>=0?'+':''}${rateChange}%</div>
       </div>
     </div>
     <div style="font-size:10px;color:#8A94A8;margin-top:6px">${stamp}</div>
   </div>
 </div>
-<div class="sec"><div class="sec-lbl">Total Insureds Managed Across All Clients</div><div class="sec-line"></div></div>
-<div class="kpi4">
-  <div class="kpi grey"><div class="kpi-lbl">Total Active Entities</div><div class="kpi-val">${totalActive.toLocaleString()}</div><div class="kpi-sub" style="color:#3872B8">${clientStats.length} clients</div></div>
-  <div class="kpi green"><div class="kpi-lbl">Compliant</div><div class="kpi-val">${totalComp.toLocaleString()}</div><div class="kpi-sub">${pct(totalComp,totalActive)} of active</div></div>
-  <div class="kpi ${totalNC>0?'red':'green'}"><div class="kpi-lbl">Non-Compliant</div><div class="kpi-val">${totalNC.toLocaleString()}</div><div class="kpi-sub">${pct(totalNC,totalActive)} of active</div></div>
-  <div class="kpi blue"><div class="kpi-lbl">Program Start Rate</div><div class="kpi-val">${firstRate}%</div><div class="kpi-sub" style="color:${chgColor}">${rateChange>=0?'\u25b2':'\u25bc'} ${Math.abs(rateChange)}% over year</div></div>
+
+<!-- NARRATIVE -->
+<div class="narrative">${esc(narrative)}</div>
+
+<!-- SCORECARD -->
+<div class="sec"><div class="sec-lbl">Program Scorecard</div><div class="sec-line"></div></div>
+<div class="kpi5">
+  <div class="kpi grey"><div class="kpi-lbl">Total Active Vendors</div><div class="kpi-val">${totalActive.toLocaleString()}</div><div class="kpi-sub">${clientStats.length} clients</div></div>
+  <div class="kpi green"><div class="kpi-lbl">Compliant</div><div class="kpi-val">${countCompliant.toLocaleString()}</div><div class="kpi-sub">${pct(countCompliant,totalActive)} of active</div></div>
+  <div class="kpi red"><div class="kpi-lbl">Non-Compliant</div><div class="kpi-val">${countNC.toLocaleString()}</div><div class="kpi-sub">${pct(countNC,totalActive)} of active</div></div>
+  <div class="kpi orange"><div class="kpi-lbl">Expired COI</div><div class="kpi-val">${countExpired.toLocaleString()}</div><div class="kpi-sub">${pct(countExpired,totalActive)} of active</div></div>
+  <div class="kpi amber"><div class="kpi-lbl">No COI on File</div><div class="kpi-val">${countNoCOI.toLocaleString()}</div><div class="kpi-sub">${pct(countNoCOI,totalActive)} of active</div></div>
 </div>
+
+<!-- TREND CHART -->
 ${monthlyTrend.length > 1 ? `
-<div class="sec"><div class="sec-lbl">Combined Compliance Rate \u2014 How It Moved Over the Year</div><div class="sec-line"></div></div>
+<div class="sec"><div class="sec-lbl">Monthly Compliance Trend</div><div class="sec-line"></div></div>
 <div class="bcard">
-  <div style="display:flex;gap:5px;align-items:flex-end;height:70px">${trendBars}</div>
+  <div style="display:flex;gap:4px;align-items:flex-end;height:72px">${trendBars}</div>
   <div style="display:flex;justify-content:space-between;margin-top:6px;font-size:9px;color:#8A94A8">
-    <span>Best: <strong style="color:#16A34A">${moNames[parseInt(monthlyTrend.reduce((a,b)=>a.rate>b.rate?a:b).month.split('-')[1])]} (${monthlyTrend.reduce((a,b)=>a.rate>b.rate?a:b).rate}%)</strong></span>
-    <span>${monthlyTrend.length} monthly snapshots · all ${clientStats.length} clients combined</span>
-    <span>Worst: <strong style="color:#DC2626">${moNames[parseInt(monthlyTrend.reduce((a,b)=>a.rate<b.rate?a:b).month.split('-')[1])]} (${monthlyTrend.reduce((a,b)=>a.rate<b.rate?a:b).rate}%)</strong></span>
+    <span>Best: <strong style="color:#16A34A">${fmtYM(monthlyTrend.reduce((a,b)=>a.rate>b.rate?a:b).month)} (${monthlyTrend.reduce((a,b)=>a.rate>b.rate?a:b).rate}%)</strong></span>
+    <span>${monthlyTrend.length} snapshots &middot; all clients combined</span>
+    <span>Worst: <strong style="color:#DC2626">${fmtYM(monthlyTrend.reduce((a,b)=>a.rate<b.rate?a:b).month)} (${monthlyTrend.reduce((a,b)=>a.rate<b.rate?a:b).rate}%)</strong></span>
   </div>
-</div>` : ''}
-<div class="two-col" style="margin-top:4px">
-  ${sentSet.size > 0 ? `<div>
-    <div class="sec" style="margin-top:14px"><div class="sec-lbl">Total Emails &amp; Engagement Rates</div><div class="sec-line"></div></div>
-    <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px">
-      <div class="bcard" style="text-align:center"><div style="font-size:8px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:#1D4ED8;margin-bottom:5px">Contacts Reached</div><div style="font-size:26px;font-weight:800;color:#3872B8">${sentSet.size.toLocaleString()}</div></div>
-      <div class="bcard" style="text-align:center"><div style="font-size:8px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:#15803D;margin-bottom:5px">Open Rate</div><div style="font-size:26px;font-weight:800;color:${engRate>=50?'#16A34A':engRate>=25?'#D97706':'#DC2626'}">${engRate}%</div></div>
-      <div class="bcard" style="text-align:center"><div style="font-size:8px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:${issueSet.size===0?'#15803D':'#B91C1C'};margin-bottom:5px">Delivery Issues</div><div style="font-size:26px;font-weight:800;color:${issueSet.size===0?'#16A34A':'#DC2626'}">${issueSet.size}</div></div>
-    </div>
-  </div>` : '<div></div>'}
-  ${improved.length > 0 ? `<div>
-    <div class="sec" style="margin-top:14px"><div class="sec-lbl">Which Clients Improved the Most</div><div class="sec-line"></div></div>
-    <div class="bcard">
-      ${improved.map((c,i)=>`<div class="prog-row">
-        <div style="font-size:10px;font-weight:700;color:#3872B8;width:18px">#${i+1}</div>
-        <div style="flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:#1E2E3D">${esc(c.name)}</div>
-        <div style="font-size:10px;color:#8A94A8;white-space:nowrap">${c.start.rate}% \u2192 ${c.end.rate}%</div>
-        <div style="font-weight:800;color:#16A34A;width:38px;text-align:right">+${c.improvement}%</div>
-      </div>`).join('')}
-    </div>
-  </div>` : '<div></div>'}
-</div>
-${ncByCovSorted && ncByCovSorted.length ? `
-<div class="sec"><div class="sec-lbl">NC Failures by Coverage Type</div><div class="sec-line"></div></div>
-<div style="display:grid;grid-template-columns:repeat(${Math.min(4,ncByCovSorted.length)},1fr);gap:10px;margin-bottom:4px">
-  ${ncByCovSorted.map((c,i)=>`<div style="border:1px solid ${i<2?'#F5CFC9':'#E8ECF5'};border-radius:8px;padding:12px 14px;background:${i<2?'#FDF0EE':'#FAFBFC'}">
-    <div style="font-size:8px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:#8A94A8;margin-bottom:5px">#${i+1} COVERAGE TYPE</div>
-    <div style="font-size:11px;font-weight:700;color:#1E2E3D;margin-bottom:5px;line-height:1.2">${esc(c.type)}</div>
-    <div style="font-size:24px;font-weight:800;color:${i<2?'#DC2626':'#1E2E3D'};line-height:1">${c.count}</div>
-    <div style="font-size:9px;color:#8A94A8;margin-top:2px">NC failures</div>
-    ${c.topReason?`<div style="font-size:9px;color:#5A6B7B;margin-top:7px;line-height:1.3;border-top:1px solid #E8ECF5;padding-top:6px">${esc(c.topReason.length>52?c.topReason.slice(0,52)+'\u2026':c.topReason)}</div>`:''}
-  </div>`).join('')}
-</div>` : ''}
-${topNCAll.length ? `
-<div class="sec"><div class="sec-lbl">Common NC Trends Across the Whole Book</div><div class="sec-line"></div></div>
+</div>` : '<div style="font-size:11px;color:#8A94A8;padding:10px 0">No snapshot data available for trend chart in this date range.</div>'}
+
+<!-- CRITERIA BREAKDOWN -->
+${criteriaSorted.length ? `
+<div class="sec"><div class="sec-lbl">Compliance by Coverage Criteria</div><div class="sec-line"></div></div>
+<table>
+  <thead><tr><th style="width:38%">Coverage Type</th><th>Compliant</th><th>Non-Compliant</th><th>NC Count</th><th style="width:90px">Relative Volume</th></tr></thead>
+  <tbody>${criteriaRows}</tbody>
+</table>` : ''}
+
+<!-- TOP NC REASONS -->
+${topNCReasons.length ? `
+<div class="sec"><div class="sec-lbl">Top Non-Compliance Reasons</div><div class="sec-line"></div></div>
 <div class="bcard">
   <div style="display:grid;grid-template-columns:1fr 1fr;gap:0 24px">
-    ${topNCAll.map(([reason,n],i)=>`<div class="prog-row">
+    ${topNCReasons.map(([reason,n],i)=>`<div class="prog-row">
       <div style="font-size:10px;font-weight:700;color:#B91C1C;width:18px">#${i+1}</div>
-      <div style="flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:#5A6B7B">${esc(mapNCReason(reason))}</div>
-      <div class="prog-bar-wrap"><div style="height:100%;background:#C0392B;border-radius:3px;width:${barPct(n,topNCAll[0][1])}%"></div></div>
-      <div style="font-weight:700;color:#C0392B;width:24px;text-align:right">${n}</div>
+      <div style="flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:#5A6B7B">${esc(reason)}</div>
+      <div class="prog-bar-wrap"><div style="height:100%;background:#C0392B;border-radius:3px;width:${barPct(n,topNCReasons[0][1])}%"></div></div>
+      <div style="font-weight:700;color:#C0392B;width:28px;text-align:right">${n}</div>
     </div>`).join('')}
   </div>
 </div>` : ''}
+
+<!-- ENGAGEMENT -->
+${sentSet.size > 0 ? `
+<div class="sec"><div class="sec-lbl">Vendor Engagement &amp; Outreach</div><div class="sec-line"></div></div>
+<div style="display:grid;grid-template-columns:repeat(4,1fr);gap:10px">
+  <div class="bcard" style="text-align:center"><div style="font-size:8px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:#1D4ED8;margin-bottom:5px">Contacts Reached</div><div style="font-size:26px;font-weight:800;color:#3872B8">${sentSet.size.toLocaleString()}</div></div>
+  <div class="bcard" style="text-align:center"><div style="font-size:8px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:#15803D;margin-bottom:5px">Opened</div><div style="font-size:26px;font-weight:800;color:#16A34A">${openSet.size.toLocaleString()}</div></div>
+  <div class="bcard" style="text-align:center"><div style="font-size:8px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:#15803D;margin-bottom:5px">Open Rate</div><div style="font-size:26px;font-weight:800;color:${engRate>=50?'#16A34A':engRate>=25?'#D97706':'#DC2626'}">${engRate}%</div></div>
+  <div class="bcard" style="text-align:center"><div style="font-size:8px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:${issueSet.size===0?'#15803D':'#B91C1C'};margin-bottom:5px">Delivery Issues</div><div style="font-size:26px;font-weight:800;color:${issueSet.size===0?'#16A34A':'#DC2626'}">${issueSet.size}</div></div>
+</div>` : ''}
+
+<!-- CLIENT BREAKDOWN -->
 <div class="sec"><div class="sec-lbl">Client-by-Client Breakdown</div><div class="sec-line"></div></div>
 <table>
-  <thead><tr><th style="width:34%">Client</th><th>Active</th><th>Compliant</th><th>Non-Compliant</th><th>End Rate</th><th>Change</th></tr></thead>
+  <thead><tr><th style="width:34%">Client</th><th>Active</th><th>Compliant</th><th>Non-Compliant</th><th>Rate</th><th>Period Change</th></tr></thead>
   <tbody>${clientRows}</tbody>
 </table>
+
+<!-- EXPIRED COIs -->
+${expiredEntities.length ? `
+<div class="sec"><div class="sec-lbl">Expired COIs \u2014 Coverage On File But Expired (${expiredEntities.length.toLocaleString()} vendors)</div><div class="sec-line"></div></div>
+<table>
+  <thead><tr><th style="width:38%">Vendor / Entity</th><th style="width:28%">Client Program</th><th>Contact Email</th></tr></thead>
+  <tbody>${expRows}</tbody>
+</table>
+${expiredEntities.length > 30 ? `<div style="font-size:10px;color:#8A94A8;padding:6px 0">\u2026 and ${expiredEntities.length - 30} more. See Excel export for full list.</div>` : ''}` : ''}
+
+<!-- NO COI ON FILE -->
+${noCOIEntities.length ? `
+<div class="sec"><div class="sec-lbl">No COI on File \u2014 No Certificate Ever Submitted (${noCOIEntities.length.toLocaleString()} vendors)</div><div class="sec-line"></div></div>
+<table>
+  <thead><tr><th style="width:38%">Vendor / Entity</th><th style="width:28%">Client Program</th><th>Contact Email</th></tr></thead>
+  <tbody>${noCOIRows}</tbody>
+</table>
+${noCOIEntities.length > 30 ? `<div style="font-size:10px;color:#8A94A8;padding:6px 0">\u2026 and ${noCOIEntities.length - 30} more. See Excel export for full list.</div>` : ''}` : ''}
+
 <div class="footer">
-  <div>&#x1F512; <strong>Confidential \u2014 HUB CertSecure Internal.</strong> HUB-Wide Annual Review \u00b7 ${year} \u00b7 Do not distribute outside HUB International.</div>
-  <div>HUB CertSecure \u00b7 ${year}</div>
+  <div>&#x1F512; <strong>Confidential \u2014 HUB CertSecure Internal.</strong> CertSecure Program Health Report &middot; ${fmtYM(fromYM)} \u2013 ${fmtYM(toYM)} &middot; Do not distribute outside HUB International.</div>
+  <div>HUB CertSecure &middot; ${stamp}</div>
 </div>
 
 <\/body><\/html>`;
 }
+
+function buildPHRExcel(data) {
+  if (typeof XLSX === 'undefined') { console.warn('[PHR] XLSX not loaded'); return; }
+  const { fromYM, toYM, monthlyTrend, totalActive, countCompliant, countNC, countExpired, countNoCOI, overallRate, rateChange, criteriaSorted, topNCReasons, sentSet, openSet, issueSet, engRate, clientStats, expiredEntities, noCOIEntities } = data;
+  const wb = XLSX.utils.book_new();
+
+  // Tab 1: Scorecard
+  const scoreRows = [
+    ['CertSecure Program Health Report'],
+    [`Period: ${fromYM} to ${toYM}`],
+    [''],
+    ['Metric', 'Value', '% of Active'],
+    ['Total Active Vendors', totalActive, '100%'],
+    ['Compliant', countCompliant, pct(countCompliant, totalActive)],
+    ['Non-Compliant', countNC, pct(countNC, totalActive)],
+    ['Expired COI', countExpired, pct(countExpired, totalActive)],
+    ['No COI on File', countNoCOI, pct(countNoCOI, totalActive)],
+    [''],
+    ['Overall Compliance Rate', overallRate + '%'],
+    ['Period Change', (rateChange >= 0 ? '+' : '') + rateChange + '%'],
+    ['Engagement Open Rate', engRate + '%'],
+    ['Contacts Reached', sentSet.size],
+    ['Delivery Issues', issueSet.size],
+  ];
+  XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(scoreRows), 'Scorecard');
+
+  // Tab 2: Monthly Trend
+  const trendRows = [['Month', 'Total Active', 'Compliant', 'Compliance Rate']];
+  monthlyTrend.forEach(d => trendRows.push([d.month, d.total, d.comp, d.rate + '%']));
+  XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(trendRows), 'Monthly Trend');
+
+  // Tab 3: Criteria Breakdown
+  const critRows = [['Coverage Type', 'Compliant', 'Non-Compliant', 'NC Count']];
+  criteriaSorted.forEach(c => critRows.push([c.name, c.compliant, c.nonCompliant, c.nonCompliant]));
+  XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(critRows), 'Criteria Breakdown');
+
+  // Tab 4: Top NC Reasons
+  const ncRows = [['Rank', 'Non-Compliance Reason', 'Count']];
+  topNCReasons.forEach(([r, n], i) => ncRows.push([i + 1, r, n]));
+  XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(ncRows), 'NC Reasons');
+
+  // Tab 5: Client Breakdown
+  const clientRows = [['Client', 'Platform', 'Active Vendors', 'Compliant', 'Non-Compliant', 'Compliance Rate', 'Period Change']];
+  clientStats.forEach(c => clientRows.push([c.name, c.platform || 'evident', c.total, c.comp, c.nc, c.rate + '%', c.improvement !== null ? (c.improvement >= 0 ? '+' : '') + c.improvement + '%' : 'N/A']));
+  XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(clientRows), 'Client Breakdown');
+
+  // Tab 6: Expired COIs
+  const expRows = [['Vendor / Entity', 'Client Program', 'Contact Email']];
+  expiredEntities.forEach(r => expRows.push([r[C.entity_name] || r['insured_name'] || '', r[C.client] || '', r[C.email] || r['primary_contact_email'] || '']));
+  XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(expRows), 'Expired COIs');
+
+  // Tab 7: No COI on File
+  const noCOIRows = [['Vendor / Entity', 'Client Program', 'Contact Email']];
+  noCOIEntities.forEach(r => noCOIRows.push([r[C.entity_name] || r['insured_name'] || '', r[C.client] || '', r[C.email] || r['primary_contact_email'] || '']));
+  XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(noCOIRows), 'No COI on File');
+
+  const dateStr = new Date().toISOString().split('T')[0];
+  XLSX.writeFile(wb, `CertSecure Program Health Report ${dateStr}.xlsx`);
+}
+
 </script>
 <script>
 let _progStep = 0;
@@ -7237,19 +7521,6 @@ const TLS = {
     contextObjects: [], contextRecords: [],
     requestRecords: [], views: [],
     tagDefs: [], docTypeDefs: [], customFieldDefs: [],
-    // per-record maps (keyed by record _id)
-    vendorContacts: {},    // primaryRecordId → []
-    vendorAttrs: {},       // primaryRecordId → []
-    vendorTags: {},        // primaryRecordId → []
-    contextAttrs: {},      // contextRecordId → []
-    requestAttrs: {},      // requestRecordId → []
-    requestCerts: {},      // requestRecordId → cert object
-    documentRequests: {},  // primaryRecordId → doc request object
-    partyComments: {},     // primaryRecordId → []
-    // workspace-level
-    complianceProfiles: [],
-    branding: [],
-    reports: [],
   },
   log: [],
   section: 'overview',
@@ -7322,99 +7593,32 @@ async function tlsConnect() {
   tlsStatus('Connecting…','info');
   try {
     TLS.data.workspace = await tlsApi('GET', '/workspace');
-    tlsStatus('Loading all DEMO Client data — Pass 1 (lists)…','info');
-
-    // ── Pass 1: all list/collection endpoints in parallel ───────
+    tlsStatus('Loading all DEMO Client data…','info');
     const results = await Promise.allSettled([
-      tlsPage('/primary-objects'),                       // 0  po
-      tlsPage('/primary-records'),                       // 1  pr
-      tlsPage('/context-objects'),                       // 2  co
-      tlsPage('/context-records'),                       // 3  cr
-      tlsPage('/request-records'),                       // 4  rr
-      tlsPage('/views'),                                 // 5  vi
-      tlsPage('/tags',               100, TLS_BASE_V1), // 6  td
-      tlsPage('/document-types',     100, TLS_BASE_V1), // 7  dt
-      tlsPage('/custom-fields',      100, TLS_BASE_V1), // 8  cf
-      tlsPage('/compliance-profiles',100, TLS_BASE_V1), // 9  cp
-      tlsPage('/branding',           100, TLS_BASE_V1), // 10 br
-      tlsPage('/reports',            100, TLS_BASE_V1), // 11 rp
+      tlsPage('/primary-objects'), tlsPage('/primary-records'),
+      tlsPage('/context-objects'), tlsPage('/context-records'),
+      tlsPage('/request-records'), tlsPage('/views'),
+      tlsPage('/tags', 100, TLS_BASE_V1),
+      tlsPage('/document-types', 100, TLS_BASE_V1),
+      tlsPage('/custom-fields', 100, TLS_BASE_V1),
     ]);
-    const [po,pr,co,cr,rr,vi,td,dt,cf,cp,br,rp] = results;
-    TLS.data.primaryObjects     = po.status==='fulfilled'?po.value:[];
-    TLS.data.primaryRecords     = pr.status==='fulfilled'?pr.value:[];
-    TLS.data.contextObjects     = co.status==='fulfilled'?co.value:[];
-    TLS.data.contextRecords     = cr.status==='fulfilled'?cr.value:[];
-    TLS.data.requestRecords     = rr.status==='fulfilled'?rr.value:[];
-    TLS.data.views              = vi.status==='fulfilled'?vi.value:[];
-    TLS.data.tagDefs            = td.status==='fulfilled'?td.value:[];
-    TLS.data.docTypeDefs        = dt.status==='fulfilled'?dt.value:[];
-    TLS.data.customFieldDefs    = cf.status==='fulfilled'?cf.value:[];
-    TLS.data.complianceProfiles = cp.status==='fulfilled'?cp.value:[];
-    TLS.data.branding           = br.status==='fulfilled'?br.value:[];
-    TLS.data.reports            = rp.status==='fulfilled'?rp.value:[];
-
-    tlsStatusBarRender(); tlsCountsUpdate();
-    tlsStatus(`Pass 1 complete — fetching per-record data for ${TLS.data.primaryRecords.length} vendors, ${TLS.data.contextRecords.length} projects, ${TLS.data.requestRecords.length} requests…`,'info');
-
-    // ── Pass 2: per-record fetches pooled ───────────────────────
-    async function pool(items, concurrency, fn) {
-      let i = 0;
-      async function worker() { while (i < items.length) { const idx = i++; await fn(items[idx]); } }
-      await Promise.all(Array.from({length: Math.min(concurrency, items.length)}, worker));
-    }
-
-    // vendors: contacts, attrs, tags, doc-request (v1), comments (v1)
-    await pool(TLS.data.primaryRecords, 6, async (v) => {
-      const id = v._id;
-      await Promise.allSettled([
-        tlsApi('GET', `/primary-records/${id}/contacts?limit=100`).then(r => {
-          TLS.data.vendorContacts[id] = r?.data || [];
-        }),
-        tlsApi('GET', `/primary-records/${id}/attributes?limit=100`).then(r => {
-          TLS.data.vendorAttrs[id] = r?.data || [];
-        }),
-        tlsApi('GET', `/primary-records/${id}/tags?limit=100`).then(r => {
-          TLS.data.vendorTags[id] = r?.data || [];
-        }),
-        tlsApi('GET', `/parties/${id}/document-request`, null, TLS_BASE_V1).then(r => {
-          if (r) TLS.data.documentRequests[id] = r;
-        }).catch(() => {}),
-        tlsPage(`/parties/${id}/comments`, 100, TLS_BASE_V1).then(r => {
-          TLS.data.partyComments[id] = r || [];
-        }).catch(() => {}),
-      ]);
-    });
-
-    // context records: attrs
-    await pool(TLS.data.contextRecords, 8, async (c) => {
-      const id = c._id;
-      const r = await tlsApi('GET', `/context-records/${id}/attributes?limit=100`).catch(() => null);
-      TLS.data.contextAttrs[id] = r?.data || [];
-    });
-
-    // request records: attrs + compliance certs
-    await pool(TLS.data.requestRecords, 8, async (req) => {
-      const id = req._id;
-      await Promise.allSettled([
-        tlsApi('GET', `/request-records/${id}/attributes?limit=100`).then(r => {
-          TLS.data.requestAttrs[id] = r?.data || [];
-        }),
-        tlsApi('GET', `/request-records/${id}/compliance-certificate`).then(r => {
-          if (r) TLS.data.requestCerts[id] = r;
-        }).catch(() => {}),
-      ]);
-    });
-
+    const [po,pr,co,cr,rr,vi,td,dt,cf] = results;
+    TLS.data.primaryObjects  = po.status==='fulfilled'?po.value:[];
+    TLS.data.primaryRecords  = pr.status==='fulfilled'?pr.value:[];
+    TLS.data.contextObjects  = co.status==='fulfilled'?co.value:[];
+    TLS.data.contextRecords  = cr.status==='fulfilled'?cr.value:[];
+    TLS.data.requestRecords  = rr.status==='fulfilled'?rr.value:[];
+    TLS.data.views           = vi.status==='fulfilled'?vi.value:[];
+    TLS.data.tagDefs         = td.status==='fulfilled'?td.value:[];
+    TLS.data.docTypeDefs     = dt.status==='fulfilled'?dt.value:[];
+    TLS.data.customFieldDefs = cf.status==='fulfilled'?cf.value:[];
+    tlsStatusBarRender();
     tlsCountsUpdate();
     btn.textContent = '↺ Reload';
     btn.disabled = false;
     document.getElementById('tls-refresh-btn').disabled = false;
     tlsShowSection('overview');
-    const totalContacts = Object.values(TLS.data.vendorContacts).reduce((s,a)=>s+a.length,0);
-    const totalCerts    = Object.keys(TLS.data.requestCerts).length;
-    const totalDocReqs  = Object.keys(TLS.data.documentRequests).length;
-    toast(`Connected — ${TLS.data.primaryRecords.length} vendors · ${TLS.data.requestRecords.length} requests · ${totalContacts} contacts · ${totalCerts} certs · ${TLS.data.complianceProfiles.length} profiles · ${totalDocReqs} doc requests`, 'success');
-    tlsStatus('','info');
+    toast(`Connected — ${TLS.data.primaryRecords.length} vendors, ${TLS.data.requestRecords.length} requests`, 'success');
   } catch(err) {
     btn.disabled = false; btn.textContent = 'Connect & Load';
     tlsStatus('❌ ' + (err?.data?.message || err?.message || 'Connection failed'), 'error');
@@ -7425,10 +7629,14 @@ async function tlsRefresh() {
   if (!TLS.token()) return;
   const btn = document.getElementById('tls-refresh-btn'); btn.disabled=true; btn.textContent='↺ Refreshing…';
   try {
-    // Re-run the full connect to refresh everything
-    btn.disabled=false; btn.textContent='↺ Refresh';
-    await tlsConnect();
-  } catch(e) { toast('Refresh failed','error'); btn.disabled=false; btn.textContent='↺ Refresh'; }
+    const [pr,cr,rr] = await Promise.allSettled([tlsPage('/primary-records'),tlsPage('/context-records'),tlsPage('/request-records')]);
+    if(pr.status==='fulfilled') TLS.data.primaryRecords=pr.value;
+    if(cr.status==='fulfilled') TLS.data.contextRecords=cr.value;
+    if(rr.status==='fulfilled') TLS.data.requestRecords=rr.value;
+    tlsStatusBarRender(); tlsCountsUpdate(); tlsShowSection(TLS.section);
+    toast('Data refreshed','success');
+  } catch(e) { toast('Refresh failed','error'); }
+  btn.disabled=false; btn.textContent='↺ Refresh';
 }
 
 // ── Status helpers ───────────────────────────────────────────────────
@@ -7448,25 +7656,7 @@ function tlsStatusBarRender() {
   <span style="color:#D1DCE8">·</span><span style="color:#5A6B7B">${d.requestRecords.length} requests</span>`;
 }
 function tlsCountsUpdate() {
-  const d = TLS.data;
-  const totalContacts = Object.values(d.vendorContacts).reduce((s,a)=>s+a.length,0);
-  const totalCerts    = Object.keys(d.requestCerts).length;
-  const m={
-    'tls-n-po': d.primaryObjects.length,
-    'tls-n-pr': d.primaryRecords.length,
-    'tls-n-co': d.contextObjects.length,
-    'tls-n-cr': d.contextRecords.length,
-    'tls-n-rr': d.requestRecords.length,
-    'tls-n-v':  d.views.length,
-    'tls-n-td': d.tagDefs.length,
-    'tls-n-dt': d.docTypeDefs.length,
-    'tls-n-cf': d.customFieldDefs.length,
-    'tls-n-cp': d.complianceProfiles.length,
-    'tls-n-br': d.branding.length,
-    'tls-n-rp': d.reports.length,
-    'tls-n-ct': totalContacts,
-    'tls-n-ce': totalCerts,
-  };
+  const m={'tls-n-po':TLS.data.primaryObjects.length,'tls-n-pr':TLS.data.primaryRecords.length,'tls-n-co':TLS.data.contextObjects.length,'tls-n-cr':TLS.data.contextRecords.length,'tls-n-rr':TLS.data.requestRecords.length,'tls-n-v':TLS.data.views.length,'tls-n-td':TLS.data.tagDefs.length,'tls-n-dt':TLS.data.docTypeDefs.length,'tls-n-cf':TLS.data.customFieldDefs.length};
   Object.entries(m).forEach(([id,n])=>{const el=document.getElementById(id);if(el)el.textContent=n;});
 }
 function tlsBody(html) { const el=document.getElementById('tls-panel-body');if(el)el.innerHTML=html; }
@@ -7502,11 +7692,6 @@ function tlsShowSection(name) {
     'request-records':['Compliance Requests',`${TLS.data.requestRecords.length} records · GET /request-records`],
     views:['Views',`${TLS.data.views.length} views · GET /views`],
     'ref-data':['Reference Data','Tag defs · Document types · Custom fields · v1 endpoints'],
-    'compliance-profiles':['Compliance Profiles',`${TLS.data.complianceProfiles.length} profiles · GET /compliance-profiles`],
-    'compliance-certs':['Compliance Certificates',`${Object.keys(TLS.data.requestCerts).length} certs · GET /request-records/{id}/compliance-certificate`],
-    contacts:['Contacts',`All party contacts · GET /primary-records/{id}/contacts`],
-    branding:['Branding',`${TLS.data.branding.length} configs · GET /branding`],
-    reports:['Reports',`${TLS.data.reports.length} reports · GET /reports`],
     'create-vendor':['Add Party','POST /primary-records'],
     'create-project':['Add Project','POST /context-records'],
     'compliance-tools':['Compliance Tools','Assign profiles · generate certs · create requests'],
@@ -7516,7 +7701,7 @@ function tlsShowSection(name) {
   const te=document.getElementById('tls-panel-title'); if(te)te.textContent=t;
   const se=document.getElementById('tls-panel-sub'); if(se)se.textContent=s;
   // Show/hide guided/raw toggle
-  const viewableSections = ['overview','primary-objects','primary-records','context-objects','context-records','request-records','views','ref-data','compliance-profiles','compliance-certs','contacts','branding','reports'];
+  const viewableSections = ['overview','primary-objects','primary-records','context-objects','context-records','request-records','views','ref-data'];
   const vt=document.getElementById('tls-view-toggle');
   if(vt) vt.style.display = (viewableSections.includes(name)&&TLS.data.workspace)?'flex':'none';
   // Dispatch
@@ -7530,11 +7715,6 @@ function tlsShowSection(name) {
     'request-records':()=>tlsRenderRequestRecords(v),
     views:()=>tlsRenderViews(v),
     'ref-data':()=>tlsRenderRefData(v),
-    'compliance-profiles':()=>tlsRenderComplianceProfiles(v),
-    'compliance-certs':()=>tlsRenderComplianceCerts(v),
-    contacts:()=>tlsRenderAllContacts(v),
-    branding:()=>tlsRenderBranding(v),
-    reports:()=>tlsRenderReports(v),
     'create-vendor':()=>tlsRenderCreateVendor(),
     'create-project':()=>tlsRenderCreateProject(),
     'compliance-tools':()=>tlsRenderComplianceTools(),
@@ -7552,43 +7732,24 @@ function tlsSetView(v) {
 
 // ── OVERVIEW ────────────────────────────────────────────────────────
 function tlsRenderOverview(view) {
-  const d = TLS.data;
-  if (view==='raw') { tlsBody(tlsRaw({workspace:d.workspace,counts:{vendors:d.primaryRecords.length,projects:d.contextRecords.length,requests:d.requestRecords.length,views:d.views.length,profiles:d.complianceProfiles.length,certs:Object.keys(d.requestCerts).length}})); return; }
-  const nc=d.requestRecords.filter(r=>r.complianceStatus==='non_compliant'), comp=d.requestRecords.filter(r=>r.complianceStatus==='compliant'), tot=d.requestRecords.length, pct=tot?Math.round(comp.length/tot*100):0;
-  const totalContacts = Object.values(d.vendorContacts).reduce((s,a)=>s+a.length,0);
-  const totalCerts    = Object.keys(d.requestCerts).length;
+  if (view==='raw') { tlsBody(tlsRaw({workspace:TLS.data.workspace,counts:{vendors:TLS.data.primaryRecords.length,projects:TLS.data.contextRecords.length,requests:TLS.data.requestRecords.length,views:TLS.data.views.length}})); return; }
+  const d=TLS.data, nc=d.requestRecords.filter(r=>r.complianceStatus==='non_compliant'), comp=d.requestRecords.filter(r=>r.complianceStatus==='compliant'), tot=d.requestRecords.length, pct=tot?Math.round(comp.length/tot*100):0;
   tlsBody(`
-    <div class="tls-kpi-grid" style="grid-template-columns:repeat(6,1fr)">
+    <div class="tls-kpi-grid">
       <div class="tls-kpi tls-kpi-blue" onclick="tlsShowSection('primary-records')" style="cursor:pointer"><div class="tls-kpi-val">${d.primaryRecords.length}</div><div class="tls-kpi-lbl">Parties</div></div>
       <div class="tls-kpi tls-kpi-teal" onclick="tlsShowSection('context-records')" style="cursor:pointer"><div class="tls-kpi-val">${d.contextRecords.length}</div><div class="tls-kpi-lbl">Projects</div></div>
       <div class="tls-kpi tls-kpi-green"><div class="tls-kpi-val" style="color:#3EBD3E">${comp.length}</div><div class="tls-kpi-lbl" style="color:#3EBD3E">${pct}% compliant</div></div>
       <div class="tls-kpi ${nc.length>0?'tls-kpi-red':'tls-kpi-green'}"><div class="tls-kpi-val" style="color:${nc.length>0?'#AC1534':'#3EBD3E'}">${nc.length}</div><div class="tls-kpi-lbl" style="color:${nc.length>0?'#AC1534':'#3EBD3E'}">Non-Compliant</div></div>
-      <div class="tls-kpi tls-kpi-blue" onclick="tlsShowSection('compliance-profiles')" style="cursor:pointer"><div class="tls-kpi-val">${d.complianceProfiles.length}</div><div class="tls-kpi-lbl">Profiles</div></div>
-      <div class="tls-kpi tls-kpi-teal" onclick="tlsShowSection('compliance-certs')" style="cursor:pointer"><div class="tls-kpi-val">${totalCerts}</div><div class="tls-kpi-lbl">Certificates</div></div>
     </div>
-    <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:4px">
-      <div>
-        <div class="tls-sec-hdr">Party Types <span class="tls-cnt">${d.primaryObjects.length}</span></div>
-        <table class="tls-table"><thead><tr><th>Name</th><th>Plural</th><th>Slug</th><th>ID</th><th>Records</th></tr></thead><tbody>
-        ${d.primaryObjects.map(o=>`<tr><td><strong>${o.name}</strong></td><td>${o.pluralName}</td><td class="mono">${o.slug||'—'}</td><td class="mono">${tlsCopy(o._id)}<small>${o._id?.slice(-8)}</small></td><td>${tlsTag('blue',d.primaryRecords.filter(r=>r.primaryObjectId===o._id).length)}</td></tr>`).join('')||'<tr><td colspan="5" class="muted">None</td></tr>'}
-        </tbody></table>
-      </div>
-      <div>
-        <div class="tls-sec-hdr">Project Types <span class="tls-cnt">${d.contextObjects.length}</span></div>
-        <table class="tls-table"><thead><tr><th>Name</th><th>Plural</th><th>Slug</th><th>ID</th><th>Projects</th></tr></thead><tbody>
-        ${d.contextObjects.map(o=>`<tr><td><strong>${o.name}</strong></td><td>${o.pluralName}</td><td class="mono">${o.slug||'—'}</td><td class="mono">${tlsCopy(o._id)}<small>${o._id?.slice(-8)}</small></td><td>${tlsTag('blue',d.contextRecords.filter(r=>r.contextObjectId===o._id).length)}</td></tr>`).join('')||'<tr><td colspan="5" class="muted">None</td></tr>'}
-        </tbody></table>
-      </div>
-    </div>
-    <div class="tls-sec-hdr mt12">Compliance Profiles <span class="tls-cnt">${d.complianceProfiles.length}</span></div>
-    <table class="tls-table"><thead><tr><th>Name</th><th>Default</th><th>Requests Using</th><th>ID</th></tr></thead><tbody>
-    ${d.complianceProfiles.map(p=>{
-      const id=p.id||p._id;
-      const used=d.requestRecords.filter(r=>r.complianceProfile?.id===id||r.complianceProfile?.name===p.name).length;
-      return `<tr><td><strong>${p.name||'—'}</strong></td><td>${p.isDefault?'✅':'—'}</td><td>${tlsTag('blue',used)}</td><td class="mono">${tlsCopy(id||'')}<small>${(id||'').slice(-8)}</small></td></tr>`;
-    }).join('')||'<tr><td colspan="4" class="muted">None</td></tr>'}
+    <div class="tls-sec-hdr">Party Types <span class="tls-cnt">${d.primaryObjects.length}</span></div>
+    <table class="tls-table"><thead><tr><th>Name</th><th>Plural</th><th>Slug</th><th>ID</th><th>Records</th></tr></thead><tbody>
+    ${d.primaryObjects.map(o=>`<tr><td><strong>${o.name}</strong></td><td>${o.pluralName}</td><td class="mono">${o.slug||'—'}</td><td class="mono">${tlsCopy(o._id)}<small>${o._id?.slice(-8)}</small></td><td>${tlsTag('blue',d.primaryRecords.filter(r=>r.primaryObjectId===o._id).length)}</td></tr>`).join('')||'<tr><td colspan="5" class="muted">None</td></tr>'}
     </tbody></table>
-    <div class="tls-hint">GET /workspace · GET /primary-objects · GET /context-objects · GET /compliance-profiles · ${totalContacts} contacts loaded · ${totalCerts} certs loaded</div>`);
+    <div class="tls-sec-hdr">Project Types <span class="tls-cnt">${d.contextObjects.length}</span></div>
+    <table class="tls-table"><thead><tr><th>Name</th><th>Plural</th><th>Slug</th><th>ID</th><th>Projects</th></tr></thead><tbody>
+    ${d.contextObjects.map(o=>`<tr><td><strong>${o.name}</strong></td><td>${o.pluralName}</td><td class="mono">${o.slug||'—'}</td><td class="mono">${tlsCopy(o._id)}<small>${o._id?.slice(-8)}</small></td><td>${tlsTag('blue',d.contextRecords.filter(r=>r.contextObjectId===o._id).length)}</td></tr>`).join('')||'<tr><td colspan="5" class="muted">None</td></tr>'}
+    </tbody></table>
+    <div class="tls-hint">GET /workspace · GET /primary-objects · GET /context-objects</div>`);
 }
 
 // ── PRIMARY RECORDS ──────────────────────────────────────────────────
@@ -7619,15 +7780,10 @@ async function tlsVendorDetail(id) {
   const r=TLS.data.primaryRecords.find(x=>x._id===id); if(!r) return;
   document.querySelectorAll('.tls-card').forEach(c=>c.classList.remove('tls-selected'));
   document.getElementById('tls-vc-'+id)?.classList.add('tls-selected');
-  // Use pre-loaded data first, fall back to live fetch if not available
-  let contacts = TLS.data.vendorContacts[id] || null;
-  let tags      = TLS.data.vendorTags[id]     || null;
-  let attrs     = TLS.data.vendorAttrs[id]    || null;
-  const docReq  = TLS.data.documentRequests[id] || null;
-  const comments= TLS.data.partyComments[id]  || [];
-  if (!contacts) { try { contacts=(await tlsApi('GET',`/primary-records/${id}/contacts?limit=100`)).data||[]; } catch(_){ contacts=[]; } }
-  if (!tags)     { try { tags=(await tlsApi('GET',`/primary-records/${id}/tags?limit=100`)).data||[];     } catch(_){ tags=[]; } }
-  if (!attrs)    { try { attrs=(await tlsApi('GET',`/primary-records/${id}/attributes?limit=100`)).data||[]; } catch(_){ attrs=[]; } }
+  let contacts=[],tags=[],attrs=[];
+  try { contacts=(await tlsApi('GET',`/primary-records/${id}/contacts?limit=100`)).data||[]; } catch(_){}
+  try { tags=(await tlsApi('GET',`/primary-records/${id}/tags?limit=100`)).data||[]; } catch(_){}
+  try { attrs=(await tlsApi('GET',`/primary-records/${id}/attributes?limit=100`)).data||[]; } catch(_){}
   const reqs=TLS.data.requestRecords.filter(rr=>rr.primaryRecordId===id);
   const pObj=TLS.data.primaryObjects.find(o=>o._id===r.primaryObjectId);
   tlsDrawer(r.name||'Party',[
@@ -7890,113 +8046,6 @@ function tlsRenderComplianceTools(){
     <div class="form-grp"><label class="form-lbl">Name</label><input type="text" class="tls-inp" id="tls-ct-rname"></div>
     <button class="btn btn-primary" style="font-size:11px;padding:5px 12px" onclick="tlsCreateReqTools()">Create</button></div></div>
   </div><div class="tls-hint mt8">All actions target your DEMO Client workspace only.</div>`);
-}
-
-// ── COMPLIANCE PROFILES ──────────────────────────────────────────────
-function tlsRenderComplianceProfiles(view) {
-  const d = TLS.data;
-  if (!d.complianceProfiles.length) { tlsBody(tlsEmpty('No compliance profiles','None returned from GET /compliance-profiles')); return; }
-  if (view==='raw') { tlsBody(tlsRaw(d.complianceProfiles)); return; }
-  tlsBody(`
-    <table class="tls-table"><thead><tr><th>Name</th><th>Description</th><th>Default</th><th>Status</th><th>Created</th><th>ID</th></tr></thead><tbody>
-    ${d.complianceProfiles.map(p=>{
-      const id=p.id||p._id;
-      const usedBy=d.requestRecords.filter(r=>r.complianceProfile?.id===id||r.complianceProfile?.name===p.name).length;
-      return `<tr><td><strong>${p.name||'—'}</strong>${usedBy?` <span style="font-size:9px;background:#EBF4FF;color:#0678D5;padding:1px 6px;border-radius:8px;margin-left:4px">${usedBy} requests</span>`:''}
-      </td><td>${p.description||'—'}</td><td>${p.isDefault?'✅':'—'}</td><td>${p.status||'—'}</td><td>${p.createdAt?new Date(p.createdAt).toLocaleDateString():'—'}</td><td class="mono">${tlsCopy(id||'')}<small>${(id||'').slice(-8)}</small></td></tr>`;
-    }).join('')}
-    </tbody></table>
-    <div class="tls-hint">GET /compliance-profiles (v1) · ${d.complianceProfiles.length} profiles loaded</div>`);
-}
-
-// ── COMPLIANCE CERTIFICATES ───────────────────────────────────────────
-function tlsRenderComplianceCerts(view) {
-  const d = TLS.data;
-  const certs = Object.entries(d.requestCerts);
-  if (!certs.length) { tlsBody(tlsEmpty('No compliance certificates','None found across all request records')); return; }
-  if (view==='raw') { tlsBody(tlsRaw(d.requestCerts)); return; }
-  tlsBody(`
-    <table class="tls-table"><thead><tr><th>Vendor</th><th>Project</th><th>Status</th><th>Expiration</th><th>URL</th><th>Request ID</th></tr></thead><tbody>
-    ${certs.map(([rid, cert])=>{
-      const req = d.requestRecords.find(r=>r._id===rid)||{};
-      const vendor = d.primaryRecords.find(p=>p._id===req.primaryRecordId);
-      const project = d.contextRecords.find(c=>c._id===req.contextRecordId);
-      const sc = cert.status==='processed'?'#16A34A':cert.status==='processing'?'#D97706':'#5A6B7B';
-      return `<tr>
-        <td><strong>${vendor?.name||req.primaryRecordId||'—'}</strong></td>
-        <td>${project?.name||'Global'}</td>
-        <td><span style="color:${sc};font-weight:600">${cert.status||'—'}</span></td>
-        <td>${cert.expirationDate?new Date(cert.expirationDate).toLocaleDateString():'—'}</td>
-        <td>${cert.url?`<a href="${cert.url}" target="_blank" style="color:#0678D5;font-size:11px">View PDF ↗</a>`:'—'}</td>
-        <td class="mono">${tlsCopy(rid)}<small>${rid.slice(-8)}</small></td>
-      </tr>`;
-    }).join('')}
-    </tbody></table>
-    <div class="tls-hint">GET /request-records/{id}/compliance-certificate · ${certs.length} certs loaded</div>`);
-}
-
-// ── ALL CONTACTS ──────────────────────────────────────────────────────
-function tlsRenderAllContacts(view) {
-  const d = TLS.data;
-  const allContacts = [];
-  for (const [vid, contacts] of Object.entries(d.vendorContacts)) {
-    const vendor = d.primaryRecords.find(p=>p._id===vid);
-    contacts.forEach(c => allContacts.push({...c, _vendorId: vid, _vendorName: vendor?.name||vid}));
-  }
-  if (!allContacts.length) { tlsBody(tlsEmpty('No contacts loaded','Connect first to load per-vendor contacts')); return; }
-  if (view==='raw') { tlsBody(tlsRaw(d.vendorContacts)); return; }
-  tlsBody(`
-    <div style="margin-bottom:10px"><input type="text" class="tls-search" placeholder="Search contacts…"
-      oninput="document.querySelectorAll('.tls-contact-row').forEach(r=>r.style.display=this.value&&!r.dataset.search.includes(this.value.toLowerCase())?'none':'')">
-    </div>
-    <table class="tls-table"><thead><tr><th>Email</th><th>Name</th><th>Vendor</th><th>Primary</th><th>Default Recipient</th></tr></thead><tbody>
-    ${allContacts.map(c=>`<tr class="tls-contact-row" data-search="${(c.email||'').toLowerCase()} ${(c._vendorName||'').toLowerCase()}">
-      <td>${c.email||'—'}</td>
-      <td>${c.contactPersonName||c.name||'—'}</td>
-      <td><a href="#" onclick="tlsVendorDetail('${c._vendorId}');return false" style="color:#0678D5">${c._vendorName}</a></td>
-      <td>${c.primary?'✅':'—'}</td>
-      <td>${c.defaultRequestRecipient?'✅':'—'}</td>
-    </tr>`).join('')}
-    </tbody></table>
-    <div class="tls-hint">GET /primary-records/{id}/contacts · ${allContacts.length} contacts across ${Object.keys(d.vendorContacts).length} vendors</div>`);
-}
-
-// ── BRANDING ──────────────────────────────────────────────────────────
-function tlsRenderBranding(view) {
-  const d = TLS.data;
-  if (!d.branding.length) { tlsBody(tlsEmpty('No branding configs','None returned from GET /branding (v1)')); return; }
-  if (view==='raw') { tlsBody(tlsRaw(d.branding)); return; }
-  tlsBody(`
-    <div class="tls-card-grid">
-    ${d.branding.map(b=>{
-      const id=b.id||b._id;
-      return `<div class="tls-card" style="cursor:default">
-        <div class="tls-card-row">
-          <div class="tls-avatar" style="background:${b.primaryColor||'#EBF4FF'};color:white;font-size:18px">🎨</div>
-          <div><div class="tls-card-name">${b.name||'Unnamed'}</div><div class="tls-card-type">${b.isDefault?'Default config':'Custom'}</div></div>
-        </div>
-        ${b.primaryColor?`<div style="display:flex;align-items:center;gap:8px;margin-top:8px"><div style="width:20px;height:20px;border-radius:4px;background:${b.primaryColor};border:1px solid #D1DCE8"></div><span style="font-family:monospace;font-size:11px">${b.primaryColor}</span></div>`:''}
-        ${b.logoUrl?`<img src="${b.logoUrl}" style="max-height:32px;max-width:120px;margin-top:8px;object-fit:contain">`:''}
-        <div class="tls-card-id">${id}</div>
-      </div>`;
-    }).join('')}
-    </div>
-    <div class="tls-hint">GET /branding (v1) · ${d.branding.length} config${d.branding.length!==1?'s':''} loaded</div>`);
-}
-
-// ── REPORTS ───────────────────────────────────────────────────────────
-function tlsRenderReports(view) {
-  const d = TLS.data;
-  if (!d.reports.length) { tlsBody(tlsEmpty('No reports','None returned from GET /reports (v1)')); return; }
-  if (view==='raw') { tlsBody(tlsRaw(d.reports)); return; }
-  tlsBody(`
-    <table class="tls-table"><thead><tr><th>Name</th><th>Type</th><th>Status</th><th>Created</th><th>ID</th></tr></thead><tbody>
-    ${d.reports.map(r=>{
-      const id=r.id||r._id;
-      return `<tr><td><strong>${r.name||'—'}</strong></td><td>${r.type||'—'}</td><td>${r.status||'—'}</td><td>${r.createdAt?new Date(r.createdAt).toLocaleDateString():'—'}</td><td class="mono">${tlsCopy(id||'')}<small>${(id||'').slice(-8)}</small></td></tr>`;
-    }).join('')}
-    </tbody></table>
-    <div class="tls-hint">GET /reports (v1) · ${d.reports.length} report${d.reports.length!==1?'s':''} loaded</div>`);
 }
 
 // ── FULL API EXPLORER ────────────────────────────────────────────────
@@ -8522,11 +8571,6 @@ function tlsBuildShell() {
       <button class="tls-nav-btn" id="tls-nb-request-records" onclick="tlsShowSection('request-records')">✅ Requests <span class="tls-nav-badge" id="tls-n-rr">—</span></button>
       <button class="tls-nav-btn" id="tls-nb-views" onclick="tlsShowSection('views')">👁️ Views <span class="tls-nav-badge" id="tls-n-v">—</span></button>
       <button class="tls-nav-btn" id="tls-nb-ref-data" onclick="tlsShowSection('ref-data')">📚 Reference Data <span class="tls-nav-badge" style="display:inline-flex;gap:2px"><span id="tls-n-td">—</span></span></button>
-      <button class="tls-nav-btn" id="tls-nb-compliance-profiles" onclick="tlsShowSection('compliance-profiles')">🛡️ Compliance Profiles <span class="tls-nav-badge" id="tls-n-cp">—</span></button>
-      <button class="tls-nav-btn" id="tls-nb-compliance-certs" onclick="tlsShowSection('compliance-certs')">📄 Certificates <span class="tls-nav-badge" id="tls-n-ce">—</span></button>
-      <button class="tls-nav-btn" id="tls-nb-contacts" onclick="tlsShowSection('contacts')">👤 Contacts <span class="tls-nav-badge" id="tls-n-ct">—</span></button>
-      <button class="tls-nav-btn" id="tls-nb-branding" onclick="tlsShowSection('branding')">🎨 Branding <span class="tls-nav-badge" id="tls-n-br">—</span></button>
-      <button class="tls-nav-btn" id="tls-nb-reports" onclick="tlsShowSection('reports')">📊 Reports <span class="tls-nav-badge" id="tls-n-rp">—</span></button>
     </div>
     <div class="tls-nav-grp"><div class="tls-nav-hdr">Actions</div>
       <button class="tls-nav-btn" onclick="tlsShowSection('create-vendor')">➕ Add Party</button>
