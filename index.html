@@ -7726,41 +7726,15 @@ function tlsRenderComplianceProfiles(view) {
   const d=TLS.data;
   if (view==='raw') { tlsBody(tlsRaw(d.complianceProfiles)); return; }
   tlsBody(`
-    <div style="display:flex;gap:8px;margin-bottom:12px;align-items:center">
-      <div style="flex:1;font-size:13px;color:#5A6B7B">${d.complianceProfiles.length} profile${d.complianceProfiles.length!==1?'s':''} in workspace</div>
-      <button class="btn btn-primary" style="font-size:12px;padding:7px 14px" onclick="tlsShowCreateProfile()">+ Create Profile</button>
+    <div style="margin-bottom:12px;padding:10px 12px;background:#FEF9EC;border:1px solid #F3B921;border-radius:6px;font-size:12px;color:#78350F">
+      ⚠️ Compliance profiles cannot be created via API (v1 or v2). Create them in the TrustLayer UI under Settings → Compliance Profiles, then they will appear here.
     </div>
-    ${d.complianceProfiles.length?`<table class="tls-table"><thead><tr><th>Name</th><th>ID</th><th>Active</th></tr></thead><tbody>
-    ${d.complianceProfiles.map(p=>`<tr><td><strong>${p.name||'—'}</strong></td><td class="mono">${tlsCopy(p.id||p._id||'')}<small>${(p.id||p._id||'').slice(-12)}</small></td><td>${p.active!==false?tlsTag('green','active'):tlsTag('grey','inactive')}</td></tr>`).join('')}
+    ${d.complianceProfiles.length?`<table class="tls-table"><thead><tr><th>Name</th><th>ID</th><th>Context</th></tr></thead><tbody>
+    ${d.complianceProfiles.map(p=>`<tr><td><strong>${p.name||'—'}</strong></td><td class="mono">${tlsCopy(p.id||p._id||'')}<small>${(p.id||p._id||'').slice(-12)}</small></td><td>${p.context||'—'}</td></tr>`).join('')}
     </tbody></table>`:'<div class="muted">No compliance profiles found.</div>'}
-    <div class="tls-hint">v1: GET /compliance-profiles · POST /compliance-profiles</div>`);
+    <div class="tls-hint">v1: GET /compliance-profiles · GET /compliance-profiles/{id}</div>`);
 }
-function tlsShowCreateProfile(){
-  tlsBody(`<div style="max-width:460px">
-    <div style="font-size:15px;font-weight:600;color:#263746;margin-bottom:16px">Create Compliance Profile</div>
-    <div class="form-grp mb6"><label class="form-lbl">Name <span style="color:#AC1534">*</span></label><input type="text" class="tls-inp" id="tls-np-name" placeholder="e.g. Standard Construction"></div>
-    <div class="form-grp mb6"><label class="form-lbl">Description</label><textarea class="tls-inp" id="tls-np-desc" rows="3" style="resize:vertical" placeholder="Optional description…"></textarea></div>
-    <div style="display:flex;gap:8px;margin-top:4px">
-      <button class="btn btn-primary" onclick="tlsCreateComplianceProfile()">Create Profile</button>
-      <button class="btn btn-secondary" onclick="tlsShowSection('compliance-profiles')">Cancel</button>
-    </div>
-    <div class="tls-hint">POST /compliance-profiles (v1)</div>
-  </div>`);
-}
-async function tlsCreateComplianceProfile(){
-  const name=document.getElementById('tls-np-name')?.value?.trim();
-  const desc=document.getElementById('tls-np-desc')?.value?.trim();
-  if(!name){toast('Name is required','error');return;}
-  const body={complianceProfile:{name}};
-  if(desc)body.complianceProfile.description=desc;
-  try{
-    const res=await tlsApi('POST','/compliance-profiles',body,TLS_BASE_V1);
-    toast('Profile created!','success');
-    const newProfile=res.complianceProfile||res;
-    TLS.data.complianceProfiles.push(newProfile);
-    tlsShowSection('compliance-profiles');
-  }catch(e){toast(e?.data?.message||'Failed','error');}
-}
+
 async function tlsCreateTagDef(){
   const name=prompt('Tag name:');
   if(!name)return;
@@ -8246,7 +8220,18 @@ async function tlsArchiveRecord(ep,id,name,currentStatus){
   }catch(e){toast(e?.data?.message||'Failed','error');}
 }
 async function tlsRemoveTag(vid,tid){if(!confirm('Remove tag?'))return;try{await tlsApi('DELETE',`/primary-records/${vid}/tags/${tid}`);toast('Removed','success');tlsVendorDetail(vid);}catch(e){toast(e?.data?.message||'Failed','error');}}
-async function tlsAddContact(vid){const e=prompt('Contact email address:');if(!e)return;try{await tlsApi('POST',`/primary-records/${vid}/contacts`,{id:e,primary:false});toast('Contact assigned','success');tlsVendorDetail(vid);}catch(e){toast(e?.data?.message||'Failed','error');}}
+async function tlsAddContact(vid){
+  const email=prompt('Contact email address:');
+  if(!email)return;
+  const name=prompt('Contact name (required):');
+  if(!name)return;
+  const isPrimary=confirm('Set as primary contact?');
+  try{
+    await tlsApi('POST',`/parties/${vid}/contacts`,{contact:{name,email,primary:isPrimary,defaultRequestRecipient:false}},TLS_BASE_V1);
+    toast('Contact added','success');
+    tlsVendorDetail(vid);
+  }catch(e){toast(e?.data?.message||'Failed','error');}
+}
 async function tlsAddTag(vid){const t=prompt('Tag ID (from Reference Data tab):');if(!t)return;const exp=prompt('Expiry date? (YYYY-MM-DD, or leave blank)');const b={id:t};if(exp)b.expiresAt=exp+'T00:00:00Z';try{await tlsApi('POST',`/primary-records/${vid}/tags`,b);toast('Tag assigned','success');tlsVendorDetail(vid);}catch(e){toast(e?.data?.message||'Failed','error');}}
 async function tlsSetAttr(ep,id){
   const fidSuffix = ep==='primary-records'?'tls-va-fid':ep==='context-records'?'tls-ca-fid':'tls-ra-fid';
