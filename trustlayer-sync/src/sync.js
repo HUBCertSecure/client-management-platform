@@ -31,6 +31,12 @@
 //   GET /tags
 //   GET /document-types
 //   GET /documents?filter[party]={id}
+//   GET /compliance-profiles                   (all clients)
+//   GET /branding                              (all clients)
+//   GET /reports                               (all clients)
+//   GET /parties/{id}/document-request         (DEMO only — outreach/engagement)
+//   GET /parties/{id}/comments                 (DEMO only)
+//   GET /parties?include=complianceProfile      (DEMO only — waiver data)
 //
 // Output CSVs written to /data/:
 //   workspace.csv
@@ -45,6 +51,7 @@
 //   primary_objects.csv
 //   request_records.csv
 //   request_record_attributes.csv
+//   compliance_certificates.csv
 //   coverage_subjects.csv
 //   requirements.csv
 //   documents.csv
@@ -55,6 +62,12 @@
 //   custom_field_definitions.csv
 //   tag_definitions.csv
 //   document_type_definitions.csv
+//   compliance_profiles.csv
+//   branding.csv
+//   reports.csv
+//   document_requests.csv        (DEMO only)
+//   waivers.csv                  (DEMO only)
+//   party_comments.csv           (DEMO only)
 // ============================================================
 
 const https = require("https");
@@ -73,6 +86,9 @@ const BASE_V2  = "https://api.trustlayer.io/v2";
 const BASE_V1  = "https://api.trustlayer.io/v1";
 const DATA_DIR = path.join(__dirname, "..", "..", "data", "trustlayer");
 const TODAY    = new Date().toISOString().split("T")[0];
+
+// DEMO-only endpoints are scoped to this client name
+const DEMO_CLIENT_NAME = "DEMO Client";
 
 // ------------------------------------------------------------
 // HTTP HELPERS
@@ -201,6 +217,14 @@ async function main() {
     custom_field_defs:       [],
     tag_defs:                [],
     doc_type_defs:           [],
+    // ── DEMO-only exhaustive pull ──────────────────────────────
+    compliance_profiles:     [],
+    compliance_certificates: [],
+    document_requests:       [],
+    waivers:                 [],
+    party_comments:          [],
+    branding:                [],
+    reports:                 [],
     errors:                  [],
   };
 
@@ -769,6 +793,180 @@ async function main() {
       }
     }
 
+    // ── COMPLIANCE PROFILES (v1) ───────────────────────────────
+    try {
+      const profiles = await fetchAllV1(client.token, "/compliance-profiles");
+      for (const p of profiles) {
+        const id = p.id || p._id;
+        rows.compliance_profiles.push({
+          client:      client.name,
+          id:          id || "",
+          name:        p.name || "",
+          description: p.description || "",
+          status:      p.status || "",
+          is_default:  p.isDefault ?? "",
+          created_at:  dt(p.createdAt),
+          updated_at:  dt(p.updatedAt),
+          sync_date:   TODAY,
+        });
+      }
+      console.log(`  Compliance profiles: ${profiles.length}`);
+    } catch(e) { err("compliance_profiles", {}, e); }
+
+    // ── COMPLIANCE CERTIFICATES — dedicated CSV ────────────────
+    // certMap is already populated above; emit a standalone CSV row per cert
+    for (const req of requestRecords) {
+      const rid  = req._id || req.id || "";
+      const cert = certMap[rid];
+      if (!cert) continue;
+      rows.compliance_certificates.push({
+        client:           client.name,
+        request_id:       rid,
+        request_name:     req.name || "",
+        vendor_id:        req.primaryRecordId || "",
+        vendor_name:      vendorMap[req.primaryRecordId] || "",
+        context_id:       req.contextRecordId || "",
+        context_name:     contextMap[req.contextRecordId] || "",
+        cert_id:          cert._id || cert.id || "",
+        status:           cert.status || "",
+        effective_date:   dt(cert.effectiveDate),
+        expiration_date:  dt(cert.expirationDate),
+        issue_date:       dt(cert.issueDate),
+        reviewed_at:      dt(cert.reviewedAt),
+        url:              cert.url || "",
+        processing:       cert.processing ?? "",
+        flagged:          !!(cert.flag?.addedOn),
+        flag_level:       cert.flag?.level || "",
+        flag_notes:       cert.flag?.notes || "",
+        applies_to_all:   cert.appliesToAllProjects ?? "",
+        sync_date:        TODAY,
+      });
+    }
+    console.log(`  Compliance certificates (standalone CSV): ${Object.keys(certMap).length}`);
+
+    // ── BRANDING (v1) ──────────────────────────────────────────
+    try {
+      const brands = await fetchAllV1(client.token, "/branding");
+      for (const b of brands) {
+        const id = b.id || b._id;
+        rows.branding.push({
+          client:        client.name,
+          id:            id || "",
+          name:          b.name || "",
+          primary_color: b.primaryColor || "",
+          logo_url:      b.logoUrl || b.logo?.url || "",
+          is_default:    b.isDefault ?? "",
+          created_at:    dt(b.createdAt),
+          updated_at:    dt(b.updatedAt),
+          sync_date:     TODAY,
+        });
+      }
+      console.log(`  Branding configs: ${brands.length}`);
+    } catch(e) { err("branding", {}, e); }
+
+    // ── REPORTS (v1) ───────────────────────────────────────────
+    try {
+      const reports = await fetchAllV1(client.token, "/reports");
+      for (const r of reports) {
+        const id = r.id || r._id;
+        rows.reports.push({
+          client:     client.name,
+          id:         id || "",
+          name:       r.name || "",
+          type:       r.type || "",
+          status:     r.status || "",
+          created_at: dt(r.createdAt),
+          updated_at: dt(r.updatedAt),
+          sync_date:  TODAY,
+        });
+      }
+      console.log(`  Reports: ${reports.length}`);
+    } catch(e) { err("reports", {}, e); }
+
+    // ── DEMO-ONLY: DOCUMENT REQUESTS, WAIVERS, PARTY COMMENTS ─
+    if (client.name === DEMO_CLIENT_NAME) {
+      console.log(`\n  [DEMO] Fetching document requests, waivers, comments...`);
+
+      // GET /parties/{id}/document-request  (v1)
+      await pooled(vendors, 5, async (v) => {
+        const id = v._id || v.id;
+        try {
+          const dr = await apiGet(client.token, BASE_V1, `/parties/${id}/document-request`);
+          if (dr) {
+            rows.document_requests.push({
+              client:      client.name,
+              vendor_id:   id,
+              vendor_name: v.name || "",
+              request_id:  dr.id || dr._id || "",
+              status:      dr.status || "",
+              sent_at:     dt(dr.sentAt || dr.createdAt),
+              opened_at:   dt(dr.openedAt),
+              message:     dr.message || "",
+              link:        dr.link || dr.url || "",
+              sync_date:   TODAY,
+            });
+          }
+        } catch(e) {
+          // 404 = no document request for this vendor — normal, skip silently
+          if (!e.message.includes("404")) err("document_requests", { vendor_id: id }, e);
+        }
+      });
+      console.log(`  [DEMO] Document requests: ${rows.document_requests.length}`);
+
+      // GET /parties?include=complianceProfile  (v1) — waiver data lives in subjects
+      try {
+        const partiesWithProfile = await fetchAllV1(client.token, "/parties", {
+          include: "complianceProfile",
+        });
+        for (const p of partiesWithProfile) {
+          const pid = p.id || p._id;
+          const subjects = p.complianceProfile?.subjects || [];
+          for (const subj of subjects) {
+            const waiver = subj.waiver || subj.waivedRequirement;
+            if (!waiver && !subj.waived) continue;
+            rows.waivers.push({
+              client:          client.name,
+              vendor_id:       pid,
+              vendor_name:     p.name || "",
+              subject_code:    subj.code || "",
+              subject_label:   subj.label || "",
+              waiver_id:       waiver?.id || "",
+              waived:          subj.waived ?? true,
+              notes:           waiver?.notes || subj.waiverNotes || "",
+              expiration_date: dt(waiver?.expirationDate || subj.waiverExpirationDate),
+              created_at:      dt(waiver?.createdAt),
+              sync_date:       TODAY,
+            });
+          }
+        }
+        console.log(`  [DEMO] Waivers found: ${rows.waivers.length}`);
+      } catch(e) { err("waivers", {}, e); }
+
+      // GET /parties/{id}/comments  (v1)
+      await pooled(vendors, 5, async (v) => {
+        const id = v._id || v.id;
+        try {
+          const comments = await fetchAllV1(client.token, `/parties/${id}/comments`);
+          for (const c of comments) {
+            rows.party_comments.push({
+              client:      client.name,
+              vendor_id:   id,
+              vendor_name: v.name || "",
+              comment_id:  c.id || c._id || "",
+              text:        c.text || c.content || "",
+              author:      c.author?.name || c.author?.email || c.userId || "",
+              created_at:  dt(c.createdAt),
+              updated_at:  dt(c.updatedAt),
+              sync_date:   TODAY,
+            });
+          }
+        } catch(e) {
+          if (!e.message.includes("404")) err("party_comments", { vendor_id: id }, e);
+        }
+      });
+      console.log(`  [DEMO] Party comments: ${rows.party_comments.length}`);
+    }
+
     // ── POLICIES ───────────────────────────────────────────────
     // Collect policy numbers from every possible source in documents
     const policyNumSet = new Set();
@@ -891,6 +1089,13 @@ async function main() {
   write("policies.csv",                rows.policies);
   write("policy_documents.csv",        rows.policy_documents);
   write("policy_amendments.csv",       rows.policy_amendments);
+  write("compliance_profiles.csv",     rows.compliance_profiles);
+  write("compliance_certificates.csv", rows.compliance_certificates);
+  write("branding.csv",                rows.branding);
+  write("reports.csv",                 rows.reports);
+  write("document_requests.csv",       rows.document_requests);
+  write("waivers.csv",                 rows.waivers);
+  write("party_comments.csv",          rows.party_comments);
 
   if (rows.errors.length > 0) {
     const summary = {};
