@@ -215,6 +215,79 @@
     .hub-logo-btn{width:34px!important;height:34px!important;object-fit:contain;display:block;border-radius:50%;background:none}
     /* ── Home Dashboard ── */
     #tab-home { padding: 32px 28px; }
+    /* ── Program Review Tool ── */
+    #tab-prt { padding: 0; display: flex; flex-direction: column; height: 100%; min-height: 0; }
+    .prt-topbar { display: flex; align-items: center; gap: 10px; padding: 14px 24px 12px; border-bottom: 1px solid var(--border); flex-wrap: wrap; flex-shrink: 0; background: var(--card); }
+    .prt-topbar-title { font-size: 15px; font-weight: 800; color: var(--text); letter-spacing: .02em; margin-right: 4px; }
+    .prt-preset { background: none; border: 1.5px solid var(--border); border-radius: 6px; padding: 5px 12px; font-size: 12px; font-weight: 600; font-family: var(--font); color: var(--muted); cursor: pointer; transition: all .15s; }
+    .prt-preset:hover { border-color: #00AEEF; color: #00AEEF; }
+    .prt-preset.active { background: #00AEEF; border-color: #00AEEF; color: white; }
+    .prt-custom-range { display: flex; gap: 8px; align-items: center; }
+    .prt-custom-range input[type=month] { font-family: var(--font); font-size: 12px; padding: 5px 8px; border: 1.5px solid var(--border); border-radius: 6px; color: var(--text); background: var(--card); }
+    .prt-dl-btn { display: flex; align-items: center; gap: 6px; padding: 6px 14px; border-radius: 6px; font-size: 12px; font-weight: 700; font-family: var(--font); cursor: pointer; border: 1.5px solid; transition: all .15s; }
+    .prt-dl-btn.pdf { border-color: rgba(172,21,52,.4); color: #AC1534; background: rgba(172,21,52,.06); }
+    .prt-dl-btn.pdf:hover { background: rgba(172,21,52,.12); }
+    .prt-dl-btn.xl { border-color: rgba(62,189,62,.4); color: #2E8B2E; background: rgba(62,189,62,.06); }
+    .prt-dl-btn.xl:hover { background: rgba(62,189,62,.12); }
+    .prt-body { flex: 1; overflow-y: auto; padding: 20px 24px 28px; }
+    .prt-loading { display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 60px 20px; gap: 14px; color: var(--muted); font-size: 13px; }
+    .prt-spinner { width: 32px; height: 32px; border: 3px solid var(--border); border-top-color: #00AEEF; border-radius: 50%; animation: prt-spin 0.8s linear infinite; }
+    @keyframes prt-spin { to { transform: rotate(360deg); } }
+    .prt-scorecard { display: grid; grid-template-columns: repeat(5, 1fr); gap: 12px; margin-bottom: 20px; }
+    .prt-kpi { border-radius: 10px; padding: 14px 16px; border: 1px solid var(--border); }
+    .prt-kpi.grey { background: var(--card); }
+    .prt-kpi.green { background: rgba(62,189,62,.08); border-color: rgba(62,189,62,.2); }
+    .prt-kpi.red { background: rgba(172,21,52,.06); border-color: rgba(172,21,52,.15); }
+    .prt-kpi.orange { background: rgba(234,88,12,.06); border-color: rgba(234,88,12,.15); }
+    .prt-kpi.amber { background: rgba(243,185,33,.08); border-color: rgba(243,185,33,.2); }
+    .prt-kpi-lbl { font-size: 9px; font-weight: 700; letter-spacing: .1em; text-transform: uppercase; margin-bottom: 6px; color: var(--muted); }
+    .prt-kpi.green .prt-kpi-lbl { color: #2E8B2E; }
+    .prt-kpi.red .prt-kpi-lbl { color: #8B0E22; }
+    .prt-kpi.orange .prt-kpi-lbl { color: #9A3412; }
+    .prt-kpi.amber .prt-kpi-lbl { color: #9B6A00; }
+    .prt-kpi-val { font-size: 28px; font-weight: 800; line-height: 1; color: var(--text); }
+    .prt-kpi.green .prt-kpi-val { color: #3EBD3E; }
+    .prt-kpi.red .prt-kpi-val { color: #AC1534; }
+    .prt-kpi.orange .prt-kpi-val { color: #EA580C; }
+    .prt-kpi.amber .prt-kpi-val { color: #D97706; }
+    .prt-kpi-sub { font-size: 11px; color: var(--muted); margin-top: 3px; }
+    .prt-section-hdr { display: flex; align-items: center; gap: 10px; margin: 22px 0 12px; }
+    .prt-section-hdr-line { flex: 1; height: 1px; background: var(--border); }
+    .prt-section-hdr-lbl { font-size: 10px; font-weight: 700; letter-spacing: .1em; text-transform: uppercase; color: var(--text); padding-left: 8px; border-left: 3px solid #0678D5; white-space: nowrap; }
+    .prt-trend-bars { display: flex; gap: 5px; align-items: flex-end; height: 80px; padding: 0 4px; }
+    .prt-trend-bar-wrap { display: flex; flex-direction: column; align-items: center; flex: 1; gap: 2px; cursor: default; }
+    .prt-trend-bar-val { font-size: 9px; font-weight: 700; }
+    .prt-trend-bar-bg { width: 100%; background: var(--border); border-radius: 3px 3px 0 0; height: 56px; display: flex; align-items: flex-end; }
+    .prt-trend-bar-fill { width: 100%; border-radius: 3px 3px 0 0; transition: height .3s; }
+    .prt-trend-bar-lbl { font-size: 8px; color: var(--muted); }
+    .prt-clients-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 12px; }
+    .prt-client-card { background: var(--card); border: 1.5px solid var(--border); border-radius: 10px; padding: 14px 16px; cursor: pointer; transition: border-color .15s, box-shadow .15s; }
+    .prt-client-card:hover { border-color: #00AEEF; box-shadow: 0 2px 12px rgba(0,174,239,.1); }
+    .prt-client-card.active { border-color: #0678D5; box-shadow: 0 0 0 3px rgba(6,120,213,.1); }
+    .prt-client-card-name { font-size: 13px; font-weight: 700; color: var(--text); margin-bottom: 6px; }
+    .prt-client-card-rate { font-size: 26px; font-weight: 900; line-height: 1; margin-bottom: 4px; }
+    .prt-client-card-meta { font-size: 11px; color: var(--muted); }
+    .prt-client-card-bar { height: 4px; border-radius: 2px; background: var(--border); margin-top: 8px; }
+    .prt-client-card-bar-fill { height: 100%; border-radius: 2px; transition: width .4s; }
+    .prt-drill { background: var(--card); border: 1.5px solid #0678D5; border-radius: 12px; padding: 20px 22px; margin-top: 4px; }
+    .prt-drill-hdr { display: flex; align-items: center; justify-content: space-between; margin-bottom: 16px; }
+    .prt-drill-name { font-size: 16px; font-weight: 800; color: var(--text); }
+    .prt-drill-close { background: none; border: 1.5px solid var(--border); border-radius: 6px; width: 28px; height: 28px; cursor: pointer; font-size: 14px; color: var(--muted); display: flex; align-items: center; justify-content: center; }
+    .prt-drill-close:hover { border-color: #AC1534; color: #AC1534; }
+    .prt-drill-buckets { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; margin-bottom: 16px; }
+    .prt-vendor-table { width: 100%; border-collapse: collapse; font-size: 12px; }
+    .prt-vendor-table th { font-size: 9px; font-weight: 700; letter-spacing: .07em; text-transform: uppercase; color: var(--muted); padding: 6px 10px; text-align: left; border-bottom: 2px solid var(--border); }
+    .prt-vendor-table td { padding: 6px 10px; border-bottom: 1px solid var(--border); color: var(--text); font-size: 12px; }
+    .prt-vendor-table tr:hover td { background: rgba(6,120,213,.04); }
+    .prt-status-badge { display: inline-block; font-size: 9px; font-weight: 700; padding: 2px 7px; border-radius: 20px; letter-spacing: .04em; text-transform: uppercase; }
+    .prt-status-badge.compliant { background: rgba(62,189,62,.12); color: #2E8B2E; }
+    .prt-status-badge.non-compliant { background: rgba(172,21,52,.1); color: #AC1534; }
+    .prt-status-badge.expired { background: rgba(234,88,12,.1); color: #EA580C; }
+    .prt-status-badge.no-coi { background: rgba(243,185,33,.12); color: #9B6A00; }
+    .prt-narrative { background: linear-gradient(135deg,rgba(6,120,213,.06),rgba(0,174,239,.04)); border: 1px solid rgba(0,174,239,.2); border-radius: 8px; padding: 12px 16px; font-size: 13px; line-height: 1.7; color: var(--text); margin-bottom: 20px; }
+    html.dark .prt-kpi.grey { background: #1e2d36; }
+    html.dark .prt-client-card { background: #1e2d36; }
+    html.dark .prt-drill { background: #1e2d36; }
     .home-header { margin-bottom: 28px; }
     .home-title { font-size: 26px; font-weight: 800; color: var(--text); letter-spacing: .02em; margin-bottom: 6px; }
     .home-title span { color: #00AEEF; }
@@ -539,6 +612,16 @@
           <span class="sb-ic"><i data-lucide="sliders-horizontal"></i></span> Configure
         </button>
       </div>
+      <!-- ── Program Review Tool ── (P after Monday, before Report) -->
+      <button class="sb-section" id="sb-sec-prt" onclick="toggleSection('prt')">
+        <span class="sb-ic"><i data-lucide="bar-chart-big"></i></span> Program Review
+        <span class="sb-arrow">&#9654;</span>
+      </button>
+      <div class="sb-section-content" id="sb-sec-prt-content">
+        <button class="sb-item" id="snav-prt" onclick="sidebarNav('prt')">
+          <span class="sb-ic"><i data-lucide="activity"></i></span> Program Review Tool
+        </button>
+      </div>
       <!-- ── Report Generator Section ── -->
       <button class="sb-section open" id="sb-sec-reports" onclick="toggleSection('reports')">
         <span class="sb-ic"><i data-lucide="file-bar-chart-2"></i></span> Report Generator
@@ -638,6 +721,46 @@
   </div>
   <div class="home-cards" id="home-cards-grid">
     <!-- Cards rendered by homeRenderCards() -->
+  </div>
+</div>
+<div id="tab-prt" style="display:none">
+  <div class="prt-topbar">
+    <span class="prt-topbar-title">&#128200; Program Review Tool</span>
+    <button class="prt-preset active" data-preset="last12" onclick="prtSetPreset(this,'last12')">Last 12 Months</button>
+    <button class="prt-preset" data-preset="ytd" onclick="prtSetPreset(this,'ytd')">This Year</button>
+    <button class="prt-preset" data-preset="last6" onclick="prtSetPreset(this,'last6')">Last 6 Months</button>
+    <button class="prt-preset" data-preset="custom" onclick="prtSetPreset(this,'custom')">Custom</button>
+    <div id="prt-custom-range" class="prt-custom-range" style="display:none">
+      <input type="month" id="prt-from" title="From">
+      <span style="color:var(--muted);font-size:12px">to</span>
+      <input type="month" id="prt-to" title="To">
+      <button class="prt-preset active" onclick="prtLoad()" style="background:#0678D5;border-color:#0678D5;color:white">Load</button>
+    </div>
+    <div style="flex:1"></div>
+    <button class="prt-dl-btn pdf" onclick="prtDownloadPDF()" title="Download PDF Report">&#8659; PDF</button>
+    <button class="prt-dl-btn xl" onclick="prtDownloadExcel()" title="Download Excel">&#8659; Excel</button>
+  </div>
+  <div class="prt-body" id="prt-body">
+    <div class="prt-loading" id="prt-loading">
+      <div class="prt-spinner"></div>
+      <div id="prt-loading-msg">Loading program data&hellip;</div>
+    </div>
+    <div id="prt-content" style="display:none">
+      <div class="prt-narrative" id="prt-narrative"></div>
+      <div class="prt-section-hdr"><div class="prt-section-hdr-lbl">Program Scorecard</div><div class="prt-section-hdr-line"></div></div>
+      <div class="prt-scorecard" id="prt-scorecard"></div>
+      <div class="prt-section-hdr"><div class="prt-section-hdr-lbl">Monthly Compliance Trend</div><div class="prt-section-hdr-line"></div><div id="prt-trend-meta" style="font-size:11px;color:var(--muted);white-space:nowrap"></div></div>
+      <div class="prt-trend-bars" id="prt-trend-bars"></div>
+      <div class="prt-section-hdr"><div class="prt-section-hdr-lbl">Compliance by Coverage Criteria</div><div class="prt-section-hdr-line"></div></div>
+      <div id="prt-criteria"></div>
+      <div id="prt-eng-wrap">
+        <div class="prt-section-hdr"><div class="prt-section-hdr-lbl">Vendor Engagement &amp; Outreach</div><div class="prt-section-hdr-line"></div></div>
+        <div id="prt-engagement"></div>
+      </div>
+      <div class="prt-section-hdr"><div class="prt-section-hdr-lbl">Client Programs</div><div class="prt-section-hdr-line"></div><div id="prt-clients-meta" style="font-size:11px;color:var(--muted);white-space:nowrap"></div></div>
+      <div class="prt-clients-grid" id="prt-clients-grid"></div>
+      <div id="prt-drill-panel" style="display:none;margin-top:16px"></div>
+    </div>
   </div>
 </div>
   <div id="tab-reports">
@@ -1823,6 +1946,393 @@ function hasTLSandboxAccess() {
   return localStorage.getItem('cs-tls-access') === '1';
 }
 
+// ── PROGRAM REVIEW TOOL ──────────────────────────────────────────────────────
+let _prtData = null;
+let _prtActiveClient = null;
+let _prtPreset = 'last12';
+
+function prtSetPreset(btn, preset) {
+  document.querySelectorAll('.prt-preset').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  _prtPreset = preset;
+  const customRange = document.getElementById('prt-custom-range');
+  if (customRange) customRange.style.display = preset === 'custom' ? 'flex' : 'none';
+  if (preset !== 'custom') prtLoad();
+}
+
+function prtGetDateRange() {
+  const now = new Date();
+  const fmt = d => `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}`;
+  if (_prtPreset === 'custom') {
+    return {
+      fromYM: document.getElementById('prt-from')?.value || fmt(new Date(now - 365*24*3600*1000)),
+      toYM:   document.getElementById('prt-to')?.value   || fmt(now)
+    };
+  } else if (_prtPreset === 'ytd') {
+    return { fromYM: `${now.getFullYear()}-01`, toYM: fmt(now) };
+  } else if (_prtPreset === 'last6') {
+    const from = new Date(now); from.setMonth(from.getMonth()-5);
+    return { fromYM: fmt(from), toYM: fmt(now) };
+  } else {
+    const from = new Date(now); from.setMonth(from.getMonth()-11);
+    return { fromYM: fmt(from), toYM: fmt(now) };
+  }
+}
+
+function prtInit() {
+  if (!_prtData) { prtLoad(); } else { prtRender(_prtData); }
+}
+
+async function prtLoad() {
+  const loading = document.getElementById('prt-loading');
+  const content = document.getElementById('prt-content');
+  const loadMsg = document.getElementById('prt-loading-msg');
+  if (!loading || !content) return;
+  loading.style.display = 'flex';
+  content.style.display = 'none';
+  _prtActiveClient = null;
+  _prtData = null;
+  const setMsg = m => { if (loadMsg) loadMsg.textContent = m; };
+  try {
+    const { fromYM, toYM } = prtGetDateRange();
+    const s = getSettings();
+    setMsg('Scanning snapshots\u2026');
+    const fromYear = parseInt(fromYM.split('-')[0]);
+    const toYear   = parseInt(toYM.split('-')[0]);
+    let allSnapshotMonths = [];
+    for (let y = fromYear; y <= toYear; y++) {
+      const months = await listSnapshotMonths(String(y)).catch(() => []);
+      allSnapshotMonths.push(...months);
+    }
+    allSnapshotMonths = allSnapshotMonths.filter(m => m >= fromYM && m <= toYM).sort();
+    const monthlySnapshots = [];
+    for (const m of allSnapshotMonths) {
+      setMsg(`Loading snapshot ${m}\u2026`);
+      const yr = m.split('-')[0];
+      const evIns  = await fetchCSV(`snapshots/${yr}/${m}/insureds.csv`).catch(()=>[]);
+      const evCrit = await fetchCSV(`snapshots/${yr}/${m}/criteria.csv`).catch(()=>[]);
+      const tlIns  = await fetchCSV(`snapshots/trustlayer/${yr}/${m}/insureds.csv`).catch(()=>[]);
+      const tlCrit = await fetchCSV(`snapshots/trustlayer/${yr}/${m}/criteria.csv`).catch(()=>[]);
+      monthlySnapshots.push({ month: m, ins: [...evIns,...tlIns], crit: [...evCrit,...tlCrit] });
+    }
+    setMsg('Loading live data\u2026');
+    let liveIns = [], liveCrit = [], liveCov = [], liveEng = [];
+    try { liveIns  = await fetchCSV(s.insuredsPath  || 'data/evident/insureds.csv'); }  catch(e) {}
+    try { liveCrit = await fetchCSV(s.criteriaPath  || 'data/evident/criteria.csv'); }  catch(e) {}
+    try { liveCov  = await fetchCSV(s.coveragesPath || 'data/evident/coverages.csv'); } catch(e) {}
+    try { liveEng  = await fetchCSV(s.notificationsPath || 'data/evident/engagement.csv'); } catch(e) {}
+    try { const tlI = await fetchCSV(s.tlInsuredsPath  || 'data/trustlayer/insureds.csv');  liveIns  = [...liveIns,  ...tlI]; } catch(e) {}
+    try { const tlC = await fetchCSV(s.tlCriteriaPath  || 'data/trustlayer/criteria.csv');  liveCrit = [...liveCrit, ...tlC]; } catch(e) {}
+    try { const tlV = await fetchCSV(s.tlCoveragesPath || 'data/trustlayer/coverages.csv'); liveCov  = [...liveCov,  ...tlV]; } catch(e) {}
+    setMsg('Calculating compliance\u2026');
+    const activeAll = liveIns.filter(r => r[C.active] !== 'false' && r[C.paused] !== 'true');
+    const totalActive = activeAll.length;
+    let countCompliant = 0, countNC = 0;
+    activeAll.forEach(r => {
+      const st = normStatus(r[C.status]);
+      if (st === 'compliant') countCompliant++;
+      else if (st === 'non_compliant') countNC++;
+    });
+    const today = new Date(); today.setHours(0,0,0,0);
+    const covByEntity = {};
+    liveCov.forEach(r => {
+      const name = (r[C.entity_name] || r['insured_name'] || '').trim().toLowerCase();
+      if (!name) return;
+      if (!covByEntity[name]) covByEntity[name] = [];
+      covByEntity[name].push(r);
+    });
+    const expiredEntities = [], noCOIEntities = [];
+    activeAll.forEach(r => {
+      if (normStatus(r[C.status]) === 'compliant') return;
+      const name = (r[C.entity_name] || r['insured_name'] || '').trim().toLowerCase();
+      const covRows = covByEntity[name] || [];
+      if (!covRows.length) { noCOIEntities.push(r); }
+      else {
+        const allExp = covRows.every(c => { const d = c[C.exp_date]||c['expiration_date']||''; if(!d) return false; return new Date(d) < today; });
+        if (allExp) expiredEntities.push(r);
+      }
+    });
+    const countExpired = expiredEntities.length;
+    const countNoCOI   = noCOIEntities.length;
+    const overallRate  = totalActive ? Math.round(countCompliant / totalActive * 100) : 0;
+    const monthlyTrend = monthlySnapshots.map(snap => {
+      const active = snap.ins.filter(r => r[C.active] !== 'false' && r[C.paused] !== 'true');
+      const comp   = active.filter(r => normStatus(r[C.status]) === 'compliant').length;
+      const rate   = active.length ? Math.round(comp / active.length * 100) : 0;
+      return { month: snap.month, total: active.length, comp, rate };
+    });
+    const firstRate  = monthlyTrend.length ? monthlyTrend[0].rate : overallRate;
+    const rateChange = overallRate - firstRate;
+    const criteriaStats = {};
+    liveCrit.forEach(r => {
+      if (normStatus(r[C.overall_comp]) === 'non_compliant') {
+        (r[C.nc_reasons] || '').split(' | ').forEach(p => {
+          const ci = p.indexOf(':'); if (ci < 0) return;
+          const covType = fmtCoverage(p.slice(0, ci).trim()); if (!covType) return;
+          if (!criteriaStats[covType]) criteriaStats[covType] = { compliant: 0, nonCompliant: 0 };
+          criteriaStats[covType].nonCompliant++;
+        });
+      }
+    });
+    const criteriaSorted = Object.entries(criteriaStats)
+      .map(([name, d]) => ({ name, ...d, total: d.compliant + d.nonCompliant }))
+      .sort((a, b) => b.nonCompliant - a.nonCompliant);
+    const ncReasonMap = {};
+    liveCrit.filter(r => normStatus(r[C.overall_comp]) === 'non_compliant').forEach(r => {
+      (r[C.nc_reasons] || '').split(' | ').forEach(p => {
+        const ci = p.indexOf(':'); if (ci < 0) return;
+        const reason = mapNCReason(p.slice(ci + 1).trim()); if (!reason) return;
+        ncReasonMap[reason] = (ncReasonMap[reason] || 0) + 1;
+      });
+    });
+    const topNCReasons = Object.entries(ncReasonMap).sort((a, b) => b[1] - a[1]).slice(0, 8);
+    const normEm   = n => (n[C.notif_email] || '').trim().toLowerCase();
+    const sentSet  = new Set(liveEng.filter(isEngSend).map(normEm).filter(Boolean));
+    const openSet  = new Set(liveEng.filter(isEngOpen).map(normEm).filter(Boolean));
+    const issueSet = new Set(liveEng.filter(isEngIssue).map(normEm).filter(Boolean));
+    const engRate  = sentSet.size ? Math.round(openSet.size / sentSet.size * 100) : 0;
+    const makeClientMatcher = ck => {
+      const meta = (typeof CLIENT_META_MAP !== 'undefined' && CLIENT_META_MAP[ck]) || {};
+      const rpName = (meta.rp_common_name || '').toLowerCase().replace(/[^a-z0-9]/g, '');
+      return r => {
+        if (r[C.client] === ck) return true;
+        if (rpName && r[C.client]) {
+          const rv = r[C.client].toLowerCase().replace(/[^a-z0-9]/g, '');
+          if (rv === rpName || rv.includes(rpName) || rpName.includes(rv)) return true;
+        }
+        return false;
+      };
+    };
+    const allClients = CLIENTS.map(c => c.key);
+    const lastSnap  = monthlySnapshots.length ? monthlySnapshots[monthlySnapshots.length - 1] : null;
+    const firstSnap = monthlySnapshots.length ? monthlySnapshots[0] : null;
+    const clientStats = [];
+    for (const ck of allClients) {
+      const matchRow   = makeClientMatcher(ck);
+      const liveRows   = liveIns.filter(matchRow);
+      if (!liveRows.length) continue;
+      const liveActive = liveRows.filter(r => r[C.active] !== 'false' && r[C.paused] !== 'true');
+      if (!liveActive.length) continue;
+      const lComp = liveActive.filter(r => normStatus(r[C.status]) === 'compliant').length;
+      const lNC   = liveActive.filter(r => normStatus(r[C.status]) === 'non_compliant').length;
+      const lRate = liveActive.length ? Math.round(lComp / liveActive.length * 100) : 0;
+      const clientExpired = expiredEntities.filter(matchRow);
+      const clientNoCOI   = noCOIEntities.filter(matchRow);
+      const firstSnapRows = firstSnap ? firstSnap.ins.filter(matchRow).filter(r => r[C.active] !== 'false' && r[C.paused] !== 'true') : [];
+      const firstComp = firstSnapRows.filter(r => normStatus(r[C.status]) === 'compliant').length;
+      const firstClientRate = firstSnapRows.length ? Math.round(firstComp / firstSnapRows.length * 100) : null;
+      const lastSnapRows = lastSnap ? lastSnap.ins.filter(matchRow).filter(r => r[C.active] !== 'false' && r[C.paused] !== 'true') : [];
+      const lastComp = lastSnapRows.filter(r => normStatus(r[C.status]) === 'compliant').length;
+      const lastClientRate = lastSnapRows.length ? Math.round(lastComp / lastSnapRows.length * 100) : null;
+      const improvement = (firstClientRate !== null && lastClientRate !== null) ? lastClientRate - firstClientRate : null;
+      const clientCritRows = liveCrit.filter(matchRow);
+      const clientNCMap = {};
+      clientCritRows.filter(r => normStatus(r[C.overall_comp]) === 'non_compliant').forEach(r => {
+        (r[C.nc_reasons] || '').split(' | ').forEach(p => {
+          const ci = p.indexOf(':'); if (ci < 0) return;
+          const covType = fmtCoverage(p.slice(0, ci).trim()); if (!covType) return;
+          clientNCMap[covType] = (clientNCMap[covType] || 0) + 1;
+        });
+      });
+      const clientTopNC = Object.entries(clientNCMap).sort((a, b) => b[1] - a[1]).slice(0, 6);
+      const meta = (typeof CLIENT_META_MAP !== 'undefined' && CLIENT_META_MAP[ck]) || {};
+      clientStats.push({
+        name: ck, platform: meta.platform || meta.source || 'evident',
+        total: liveActive.length, comp: lComp, nc: lNC, rate: lRate,
+        expired: clientExpired, noCOI: clientNoCOI,
+        vendors: liveActive, improvement, clientTopNC
+      });
+    }
+    const trendWord = rateChange > 2 ? 'improving' : rateChange < -2 ? 'declining' : 'stable';
+    const moNames = {1:'Jan',2:'Feb',3:'Mar',4:'Apr',5:'May',6:'Jun',7:'Jul',8:'Aug',9:'Sep',10:'Oct',11:'Nov',12:'Dec'};
+    const fmtYM = ym => { const [y,m] = ym.split('-'); return `${moNames[parseInt(m)]} ${y}`; };
+    const narrative = `As of ${new Date().toLocaleDateString('en-US',{month:'long',day:'numeric',year:'numeric'})}, the CertSecure program manages ${clientStats.length} active client programs across ${totalActive.toLocaleString()} tracked vendors. Overall compliance stands at ${overallRate}% \u2014 ${countCompliant.toLocaleString()} compliant, ${countNC.toLocaleString()} non-compliant, ${countExpired.toLocaleString()} with expired coverage, and ${countNoCOI.toLocaleString()} with no certificate on file. Program compliance is ${trendWord} over the selected period${rateChange !== 0 ? ' (' + (rateChange > 0 ? '+' : '') + rateChange + '% from start of range)' : ''}.`;
+    _prtData = { fromYM, toYM, fmtYM, monthlyTrend, totalActive, countCompliant, countNC, countExpired, countNoCOI, overallRate, firstRate, rateChange, criteriaSorted, topNCReasons, sentSet, openSet, issueSet, engRate, clientStats, expiredEntities, noCOIEntities, narrative };
+    prtRender(_prtData);
+  } catch(e) {
+    if (loadMsg) loadMsg.textContent = 'Failed to load: ' + e.message;
+    console.error('[PRT]', e);
+  }
+}
+
+function prtRender(d) {
+  const loading = document.getElementById('prt-loading');
+  const content = document.getElementById('prt-content');
+  if (!content) return;
+  loading.style.display = 'none';
+  content.style.display = '';
+  const narEl = document.getElementById('prt-narrative');
+  if (narEl) narEl.textContent = d.narrative;
+  const scoreEl = document.getElementById('prt-scorecard');
+  if (scoreEl) {
+    scoreEl.innerHTML = [
+      { cls:'grey',   lbl:'Total Active',   val: d.totalActive.toLocaleString(), sub: `${d.clientStats.length} clients` },
+      { cls:'green',  lbl:'Compliant',      val: d.countCompliant.toLocaleString(), sub: pct(d.countCompliant, d.totalActive) + ' of active' },
+      { cls:'red',    lbl:'Non-Compliant',  val: d.countNC.toLocaleString(), sub: pct(d.countNC, d.totalActive) + ' of active' },
+      { cls:'orange', lbl:'Expired COI',    val: d.countExpired.toLocaleString(), sub: pct(d.countExpired, d.totalActive) + ' of active' },
+      { cls:'amber',  lbl:'No COI on File', val: d.countNoCOI.toLocaleString(), sub: pct(d.countNoCOI, d.totalActive) + ' of active' },
+    ].map(k => `<div class="prt-kpi ${k.cls}"><div class="prt-kpi-lbl">${k.lbl}</div><div class="prt-kpi-val">${k.val}</div><div class="prt-kpi-sub">${k.sub}</div></div>`).join('');
+  }
+  const trendEl = document.getElementById('prt-trend-bars');
+  const trendMeta = document.getElementById('prt-trend-meta');
+  if (trendEl) {
+    if (!d.monthlyTrend.length) {
+      trendEl.innerHTML = '<div style="font-size:12px;color:var(--muted);padding:16px 0">No snapshot data in this range yet.</div>';
+    } else {
+      const moNames = {1:'Jan',2:'Feb',3:'Mar',4:'Apr',5:'May',6:'Jun',7:'Jul',8:'Aug',9:'Sep',10:'Oct',11:'Nov',12:'Dec'};
+      trendEl.innerHTML = d.monthlyTrend.map(pt => {
+        const color = pt.rate >= 80 ? '#3EBD3E' : pt.rate >= 60 ? '#D97706' : '#AC1534';
+        const mo = moNames[parseInt(pt.month.split('-')[1])] || pt.month.split('-')[1];
+        const h = Math.max(3, Math.round(pt.rate / 100 * 56));
+        return `<div class="prt-trend-bar-wrap" title="${pt.month}: ${pt.rate}%">
+          <div class="prt-trend-bar-val" style="color:${color}">${pt.rate}%</div>
+          <div class="prt-trend-bar-bg"><div class="prt-trend-bar-fill" style="height:${h}px;background:${color}"></div></div>
+          <div class="prt-trend-bar-lbl">${mo}</div>
+        </div>`;
+      }).join('');
+      if (trendMeta && d.monthlyTrend.length > 1) {
+        const best  = d.monthlyTrend.reduce((a,b) => a.rate > b.rate ? a : b);
+        const worst = d.monthlyTrend.reduce((a,b) => a.rate < b.rate ? a : b);
+        trendMeta.textContent = `Best: ${d.fmtYM(best.month)} ${best.rate}%  ·  Worst: ${d.fmtYM(worst.month)} ${worst.rate}%`;
+      }
+    }
+  }
+  const critEl = document.getElementById('prt-criteria');
+  if (critEl) {
+    if (!d.criteriaSorted.length) {
+      critEl.innerHTML = '<div style="font-size:12px;color:var(--muted);padding:8px 0">No criteria data available.</div>';
+    } else {
+      const maxNC = d.criteriaSorted[0]?.nonCompliant || 1;
+      critEl.innerHTML = `<table class="prt-vendor-table">
+        <thead><tr><th style="width:35%">Coverage Type</th><th>Non-Compliant</th><th style="width:120px">Volume</th><th>Top NC Reason</th></tr></thead>
+        <tbody>${d.criteriaSorted.slice(0,12).map(c => {
+          const topReason = d.topNCReasons.find(([r]) => r.toLowerCase().includes(c.name.toLowerCase().slice(0,4))) || d.topNCReasons[0];
+          const barW = Math.round(c.nonCompliant / maxNC * 100);
+          return `<tr><td style="font-weight:600">${esc(c.name)}</td><td><span style="font-weight:700;color:#AC1534">${c.nonCompliant}</span></td><td><div style="background:var(--border);border-radius:3px;height:6px"><div style="background:#AC1534;border-radius:3px;height:100%;width:${barW}%"></div></div></td><td style="color:var(--muted);font-size:11px">${topReason ? esc(topReason[0].length > 50 ? topReason[0].slice(0,50)+'\u2026' : topReason[0]) : '\u2014'}</td></tr>`;
+        }).join('')}</tbody></table>`;
+    }
+  }
+  const engEl = document.getElementById('prt-engagement');
+  const engWrap = document.getElementById('prt-eng-wrap');
+  if (engEl && engWrap) {
+    if (!d.sentSet.size) { engWrap.style.display = 'none'; }
+    else {
+      engWrap.style.display = '';
+      engEl.innerHTML = `<div style="display:grid;grid-template-columns:repeat(4,1fr);gap:12px">
+        <div class="prt-kpi grey"><div class="prt-kpi-lbl">Contacts Reached</div><div class="prt-kpi-val" style="color:#0678D5">${d.sentSet.size.toLocaleString()}</div></div>
+        <div class="prt-kpi grey"><div class="prt-kpi-lbl">Opened</div><div class="prt-kpi-val" style="color:#0678D5">${d.openSet.size.toLocaleString()}</div></div>
+        <div class="prt-kpi ${d.engRate>=50?'green':d.engRate>=25?'amber':'red'}"><div class="prt-kpi-lbl">Open Rate</div><div class="prt-kpi-val">${d.engRate}%</div></div>
+        <div class="prt-kpi ${d.issueSet.size===0?'green':'red'}"><div class="prt-kpi-lbl">Delivery Issues</div><div class="prt-kpi-val">${d.issueSet.size}</div></div>
+      </div>`;
+    }
+  }
+  const gridEl = document.getElementById('prt-clients-grid');
+  const clientsMeta = document.getElementById('prt-clients-meta');
+  if (gridEl) {
+    if (clientsMeta) clientsMeta.textContent = `${d.clientStats.length} active programs`;
+    gridEl.innerHTML = d.clientStats
+      .sort((a, b) => a.rate - b.rate)
+      .map(c => {
+        const color = c.rate >= 80 ? '#3EBD3E' : c.rate >= 60 ? '#D97706' : '#AC1534';
+        const platBadge = c.platform === 'trustlayer'
+          ? `<span style="font-size:9px;background:rgba(62,189,62,.15);color:#2a9e2a;padding:1px 6px;border-radius:3px;font-weight:700">TL</span>`
+          : `<span style="font-size:9px;background:rgba(6,120,213,.12);color:#0678D5;padding:1px 6px;border-radius:3px;font-weight:700">EV</span>`;
+        const chgStr = c.improvement !== null
+          ? `<span style="color:${c.improvement>=0?'#3EBD3E':'#AC1534'};font-weight:600">${c.improvement>=0?'\u25b2':'\u25bc'}${Math.abs(c.improvement)}%</span>`
+          : '';
+        return `<div class="prt-client-card${_prtActiveClient===c.name?' active':''}" onclick="prtShowClient('${c.name.replace(/'/g,"\\'")}')">
+          <div style="display:flex;align-items:center;gap:6px;margin-bottom:4px">${platBadge}<div class="prt-client-card-name" style="flex:1;font-size:12px">${esc(c.name)}</div>${chgStr}</div>
+          <div class="prt-client-card-rate" style="color:${color}">${c.rate}%</div>
+          <div class="prt-client-card-meta">${c.total.toLocaleString()} vendors &nbsp;&middot;&nbsp; ${c.comp} compliant &nbsp;&middot;&nbsp; ${c.nc} NC</div>
+          <div class="prt-client-card-bar"><div class="prt-client-card-bar-fill" style="width:${c.rate}%;background:${color}"></div></div>
+          ${c.expired.length || c.noCOI.length ? `<div style="font-size:10px;margin-top:6px;color:var(--muted)">${c.expired.length?`<span style="color:#EA580C">${c.expired.length} expired</span>`:''}${c.expired.length&&c.noCOI.length?' &nbsp;&middot;&nbsp; ':''}${c.noCOI.length?`<span style="color:#D97706">${c.noCOI.length} no COI</span>`:''}</div>` : ''}
+        </div>`;
+      }).join('');
+  }
+  if (!_prtActiveClient) { const drill = document.getElementById('prt-drill-panel'); if (drill) drill.style.display = 'none'; }
+}
+
+function prtShowClient(clientName) {
+  if (_prtActiveClient === clientName) {
+    _prtActiveClient = null;
+    document.querySelectorAll('.prt-client-card').forEach(c => c.classList.remove('active'));
+    const drill = document.getElementById('prt-drill-panel');
+    if (drill) { drill.style.display = 'none'; drill.innerHTML = ''; }
+    return;
+  }
+  _prtActiveClient = clientName;
+  document.querySelectorAll('.prt-client-card').forEach(c => {
+    c.classList.toggle('active', c.querySelector('.prt-client-card-name')?.textContent === clientName);
+  });
+  const d = _prtData;
+  const client = d?.clientStats.find(c => c.name === clientName);
+  if (!client) return;
+  const drill = document.getElementById('prt-drill-panel');
+  if (!drill) return;
+  drill.style.display = '';
+  drill.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+  const rateColor = client.rate >= 80 ? '#3EBD3E' : client.rate >= 60 ? '#D97706' : '#AC1534';
+  const chgStr = client.improvement !== null
+    ? `<span style="color:${client.improvement>=0?'#3EBD3E':'#AC1534'};font-size:13px;font-weight:700">${client.improvement>=0?'\u25b2':'\u25bc'}${Math.abs(client.improvement)}% over period</span>`
+    : '';
+  const statusOrder = { 'non_compliant': 0, 'pending': 1, 'compliant': 2 };
+  const vendorRows = client.vendors
+    .sort((a, b) => (statusOrder[normStatus(a[C.status])]||1) - (statusOrder[normStatus(b[C.status])]||1))
+    .map(r => {
+      const st = normStatus(r[C.status]);
+      const name  = r[C.entity_name] || r['insured_name'] || '\u2014';
+      const email = r[C.email] || r['primary_contact_email'] || '\u2014';
+      const nextExp = r[C.next_exp] || r['next_expiration'] || '';
+      let badgeCls = 'compliant', badgeTxt = 'Compliant';
+      if (st === 'non_compliant') {
+        const nm = name.trim().toLowerCase();
+        const isNoCOI = client.noCOI.some(e => (e[C.entity_name]||e['insured_name']||'').trim().toLowerCase() === nm);
+        const isExp   = client.expired.some(e => (e[C.entity_name]||e['insured_name']||'').trim().toLowerCase() === nm);
+        if (isNoCOI)    { badgeCls = 'no-coi';       badgeTxt = 'No COI'; }
+        else if (isExp) { badgeCls = 'expired';       badgeTxt = 'Expired'; }
+        else            { badgeCls = 'non-compliant'; badgeTxt = 'Non-Compliant'; }
+      }
+      return `<tr><td style="font-weight:600">${esc(name)}</td><td><span class="prt-status-badge ${badgeCls}">${badgeTxt}</span></td><td style="color:var(--muted)">${esc(email)}</td><td style="color:var(--muted)">${nextExp ? new Date(nextExp).toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'}) : '\u2014'}</td></tr>`;
+    }).join('');
+  const ncSection = client.clientTopNC.length ? `
+    <div class="prt-section-hdr" style="margin-top:16px"><div class="prt-section-hdr-lbl">Top NC Reasons</div><div class="prt-section-hdr-line"></div></div>
+    <div style="display:flex;flex-wrap:wrap;gap:8px">${client.clientTopNC.map(([cov,n]) =>
+      `<div style="background:rgba(172,21,52,.07);border:1px solid rgba(172,21,52,.15);border-radius:6px;padding:6px 12px;font-size:12px"><span style="font-weight:700;color:#AC1534">${n}</span> <span style="color:var(--muted)">${esc(cov)}</span></div>`
+    ).join('')}</div>` : '';
+  drill.innerHTML = `<div class="prt-drill">
+    <div class="prt-drill-hdr">
+      <div>
+        <div class="prt-drill-name">${esc(clientName)}</div>
+        <div style="font-size:12px;color:var(--muted);margin-top:2px">${client.total.toLocaleString()} active vendors &nbsp;&middot;&nbsp; <span style="font-weight:700;color:${rateColor}">${client.rate}% compliant</span> &nbsp;&middot;&nbsp; ${chgStr}</div>
+      </div>
+      <button class="prt-drill-close" onclick="prtShowClient('${clientName.replace(/'/g,"\\'")}')" title="Close">&#10005;</button>
+    </div>
+    <div class="prt-drill-buckets">
+      <div class="prt-kpi green"><div class="prt-kpi-lbl">Compliant</div><div class="prt-kpi-val">${client.comp}</div><div class="prt-kpi-sub">${pct(client.comp,client.total)}</div></div>
+      <div class="prt-kpi red"><div class="prt-kpi-lbl">Non-Compliant</div><div class="prt-kpi-val">${client.nc}</div><div class="prt-kpi-sub">${pct(client.nc,client.total)}</div></div>
+      <div class="prt-kpi orange"><div class="prt-kpi-lbl">Expired COI</div><div class="prt-kpi-val">${client.expired.length}</div><div class="prt-kpi-sub">${pct(client.expired.length,client.total)}</div></div>
+      <div class="prt-kpi amber"><div class="prt-kpi-lbl">No COI on File</div><div class="prt-kpi-val">${client.noCOI.length}</div><div class="prt-kpi-sub">${pct(client.noCOI.length,client.total)}</div></div>
+    </div>
+    ${ncSection}
+    <div class="prt-section-hdr" style="margin-top:16px"><div class="prt-section-hdr-lbl">All Vendors (${client.vendors.length})</div><div class="prt-section-hdr-line"></div></div>
+    <table class="prt-vendor-table">
+      <thead><tr><th style="width:35%">Vendor / Entity</th><th style="width:120px">Status</th><th>Contact Email</th><th>Next Expiration</th></tr></thead>
+      <tbody>${vendorRows}</tbody>
+    </table>
+  </div>`;
+}
+
+function prtDownloadPDF() {
+  if (!_prtData) { toast('Load data first', 'error'); return; }
+  printHTMLasPDF(buildPHRHTML(_prtData));
+}
+
+function prtDownloadExcel() {
+  if (!_prtData) { toast('Load data first', 'error'); return; }
+  buildPHRExcel(_prtData);
+}
+// ── END PROGRAM REVIEW TOOL ──────────────────────────────────────────────────
+
 function homeRenderCards() {
   // Update welcome name
   const nameEl = document.getElementById('home-welcome-name');
@@ -1838,6 +2348,13 @@ function homeRenderCards() {
   const showTLS = hasTLSandboxAccess();
 
   const cards = [
+    {
+      dest: 'prt',
+      icon: '<svg viewBox="0 0 24 24"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>',
+      title: 'Program Review Tool',
+      desc: 'Live interactive dashboard across all clients and platforms. Drill into compliance rates, vendor status, criteria breakdowns, and engagement — with PDF and Excel export.',
+      badge: null
+    },
     {
       dest: 'generate',
       icon: '<svg viewBox="0 0 24 24"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>',
@@ -2515,7 +3032,7 @@ async function saveClientsToConfig(updatedClients) {
   await attemptSave(1);
 }
 function switchTab(tab) {
-  ['home','reports','monday','template','bre','tl-sandbox'].forEach(t => {
+  ['home','prt','reports','monday','template','bre','tl-sandbox'].forEach(t => {
     const el = document.getElementById('tab-' + t);
     if (el) {
       el.style.display = t === tab ? '' : 'none';
@@ -2545,7 +3062,7 @@ function toggleSection(sec) {
   const isTemplate = sec === 'template';
   const isClients = sec === 'clients';
   // Toggle sections
-  ['reports','monday','template','cm','bre','tls'].forEach(s => {
+  ['reports','monday','template','cm','bre','tls','prt'].forEach(s => {
     const btn = document.getElementById('sb-sec-' + s);
     const cont = document.getElementById('sb-sec-' + s + '-content');
     const opening = (s === sec);
@@ -2553,7 +3070,8 @@ function toggleSection(sec) {
     if (cont) cont.classList.toggle('open', opening);
   });
   // Navigate to the default item of the section
-  if (isReports) sidebarNav('generate');
+  if (sec === 'prt') sidebarNav('prt');
+  else if (isReports) sidebarNav('generate');
   else if (isTemplate) sidebarNav('tg-build');
   else if (sec === 'cm') sidebarNav('cm-clients');
   else if (sec === 'bre') sidebarNav('bre-roster');
@@ -2564,7 +3082,7 @@ function toggleSection(sec) {
 function sidebarNav(dest) {
   csDebug.log("NAV","sidebarNav","Navigate",{dest});
   // Clear all sub-item active states
-  ['snav-home','snav-generate','snav-config','snav-m-clients','snav-m-setup','snav-m-configure','snav-tg-build','snav-bre-roster','snav-tls-sandbox'].forEach(id => {
+  ['snav-home','snav-prt','snav-generate','snav-config','snav-m-clients','snav-m-setup','snav-m-configure','snav-tg-build','snav-bre-roster','snav-tls-sandbox'].forEach(id => {
     const el = document.getElementById(id); if (el) el.classList.remove('active');
   });
   // Activate selected item
@@ -2574,6 +3092,7 @@ function sidebarNav(dest) {
   // Update breadcrumb
   const bcMap = {
     'home':        ['Home','Dashboard'],
+    'prt':         ['Program Review','Program Review Tool'],
     'generate':    ['Report Generator','Generate Reports'],
     'm-setup':     ['Monday.com Generator','Workspace Setup'],
     'm-configure': ['Monday.com Generator','Configure'],
@@ -2589,6 +3108,7 @@ function sidebarNav(dest) {
   // Update header title
   const hTitles = {
     'home':        'Home',
+    'prt':         'Program Review Tool',
     'generate':    'Generate Reports',
     'm-setup':     'Workspace Setup',
     'm-configure': 'Configure',
@@ -2601,6 +3121,7 @@ function sidebarNav(dest) {
   setHeaderTitle(hTitles[dest] || 'CertSecure');
   // Route
   if (dest === 'home')             { switchTab('home'); homeRenderCards(); }
+  else if (dest === 'prt')         { switchTab('prt'); prtInit(); }
   else if (dest === 'generate')    { switchTab('reports'); switchRGTab('generate');  }
   else if (dest === 'm-clients')   { switchTab('monday'); switchMondayTab('clients'); }
   else if (dest === 'm-setup')     { switchTab('monday'); switchMondayTab('setup'); }
