@@ -737,6 +737,19 @@
       <button class="prt-preset active" onclick="prtLoad()" style="background:#0678D5;border-color:#0678D5;color:white">Load</button>
     </div>
     <div style="flex:1"></div>
+    <div style="display:flex;align-items:center;gap:6px;border-left:1px solid var(--border);padding-left:12px">
+      <span style="font-size:10px;font-weight:700;letter-spacing:.07em;text-transform:uppercase;color:var(--muted)">Type</span>
+      <button class="prt-preset active" id="prt-f-all"      onclick="prtSetFilter('struct','all')">All</button>
+      <button class="prt-preset"        id="prt-f-general"  onclick="prtSetFilter('struct','general')">General</button>
+      <button class="prt-preset"        id="prt-f-project"  onclick="prtSetFilter('struct','project')">Subs</button>
+      <button class="prt-preset"        id="prt-f-location" onclick="prtSetFilter('struct','location')">Tenants</button>
+    </div>
+    <div style="display:flex;align-items:center;gap:6px;border-left:1px solid var(--border);padding-left:12px">
+      <span style="font-size:10px;font-weight:700;letter-spacing:.07em;text-transform:uppercase;color:var(--muted)">Platform</span>
+      <button class="prt-preset active" id="prt-f-plat-all" onclick="prtSetFilter('plat','all')">All</button>
+      <button class="prt-preset"        id="prt-f-plat-ev"  onclick="prtSetFilter('plat','evident')">EV</button>
+      <button class="prt-preset"        id="prt-f-plat-tl"  onclick="prtSetFilter('plat','trustlayer')">TL</button>
+    </div>
     <button class="prt-dl-btn pdf" onclick="prtDownloadPDF()" title="Download PDF Report">&#8659; PDF</button>
     <button class="prt-dl-btn xl" onclick="prtDownloadExcel()" title="Download Excel">&#8659; Excel</button>
   </div>
@@ -1950,6 +1963,7 @@ function hasTLSandboxAccess() {
 let _prtData = null;
 let _prtActiveClient = null;
 let _prtPreset = 'last12';
+let _prtFilter = { struct: 'all', plat: 'all' };
 
 function prtSetPreset(btn, preset) {
   document.querySelectorAll('.prt-preset').forEach(b => b.classList.remove('active'));
@@ -1958,6 +1972,24 @@ function prtSetPreset(btn, preset) {
   const customRange = document.getElementById('prt-custom-range');
   if (customRange) customRange.style.display = preset === 'custom' ? 'flex' : 'none';
   if (preset !== 'custom') prtLoad();
+}
+
+function prtSetFilter(axis, val) {
+  _prtFilter[axis] = val;
+  // Update button active states
+  if (axis === 'struct') {
+    ['all','general','project','location'].forEach(v => {
+      const btn = document.getElementById('prt-f-' + v);
+      if (btn) btn.classList.toggle('active', v === val);
+    });
+  } else {
+    ['plat-all','plat-ev','plat-tl'].forEach(v => {
+      const btn = document.getElementById('prt-f-' + v);
+      const bval = v === 'plat-all' ? 'all' : v === 'plat-ev' ? 'evident' : 'trustlayer';
+      if (btn) btn.classList.toggle('active', bval === val);
+    });
+  }
+  if (_prtData) prtRenderClients(_prtData);
 }
 
 function prtGetDateRange() {
@@ -2063,27 +2095,31 @@ async function prtLoad() {
     });
     const firstRate  = monthlyTrend.length ? monthlyTrend[0].rate : overallRate;
     const rateChange = overallRate - firstRate;
+    // Build criteria stats AND per-type NC reason map in one pass
     const criteriaStats = {};
+    const ncReasonsByType = {};
     liveCrit.forEach(r => {
       if (normStatus(r[C.overall_comp]) === 'non_compliant') {
         (r[C.nc_reasons] || '').split(' | ').forEach(p => {
           const ci = p.indexOf(':'); if (ci < 0) return;
           const covType = fmtCoverage(p.slice(0, ci).trim()); if (!covType) return;
+          const reason  = mapNCReason(p.slice(ci + 1).trim());
           if (!criteriaStats[covType]) criteriaStats[covType] = { compliant: 0, nonCompliant: 0 };
           criteriaStats[covType].nonCompliant++;
+          if (reason) {
+            if (!ncReasonsByType[covType]) ncReasonsByType[covType] = {};
+            ncReasonsByType[covType][reason] = (ncReasonsByType[covType][reason] || 0) + 1;
+          }
         });
       }
     });
     const criteriaSorted = Object.entries(criteriaStats)
       .map(([name, d]) => ({ name, ...d, total: d.compliant + d.nonCompliant }))
       .sort((a, b) => b.nonCompliant - a.nonCompliant);
+    // Global top NC reasons (for summary)
     const ncReasonMap = {};
-    liveCrit.filter(r => normStatus(r[C.overall_comp]) === 'non_compliant').forEach(r => {
-      (r[C.nc_reasons] || '').split(' | ').forEach(p => {
-        const ci = p.indexOf(':'); if (ci < 0) return;
-        const reason = mapNCReason(p.slice(ci + 1).trim()); if (!reason) return;
-        ncReasonMap[reason] = (ncReasonMap[reason] || 0) + 1;
-      });
+    Object.values(ncReasonsByType).forEach(typeMap => {
+      Object.entries(typeMap).forEach(([r, n]) => { ncReasonMap[r] = (ncReasonMap[r] || 0) + n; });
     });
     const topNCReasons = Object.entries(ncReasonMap).sort((a, b) => b[1] - a[1]).slice(0, 8);
     const normEm   = n => (n[C.notif_email] || '').trim().toLowerCase();
@@ -2136,8 +2172,11 @@ async function prtLoad() {
       });
       const clientTopNC = Object.entries(clientNCMap).sort((a, b) => b[1] - a[1]).slice(0, 6);
       const meta = (typeof CLIENT_META_MAP !== 'undefined' && CLIENT_META_MAP[ck]) || {};
+      // Also look up structure from CLIENTS array
+      const clientDef = (typeof CLIENTS !== 'undefined' ? CLIENTS : []).find(c => c.key === ck || c.client_name === ck) || {};
       clientStats.push({
-        name: ck, platform: meta.platform || meta.source || 'evident',
+        name: ck, platform: meta.platform || meta.source || clientDef.source || 'evident',
+        structure: clientDef.structure || meta.structure || 'general',
         total: liveActive.length, comp: lComp, nc: lNC, rate: lRate,
         expired: clientExpired, noCOI: clientNoCOI,
         vendors: liveActive, improvement, clientTopNC
@@ -2147,7 +2186,7 @@ async function prtLoad() {
     const moNames = {1:'Jan',2:'Feb',3:'Mar',4:'Apr',5:'May',6:'Jun',7:'Jul',8:'Aug',9:'Sep',10:'Oct',11:'Nov',12:'Dec'};
     const fmtYM = ym => { const [y,m] = ym.split('-'); return `${moNames[parseInt(m)]} ${y}`; };
     const narrative = `As of ${new Date().toLocaleDateString('en-US',{month:'long',day:'numeric',year:'numeric'})}, the CertSecure program manages ${clientStats.length} active client programs across ${totalActive.toLocaleString()} tracked vendors. Overall compliance stands at ${overallRate}% \u2014 ${countCompliant.toLocaleString()} compliant, ${countNC.toLocaleString()} non-compliant, ${countExpired.toLocaleString()} with expired coverage, and ${countNoCOI.toLocaleString()} with no certificate on file. Program compliance is ${trendWord} over the selected period${rateChange !== 0 ? ' (' + (rateChange > 0 ? '+' : '') + rateChange + '% from start of range)' : ''}.`;
-    _prtData = { fromYM, toYM, fmtYM, monthlyTrend, totalActive, countCompliant, countNC, countExpired, countNoCOI, overallRate, firstRate, rateChange, criteriaSorted, topNCReasons, sentSet, openSet, issueSet, engRate, clientStats, expiredEntities, noCOIEntities, narrative };
+    _prtData = { fromYM, toYM, fmtYM, monthlyTrend, totalActive, countCompliant, countNC, countExpired, countNoCOI, overallRate, firstRate, rateChange, criteriaSorted, topNCReasons, ncReasonsByType, sentSet, openSet, issueSet, engRate, clientStats, expiredEntities, noCOIEntities, narrative };
     prtRender(_prtData);
   } catch(e) {
     if (loadMsg) loadMsg.textContent = 'Failed to load: ' + e.message;
@@ -2206,50 +2245,85 @@ function prtRender(d) {
       critEl.innerHTML = `<table class="prt-vendor-table">
         <thead><tr><th style="width:35%">Coverage Type</th><th>Non-Compliant</th><th style="width:120px">Volume</th><th>Top NC Reason</th></tr></thead>
         <tbody>${d.criteriaSorted.slice(0,12).map(c => {
-          const topReason = d.topNCReasons.find(([r]) => r.toLowerCase().includes(c.name.toLowerCase().slice(0,4))) || d.topNCReasons[0];
+          // Look up top reason directly from the per-type map — no substring guessing
+          const typeReasons = d.ncReasonsByType[c.name] || {};
+          const topReasonEntry = Object.entries(typeReasons).sort((a,b) => b[1]-a[1])[0];
+          const topReasonText = topReasonEntry ? topReasonEntry[0] : '—';
           const barW = Math.round(c.nonCompliant / maxNC * 100);
-          return `<tr><td style="font-weight:600">${esc(c.name)}</td><td><span style="font-weight:700;color:#AC1534">${c.nonCompliant}</span></td><td><div style="background:var(--border);border-radius:3px;height:6px"><div style="background:#AC1534;border-radius:3px;height:100%;width:${barW}%"></div></div></td><td style="color:var(--muted);font-size:11px">${topReason ? esc(topReason[0].length > 50 ? topReason[0].slice(0,50)+'\u2026' : topReason[0]) : '\u2014'}</td></tr>`;
+          return `<tr><td style="font-weight:600">${esc(c.name)}</td><td><span style="font-weight:700;color:#AC1534">${c.nonCompliant}</span></td><td><div style="background:var(--border);border-radius:3px;height:6px"><div style="background:#AC1534;border-radius:3px;height:100%;width:${barW}%"></div></div></td><td style="color:var(--muted);font-size:11px">${esc(topReasonText.length > 50 ? topReasonText.slice(0,50)+'…' : topReasonText)}</td></tr>`;
         }).join('')}</tbody></table>`;
     }
   }
   const engEl = document.getElementById('prt-engagement');
   const engWrap = document.getElementById('prt-eng-wrap');
   if (engEl && engWrap) {
-    if (!d.sentSet.size) { engWrap.style.display = 'none'; }
-    else {
-      engWrap.style.display = '';
-      engEl.innerHTML = `<div style="display:grid;grid-template-columns:repeat(4,1fr);gap:12px">
+    engWrap.style.display = '';
+    const noEng = !d.sentSet.size;
+    engEl.innerHTML = noEng
+      ? `<div style="font-size:12px;color:var(--muted);padding:10px 0;font-style:italic">No engagement data loaded for this period. Check that the engagement CSV path is set correctly in Settings.</div>`
+      : `<div style="display:grid;grid-template-columns:repeat(4,1fr);gap:12px">
         <div class="prt-kpi grey"><div class="prt-kpi-lbl">Contacts Reached</div><div class="prt-kpi-val" style="color:#0678D5">${d.sentSet.size.toLocaleString()}</div></div>
         <div class="prt-kpi grey"><div class="prt-kpi-lbl">Opened</div><div class="prt-kpi-val" style="color:#0678D5">${d.openSet.size.toLocaleString()}</div></div>
         <div class="prt-kpi ${d.engRate>=50?'green':d.engRate>=25?'amber':'red'}"><div class="prt-kpi-lbl">Open Rate</div><div class="prt-kpi-val">${d.engRate}%</div></div>
         <div class="prt-kpi ${d.issueSet.size===0?'green':'red'}"><div class="prt-kpi-lbl">Delivery Issues</div><div class="prt-kpi-val">${d.issueSet.size}</div></div>
       </div>`;
-    }
   }
+  prtRenderClients(d);
+  if (!_prtActiveClient) { const drill = document.getElementById('prt-drill-panel'); if (drill) drill.style.display = 'none'; }
+}
+
+function prtRenderClients(d) {
   const gridEl = document.getElementById('prt-clients-grid');
   const clientsMeta = document.getElementById('prt-clients-meta');
-  if (gridEl) {
-    if (clientsMeta) clientsMeta.textContent = `${d.clientStats.length} active programs`;
-    gridEl.innerHTML = d.clientStats
-      .sort((a, b) => a.rate - b.rate)
-      .map(c => {
-        const color = c.rate >= 80 ? '#3EBD3E' : c.rate >= 60 ? '#D97706' : '#AC1534';
-        const platBadge = c.platform === 'trustlayer'
-          ? `<span style="font-size:9px;background:rgba(62,189,62,.15);color:#2a9e2a;padding:1px 6px;border-radius:3px;font-weight:700">TL</span>`
-          : `<span style="font-size:9px;background:rgba(6,120,213,.12);color:#0678D5;padding:1px 6px;border-radius:3px;font-weight:700">EV</span>`;
-        const chgStr = c.improvement !== null
-          ? `<span style="color:${c.improvement>=0?'#3EBD3E':'#AC1534'};font-weight:600">${c.improvement>=0?'\u25b2':'\u25bc'}${Math.abs(c.improvement)}%</span>`
-          : '';
-        return `<div class="prt-client-card${_prtActiveClient===c.name?' active':''}" onclick="prtShowClient('${c.name.replace(/'/g,"\\'")}')">
-          <div style="display:flex;align-items:center;gap:6px;margin-bottom:4px">${platBadge}<div class="prt-client-card-name" style="flex:1;font-size:12px">${esc(c.name)}</div>${chgStr}</div>
-          <div class="prt-client-card-rate" style="color:${color}">${c.rate}%</div>
-          <div class="prt-client-card-meta">${c.total.toLocaleString()} vendors &nbsp;&middot;&nbsp; ${c.comp} compliant &nbsp;&middot;&nbsp; ${c.nc} NC</div>
-          <div class="prt-client-card-bar"><div class="prt-client-card-bar-fill" style="width:${c.rate}%;background:${color}"></div></div>
-          ${c.expired.length || c.noCOI.length ? `<div style="font-size:10px;margin-top:6px;color:var(--muted)">${c.expired.length?`<span style="color:#EA580C">${c.expired.length} expired</span>`:''}${c.expired.length&&c.noCOI.length?' &nbsp;&middot;&nbsp; ':''}${c.noCOI.length?`<span style="color:#D97706">${c.noCOI.length} no COI</span>`:''}</div>` : ''}
-        </div>`;
-      }).join('');
+  if (!gridEl) return;
+
+  const structLabels = { general: 'General', project: 'Subs', location: 'Tenants' };
+  const structColors = { general: '#0678D5', project: '#7C3AED', location: '#D97706' };
+
+  // Apply filters
+  let filtered = d.clientStats.filter(c => {
+    if (_prtFilter.struct !== 'all' && c.structure !== _prtFilter.struct) return false;
+    if (_prtFilter.plat !== 'all' && c.platform !== _prtFilter.plat) return false;
+    return true;
+  });
+
+  // Build summary line
+  const totalShown = filtered.length;
+  const avgRate = totalShown ? Math.round(filtered.reduce((s,c) => s+c.rate, 0) / totalShown) : 0;
+  const filterDesc = [];
+  if (_prtFilter.struct !== 'all') filterDesc.push(structLabels[_prtFilter.struct] || _prtFilter.struct);
+  if (_prtFilter.plat  !== 'all') filterDesc.push(_prtFilter.plat === 'trustlayer' ? 'TrustLayer' : 'Evident');
+  const metaText = filterDesc.length
+    ? `${totalShown} of ${d.clientStats.length} programs · avg ${avgRate}% (${filterDesc.join(', ')})`
+    : `${totalShown} active programs · avg ${avgRate}%`;
+  if (clientsMeta) clientsMeta.textContent = metaText;
+
+  if (!filtered.length) {
+    gridEl.innerHTML = '<div style="font-size:12px;color:var(--muted);padding:16px 0">No clients match the current filters.</div>';
+    return;
   }
-  if (!_prtActiveClient) { const drill = document.getElementById('prt-drill-panel'); if (drill) drill.style.display = 'none'; }
+
+  gridEl.innerHTML = filtered
+    .sort((a, b) => a.rate - b.rate)
+    .map(c => {
+      const color = c.rate >= 80 ? '#3EBD3E' : c.rate >= 60 ? '#D97706' : '#AC1534';
+      const platBadge = c.platform === 'trustlayer'
+        ? `<span style="font-size:9px;background:rgba(62,189,62,.15);color:#2a9e2a;padding:1px 6px;border-radius:3px;font-weight:700">TL</span>`
+        : `<span style="font-size:9px;background:rgba(6,120,213,.12);color:#0678D5;padding:1px 6px;border-radius:3px;font-weight:700">EV</span>`;
+      const sLabel = structLabels[c.structure] || 'General';
+      const sColor = structColors[c.structure] || '#0678D5';
+      const structBadge = `<span style="font-size:9px;background:rgba(0,0,0,.05);color:${sColor};padding:1px 6px;border-radius:3px;font-weight:700;border:1px solid ${sColor}33">${sLabel}</span>`;
+      const chgStr = c.improvement !== null
+        ? `<span style="color:${c.improvement>=0?'#3EBD3E':'#AC1534'};font-weight:600">${c.improvement>=0?'▲':'▼'}${Math.abs(c.improvement)}%</span>`
+        : '';
+      return `<div class="prt-client-card${_prtActiveClient===c.name?' active':''}" onclick="prtShowClient('${c.name.replace(/'/g,"\'")}')">
+        <div style="display:flex;align-items:center;gap:4px;margin-bottom:6px;flex-wrap:wrap">${platBadge}${structBadge}<div class="prt-client-card-name" style="flex:1;font-size:12px;margin-left:2px">${esc(c.name)}</div>${chgStr}</div>
+        <div class="prt-client-card-rate" style="color:${color}">${c.rate}%</div>
+        <div class="prt-client-card-meta">${c.total.toLocaleString()} vendors &nbsp;&middot;&nbsp; ${c.comp} compliant &nbsp;&middot;&nbsp; ${c.nc} NC</div>
+        <div class="prt-client-card-bar"><div class="prt-client-card-bar-fill" style="width:${c.rate}%;background:${color}"></div></div>
+        ${c.expired.length || c.noCOI.length ? `<div style="font-size:10px;margin-top:6px;color:var(--muted)">${c.expired.length?`<span style="color:#EA580C">${c.expired.length} expired</span>`:''}${c.expired.length&&c.noCOI.length?' &nbsp;&middot;&nbsp; ':''}${c.noCOI.length?`<span style="color:#D97706">${c.noCOI.length} no COI</span>`:''}</div>` : ''}
+      </div>`;
+    }).join('');
 }
 
 function prtShowClient(clientName) {
@@ -2303,7 +2377,7 @@ function prtShowClient(clientName) {
     <div class="prt-drill-hdr">
       <div>
         <div class="prt-drill-name">${esc(clientName)}</div>
-        <div style="font-size:12px;color:var(--muted);margin-top:2px">${client.total.toLocaleString()} active vendors &nbsp;&middot;&nbsp; <span style="font-weight:700;color:${rateColor}">${client.rate}% compliant</span> &nbsp;&middot;&nbsp; ${chgStr}</div>
+        <div style="font-size:12px;color:var(--muted);margin-top:2px">${client.total.toLocaleString()} active vendors &nbsp;&middot;&nbsp; <span style="font-weight:700;color:${rateColor}">${client.rate}% compliant</span> &nbsp;&middot;&nbsp; ${({'general':'General','project':'Subcontractors','location':'Tenants'})[client.structure]||'General'} &nbsp;&middot;&nbsp; ${client.platform==='trustlayer'?'TrustLayer':'Evident'} &nbsp;&middot;&nbsp; ${chgStr}</div>
       </div>
       <button class="prt-drill-close" onclick="prtShowClient('${clientName.replace(/'/g,"\\'")}')" title="Close">&#10005;</button>
     </div>
@@ -7270,7 +7344,7 @@ function ceAutoDetectColors() {
 </style>
 
 <!-- ═══ DEBUG PANEL ═══ -->
-<div id="cs-debug-panel" style="display:none;position:fixed;bottom:12px;right:12px;background:#1a1a2e;color:#e0e0e0;font-family:monospace;font-size:11px;padding:10px 12px;border-radius:8px;z-index:99999;min-width:280px;max-width:340px;box-shadow:0 4px 20px rgba(0,0,0,.5);border:1px solid #333;max-height:380px;overflow:hidden;flex-direction:column">
+<div id="cs-debug-panel" style="display:none;position:fixed;bottom:12px;right:12px;background:#1a1a2e;color:#e0e0e0;font-family:monospace;font-size:11px;padding:10px 12px;border-radius:8px;z-index:99999;min-width:280px;max-width:340px;box-shadow:0 4px 20px rgba(0,0,0,.5);border:1px solid #333;max-height:380px;overflow:hidden;display:flex;flex-direction:column">
   <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px">
     <span style="font-weight:700;color:#00AEEF;font-size:12px">&#128295; Debug v0.60</span>
     <div style="display:flex;gap:6px">
