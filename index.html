@@ -7242,6 +7242,7 @@ const TLS = {
   section: 'overview',
   view: 'guided',
   apiTab: 'workspace',
+  apiVersion: null,
 };
 let _tlsLogId = 0;
 
@@ -7334,6 +7335,16 @@ async function tlsConnect() {
     btn.textContent = '↺ Reload';
     btn.disabled = false;
     document.getElementById('tls-refresh-btn').disabled = false;
+    // API version check
+    const apiVer = TLS.data.workspace?.apiVersion;
+    TLS.apiVersion = apiVer;
+    if (apiVer === 1) {
+      tlsStatus('⚠️ This workspace runs API v1. The TrustLayer UI uses v1 party types, projects and parties — v2 primary-objects/records are a separate data model and will NOT appear in the TrustLayer UI. Reads work; writes go to the v2 layer only.', 'error');
+    } else if (apiVer === 2) {
+      tlsStatus('✅ API v2 workspace — writes will appear in the TrustLayer UI in real time.', 'success');
+    } else {
+      tlsStatus('⚠️ Could not determine workspace API version. Check API Health for details.', 'info');
+    }
     tlsShowSection('overview');
     toast(`Connected — ${TLS.data.primaryRecords.length} vendors, ${TLS.data.requestRecords.length} requests`, 'success');
   } catch(err) {
@@ -7436,6 +7447,7 @@ function tlsShowSection(name) {
     'create-project':()=>tlsRenderCreateProject(),
     'compliance-tools':()=>tlsRenderComplianceTools(),
     'compliance-profiles':()=>tlsRenderComplianceProfiles(),
+    'api-health':()=>tlsRenderApiHealth(),
     'full-api':()=>tlsRenderFullApi(),
   };
   if (map[name]) map[name]();
@@ -7453,6 +7465,10 @@ function tlsRenderOverview(view) {
   if (view==='raw') { tlsBody(tlsRaw({workspace:TLS.data.workspace,counts:{vendors:TLS.data.primaryRecords.length,projects:TLS.data.contextRecords.length,requests:TLS.data.requestRecords.length,views:TLS.data.views.length}})); return; }
   const d=TLS.data, nc=d.requestRecords.filter(r=>r.complianceStatus==='non_compliant'), comp=d.requestRecords.filter(r=>r.complianceStatus==='compliant'), tot=d.requestRecords.length, pct=tot?Math.round(comp.length/tot*100):0;
   tlsBody(`
+    ${TLS.apiVersion===1?`<div style="margin-bottom:14px;padding:12px 14px;background:#FEF2F2;border:1px solid #FECACA;border-radius:8px;font-size:12px;color:#AC1534;line-height:1.6">
+      <strong>⚠️ API v1 Workspace</strong> — This workspace uses TrustLayer's v1 data model. The sandbox reads from and writes to the v2 layer (<code style="background:rgba(0,0,0,.06);padding:1px 4px;border-radius:3px">primary-objects</code>, <code style="background:rgba(0,0,0,.06);padding:1px 4px;border-radius:3px">primary-records</code>, etc.) which is a <strong>separate data model</strong> from what the TrustLayer UI shows. Party types and parties you create here will not appear in the TL UI. To interact with what the UI shows, use the v1 endpoints in the Full API Explorer.</div>`
+    :TLS.apiVersion===2?`<div style="margin-bottom:14px;padding:10px 14px;background:rgba(62,189,62,.08);border:1px solid #BBF7D0;border-radius:8px;font-size:12px;color:#166534">✅ <strong>API v2 Workspace</strong> — Writes made here will appear in the TrustLayer UI in real time.</div>`
+    :`<div style="margin-bottom:14px;padding:10px 14px;background:#FEF9EC;border:1px solid #F3B921;border-radius:8px;font-size:12px;color:#78350F">⚠️ Workspace API version unknown — check API Health panel.</div>`}
     <div class="tls-kpi-grid">
       <div class="tls-kpi tls-kpi-blue" onclick="tlsShowSection('primary-records')" style="cursor:pointer"><div class="tls-kpi-val">${d.primaryRecords.length}</div><div class="tls-kpi-lbl">Parties</div></div>
       <div class="tls-kpi tls-kpi-teal" onclick="tlsShowSection('context-records')" style="cursor:pointer"><div class="tls-kpi-val">${d.contextRecords.length}</div><div class="tls-kpi-lbl">Projects</div></div>
@@ -7746,6 +7762,84 @@ async function tlsCreateTagDef(){
     tlsCountsUpdate();
     tlsShowSection('ref-data');
   }catch(e){toast(e?.data?.message||'Failed','error');}
+}
+
+// ── API HEALTH ───────────────────────────────────────────────────────
+async function tlsRenderApiHealth() {
+  tlsBody(`<div style="padding:8px 0;font-size:13px;color:#5A6B7B">Running health checks…</div>`);
+  const ws = TLS.data.workspace;
+  const apiVer = TLS.apiVersion;
+
+  // CORS test — try a simple OPTIONS-triggering method
+  let corsDelete = '…', corsPatch = '…';
+  try {
+    await tlsApi('DELETE', '/primary-records/000000000000000000000000');
+    corsDelete = '✅ allowed';
+  } catch(e) {
+    corsDelete = e?.status === 404 ? '✅ allowed (404 = CORS OK, record not found)' : `❌ blocked (${e?.status||'CORS preflight failed'})`;
+  }
+  try {
+    await tlsApi('PATCH', '/primary-records/000000000000000000000000', {name:'test'});
+    corsPatch = '✅ allowed';
+  } catch(e) {
+    corsPatch = e?.status === 404 ? '✅ allowed (404 = CORS OK, record not found)' : `❌ blocked (${e?.status||'CORS preflight failed'})`;
+  }
+
+  // Key endpoint checks
+  const checks = [
+    {label:'GET /workspace',          fn:()=>tlsApi('GET','/workspace'),                          ver:'v2'},
+    {label:'GET /primary-objects',    fn:()=>tlsApi('GET','/primary-objects?limit=1'),             ver:'v2'},
+    {label:'GET /primary-records',    fn:()=>tlsApi('GET','/primary-records?limit=1'),             ver:'v2'},
+    {label:'GET /context-objects',    fn:()=>tlsApi('GET','/context-objects?limit=1'),             ver:'v2'},
+    {label:'GET /context-records',    fn:()=>tlsApi('GET','/context-records?limit=1'),             ver:'v2'},
+    {label:'GET /request-records',    fn:()=>tlsApi('GET','/request-records?limit=1'),             ver:'v2'},
+    {label:'GET /views',              fn:()=>tlsApi('GET','/views?limit=1'),                       ver:'v2'},
+    {label:'GET /parties (v1)',       fn:()=>tlsApi('GET','/parties?page[size]=1',null,TLS_BASE_V1), ver:'v1'},
+    {label:'GET /projects (v1)',      fn:()=>tlsApi('GET','/projects?page[size]=1',null,TLS_BASE_V1), ver:'v1'},
+    {label:'GET /tags (v1)',          fn:()=>tlsApi('GET','/tags',null,TLS_BASE_V1),               ver:'v1'},
+    {label:'GET /custom-fields (v1)', fn:()=>tlsApi('GET','/custom-fields',null,TLS_BASE_V1),      ver:'v1'},
+    {label:'GET /compliance-profiles (v1)', fn:()=>tlsApi('GET','/compliance-profiles',null,TLS_BASE_V1), ver:'v1'},
+    {label:'GET /party-types (v1)',   fn:()=>tlsApi('GET','/party-types',null,TLS_BASE_V1),        ver:'v1'},
+    {label:'GET /document-types (v1)',fn:()=>tlsApi('GET','/document-types',null,TLS_BASE_V1),     ver:'v1'},
+  ];
+
+  const results = await Promise.allSettled(checks.map(c=>c.fn()));
+
+  const rows = checks.map((c,i) => {
+    const r = results[i];
+    const ok = r.status==='fulfilled';
+    const count = ok ? (r.value?.data?.length ?? r.value?.meta?.count ?? (Array.isArray(r.value)?r.value.length:'—')) : '—';
+    const err = ok ? '' : (r.reason?.status||r.reason?.message||'error');
+    return `<tr>
+      <td>${tlsTag(c.ver==='v2'?'blue':'grey',c.ver)}</td>
+      <td class="mono" style="font-size:11px">${c.label}</td>
+      <td>${ok ? tlsTag('green','✓ OK') : tlsTag('red','✗ '+err)}</td>
+      <td style="text-align:center">${ok?tlsTag('blue',count):''}</td>
+    </tr>`;
+  }).join('');
+
+  const verColor = apiVer===2?'#166534':apiVer===1?'#AC1534':'#78350F';
+  const verBg = apiVer===2?'rgba(62,189,62,.08)':apiVer===1?'#FEF2F2':'#FEF9EC';
+  const verBorder = apiVer===2?'#BBF7D0':apiVer===1?'#FECACA':'#F3B921';
+
+  tlsBody(`
+    <div style="margin-bottom:16px;padding:14px;background:${verBg};border:1px solid ${verBorder};border-radius:8px;font-size:12px;color:${verColor};line-height:1.8">
+      <div style="font-weight:700;font-size:13px;margin-bottom:6px">🔍 Workspace Diagnostics</div>
+      <div><strong>Name:</strong> ${ws?.name||'—'}</div>
+      <div><strong>API Version:</strong> ${apiVer!=null?'v'+apiVer:'unknown'} ${apiVer===1?'— UI uses v1 model; v2 writes are a separate layer':''}${apiVer===2?'— v2 writes appear in TL UI in real time':''}</div>
+      <div><strong>Slug:</strong> ${ws?.slugifyName||'—'}</div>
+    </div>
+    <div style="margin-bottom:16px;padding:14px;background:#F8FAFC;border:1px solid #D1DCE8;border-radius:8px;font-size:12px;line-height:1.8">
+      <div style="font-weight:700;font-size:13px;margin-bottom:6px">🌐 CORS Write Method Tests</div>
+      <div><strong>DELETE:</strong> ${corsDelete}</div>
+      <div><strong>PATCH:</strong> ${corsPatch}</div>
+      <div style="margin-top:6px;color:#5A6B7B;font-size:11px">If blocked, write operations (edit/delete/archive) from the browser will fail. Route through a server-side proxy (e.g. Supabase Edge Function) to enable them.</div>
+    </div>
+    <div style="font-weight:700;font-size:12px;color:#263746;margin-bottom:8px">📡 Endpoint Health</div>
+    <table class="tls-table"><thead><tr><th>Ver</th><th>Endpoint</th><th>Status</th><th>Count</th></tr></thead><tbody>
+    ${rows}
+    </tbody></table>
+    <div class="tls-hint">Runs live API calls — results reflect actual token permissions and CORS policy</div>`);
 }
 
 // ── CREATE FORMS ─────────────────────────────────────────────────────
@@ -8402,6 +8496,7 @@ function tlsBuildShell() {
     </div>
     <div class="tls-nav-grp"><div class="tls-nav-hdr">Full API</div>
       <button class="tls-nav-btn" id="tls-nb-full-api" onclick="tlsShowSection('full-api')">⚡ Full API Explorer</button>
+      <button class="tls-nav-btn" id="tls-nb-api-health" onclick="tlsShowSection('api-health')">🩺 API Health</button>
     </div>
   </div>
 
