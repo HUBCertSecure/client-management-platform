@@ -9002,7 +9002,14 @@ async function tlsRenderApiHealth() {
     await tlsApi('DELETE', '/primary-records/000000000000000000000000');
     corsDelete = '✅ proxy OK';
   } catch(e) {
-    corsDelete = e?.status === 404 ? '✅ proxy OK (404 = record not found, write path works)' : `❌ failed (${e?.status||e?.message||'error'})`;
+    // 404 = proxy works, record not found (expected)
+    // 500 = proxy works, TrustLayer internal error on dummy ID (also means proxy path is open)
+    // anything else (CORS error, network error, 401) = actual failure
+    if (e?.status === 404 || e?.status === 500) {
+      corsDelete = `✅ proxy OK (${e.status} = TL responded — write path is open)`;
+    } else {
+      corsDelete = `❌ failed (${e?.status||e?.message||'error'})`;
+    }
   }
   try {
     await tlsApi('PATCH', '/primary-records/000000000000000000000000', {name:'test'});
@@ -9419,7 +9426,15 @@ async function tlsDelete(ep,id,name){
     if(ep==='primary-objects')TLS.data.primaryObjects=TLS.data.primaryObjects.filter(r=>r._id!==id);
     if(ep==='context-objects')TLS.data.contextObjects=TLS.data.contextObjects.filter(r=>r._id!==id);
     tlsCountsUpdate(); tlsStatusBarRender(); tlsShowSection(TLS.section);
-  }catch(e){toast(e?.data?.message||'Delete failed','error');}
+  }catch(e){
+    // Extract the most useful error message from TrustLayer's response
+    const msg = e?.data?.message || e?.data?.error || e?.data?.detail
+      || (typeof e?.data === 'string' ? e.data : null)
+      || (e?.status ? `HTTP ${e.status}` : null)
+      || e?.message || 'Delete failed';
+    toast(`Delete failed: ${msg}`, 'error');
+    console.error('[TLS DELETE]', e);
+  }
 }
 async function tlsCreateVendor(){
   const t=document.getElementById('tls-cv-type')?.value, n=document.getElementById('tls-cv-name')?.value?.trim();
