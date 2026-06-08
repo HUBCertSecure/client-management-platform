@@ -75,7 +75,7 @@ client,id,name,context_object,status,description,start_date,end_date,archived_at
 "Block Real Estate Services, LLC",69fdf064e45e7dcf5c4375c2,"kci287 - Platte Valley Industrial Center 7 {Platte Valley Investment, LLC}",Project,active,,,,,,2026-05-08,2026-05-28,2026-06-08
 "Block Real Estate Services, LLC",69fdf067fa0b60fcd50d99bf,"kci288 - Platte Valley Industrial Center 8 {Platte Valley Investment, LLC}",Project,active,,,,,,2026-05-08,2026-06-07,2026-06-08
 "Block Real Estate Services, LLC",69fdf06abf1df2fe96926664,"kci289 - Platte Valley Industrial Center 9 {Platte Valley Investment, LLC}",Project,active,,,,,,2026-05-08,2026-06-07,2026-06-08
-"Block Real Estate Services, LLC",69fdf06de45e7dcf5c4377cd,"kci290 - Platte Valley Industrial Center 10 {Platte Valley Investment, LLC}",Project,active,,,,,,2026-05-08,2026-06-07,2026-06-08
+"Block Real Estate Services, LLC",69fdf06de45e7dcf5c4377cd,"kci290 - Platte Valley Industrial Center 10 {Platte Valley Investment, LLC}",Project,active,,,,,,2026-05-08,2026-06-08,2026-06-08
 "Block Real Estate Services, LLC",69fdf07103a2257cd27deaeb,"kci291 - Platte Valley Industrial Center 11 {Platte Valley Investment, LLC}",Project,active,,,,,,2026-05-08,2026-05-28,2026-06-08
 "Block Real Estate Services, LLC",69fdf07502bb2c42a87a2174,"kci862 - Riverside Distribution Center 2 {Riverside Distribution Center Investment, LLC}",Project,active,,,,,,2026-05-08,2026-06-07,2026-06-08
 "Block Real Estate Services, LLC",69fdf07f0e86e2f8723dbc32,"kci863 - Riverside Distribution Center 3 {Riverside Distribution Center Investment, LLC}",Project,active,,,,,,2026-05-08,2026-06-02,2026-06-08
@@ -101,7 +101,7 @@ client,id,name,context_object,status,description,start_date,end_date,archived_at
 "Block Real Estate Services, LLC",69fdf0c802bb2c42a87a35a2,"pla047 - 4700 Summer Investors, LLC / Planet Fitness",Project,active,,,,,,2026-05-08,2026-05-28,2026-06-08
 "Block Real Estate Services, LLC",69fdf0cbe45e7dcf5c438bc3,"pma106 - 5055 Antioch {Pine Meadows Associates, LLC}",Project,active,,,,,,2026-05-08,2026-05-28,2026-06-08
 "Block Real Estate Services, LLC",69fdf0cf3b208288e0a7f650,"prg801 - Pine Ridge Building A {PERG BUILDINGS, LLC}",Project,active,,,,,,2026-05-08,2026-06-05,2026-06-08
-"Block Real Estate Services, LLC",69fdf0d2e45e7dcf5c438d24,"prg802 - Pine Ridge Building B {PERG BUILDINGS, LLC}",Project,active,,,,,,2026-05-08,2026-06-07,2026-06-08
+"Block Real Estate Services, LLC",69fdf0d2e45e7dcf5c438d24,"prg802 - Pine Ridge Building B {PERG BUILDINGS, LLC}",Project,active,,,,,,2026-05-08,2026-06-08,2026-06-08
 "Block Real Estate Services, LLC",69fdf0d602bb2c42a87a37d2,"prg803 - Pine Ridge Building C {PERG BUILDINGS, LLC}",Project,active,,,,,,2026-05-08,2026-06-08,2026-06-08
 "Block Real Estate Services, LLC",69fdf0d9e45e7dcf5c438e0a,"prg804 - Pine Ridge Building D {PERG BUILDINGS, LLC}",Project,active,,,,,,2026-05-08,2026-06-08,2026-06-08
 "Block Real Estate Services, LLC",69fdf0dc02bb2c42a87a39b3,"prg805 - Pine Ridge Building E-1 {PERG BUILDINGS, LLC}",Project,active,,,,,,2026-05-08,2026-06-08,2026-06-08
@@ -168,7 +168,7 @@ client,id,name,context_object,status,description,start_date,end_date,archived_at
 "Block Real Estate Services, LLC",69fdf2023b208288e0a871b2,"tic846 - Pine Ridge Building 26 {PERG BUILDINGS, LLC}",Project,active,,,,,,2026-05-08,2026-06-01,2026-06-08
 "Block Real Estate Services, LLC",69fdf20a02bb2c42a87a98b0,"tic847 - Pine Ridge Building 27 {PERG BUILDINGS, LLC}",Project,active,,,,,,2026-05-08,2026-06-08,2026-06-08
 "Block Real Estate Services, LLC",69fdf20e8e25e7a0d918b96c,"tic851 - Pine Ridge Building 31 {PERG Corbion, LLC}",Project,active,,,,,,2026-05-08,2026-06-02,2026-06-08
-"Block Real Estate Services, LLC",69fdf211bf1df2fe9692fce4,"tic873 - Northgate Plaza {Northgate Associates, LLC}",Project,active,,,,,,2026-05-08,2026-06-07,2026-06-08
+"Block Real Estate Services, LLC",69fdf211bf1df2fe9692fce4,"tic873 - Northgate Plaza {Northgate Associates, LLC}",Project,active,,,,,,2026-05-08,2026-06-08,2026-06-08
 "Block Real Estate Services, LLC",69fdf21419e1eeeaeb9ad90b,"tic880 - 8040 Bond {8040 Bond Investors, LLC}",Project,active,,,,,,2026-05-08,2026-05-27,2026-06-08
 "Block Real Estate Services, LLC",69fdf21802bb2c42a87aa766,"tic921 - Millennium Business Park {Millennium Lenexa, LLC}",Project,active,,,,,,2026-05-08,2026-06-07,2026-06-08
 "Block Real Estate Services, LLC",69fdf21b8e25e7a0d918bf24,tic949 - Staples Building {Orchard Cambridge Investors LLC} (fka Corporate Express [BIF III - CEB Executive Park]),Project,active,,,,,,2026-05-08,2026-06-02,2026-06-08
@@ -257,7 +257,7 @@ DEMO Client,6a0b3e35b969c617163dd612,Hauler,Project,active,,,,,,2026-05-18,2026-
 DEMO Client,6a0b3e35b969c617163dd613,Speciality Vendor,Project,active,,,,,,2026-05-18,2026-05-18,2026-06-08
 DEMO Client,6a0b3e35b969c617163dd60e,"Project 101 - Riverside Office Complex, Chicago IL",Project,active,,,,,,2026-05-18,2026-06-08,2026-06-08
 DEMO Client,6a0b3e35b969c617163dd60f,"Project 102 - Lakefront Residential Tower, Evanston IL",Project,active,,,,,,2026-05-18,2026-05-18,2026-06-08
-DEMO Client,6a0b3e35b969c617163dd610,"Project 103 - Distribution Center, Bedford Park IL",Project,active,,,,,,2026-05-18,2026-06-02,2026-06-08
+DEMO Client,6a0b3e35b969c617163dd610,"Project 103 - Distribution Center, Bedford Park IL",Project,active,,,,,,2026-05-18,2026-06-08,2026-06-08
 DEMO Client,6a0b3e35b969c617163dd60a,Retail Location,Project,active,,,,,,2026-05-18,2026-05-18,2026-06-08
 DEMO Client,6a0b3e35b969c617163dd60b,Restaurtant Location,Project,active,,,,,,2026-05-18,2026-05-18,2026-06-08
 DEMO Client,6a0b3e35b969c617163dd60c,Office Location 1,Project,active,,,,,,2026-05-18,2026-06-08,2026-06-08
