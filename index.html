@@ -2206,8 +2206,38 @@ async function prtLoad() {
     try { liveIns  = await fetchCSV(s.insuredsPath  || 'data/evident/insureds.csv'); }  catch(e) {}
     try { liveCrit = await fetchCSV(s.criteriaPath  || 'data/evident/criteria.csv'); }  catch(e) {}
     try { liveCov  = await fetchCSV(s.coveragesPath || 'data/evident/coverages.csv'); } catch(e) {}
-    try { liveEng  = await fetchCSV(s.notificationsPath || 'data/evident/engagement.csv'); } catch(e) {}
-    try { const tlEng = await fetchCSV(s.tlNotificationsPath || 'data/trustlayer/engagement.csv'); liveEng = [...liveEng, ...tlEng]; } catch(e) {}
+    let engLoadMsg = '';
+    try {
+      liveEng = await fetchCSV(s.notificationsPath || 'data/evident/engagement.csv');
+      engLoadMsg += `EV: ${liveEng.length} rows`;
+      if (liveEng.length > 0) {
+        // Check if columns match what we expect
+        const sample = liveEng[0];
+        const cols = Object.keys(sample);
+        const hasType  = cols.includes('Type')  || cols.includes('type');
+        const hasEmail = cols.includes('Email') || cols.includes('email');
+        if (!hasType || !hasEmail)
+          engLoadMsg += ` (⚠ unexpected columns: ${cols.slice(0,5).join(', ')})`;
+      }
+    } catch(e) { engLoadMsg += `EV: failed (${e.message})`; }
+    try {
+      const tlEng = await fetchCSV(s.tlNotificationsPath || 'data/trustlayer/engagement.csv');
+      liveEng = [...liveEng, ...tlEng];
+      engLoadMsg += ` · TL: ${tlEng.length} rows`;
+    } catch(e) { engLoadMsg += ` · TL: not found`; }
+    setMsg(`Engagement: ${engLoadMsg}`);
+    // Normalise column names if CSV uses lowercase headers
+    if (liveEng.length > 0) {
+      const firstKey = Object.keys(liveEng[0]);
+      const needsNorm = firstKey.includes('type') || firstKey.includes('email');
+      if (needsNorm) {
+        liveEng = liveEng.map(r => {
+          const n = {};
+          Object.entries(r).forEach(([k, v]) => { n[k.charAt(0).toUpperCase() + k.slice(1)] = v; });
+          return n;
+        });
+      }
+    }
     try { const tlI = await fetchCSV(s.tlInsuredsPath  || 'data/trustlayer/insureds.csv');  liveIns  = [...liveIns,  ...tlI]; } catch(e) {}
     try { const tlC = await fetchCSV(s.tlCriteriaPath  || 'data/trustlayer/criteria.csv');  liveCrit = [...liveCrit, ...tlC]; } catch(e) {}
     try { const tlV = await fetchCSV(s.tlCoveragesPath || 'data/trustlayer/coverages.csv'); liveCov  = [...liveCov,  ...tlV]; } catch(e) {}
@@ -2345,7 +2375,7 @@ async function prtLoad() {
     const moNames = {1:'Jan',2:'Feb',3:'Mar',4:'Apr',5:'May',6:'Jun',7:'Jul',8:'Aug',9:'Sep',10:'Oct',11:'Nov',12:'Dec'};
     const fmtYM = ym => { const [y,m] = ym.split('-'); return `${moNames[parseInt(m)]} ${y}`; };
     const narrative = `As of ${new Date().toLocaleDateString('en-US',{month:'long',day:'numeric',year:'numeric'})}, the CertSecure program manages ${clientStats.length} active client programs across ${totalActive.toLocaleString()} tracked vendors. Overall compliance stands at ${overallRate}% \u2014 ${countCompliant.toLocaleString()} compliant, ${countNC.toLocaleString()} non-compliant, ${countExpired.toLocaleString()} with expired coverage, and ${countNoCOI.toLocaleString()} with no certificate on file. Program compliance is ${trendWord} over the selected period${rateChange !== 0 ? ' (' + (rateChange > 0 ? '+' : '') + rateChange + '% from start of range)' : ''}.`;
-    _prtData = { fromYM, toYM, fmtYM, monthlyTrend, totalActive, countCompliant, countNC, countExpired, countNoCOI, overallRate, firstRate, rateChange, criteriaSorted, topNCReasons, ncReasonsByType, sentSet, openSet, issueSet, engRate, clientStats, expiredEntities, noCOIEntities, narrative };
+    _prtData = { fromYM, toYM, fmtYM, monthlyTrend, totalActive, countCompliant, countNC, countExpired, countNoCOI, overallRate, firstRate, rateChange, criteriaSorted, topNCReasons, ncReasonsByType, sentSet, openSet, issueSet, engRate, engLoadMsg, clientStats, expiredEntities, noCOIEntities, narrative };
     prtRender(_prtData);
   } catch(e) {
     if (loadMsg) loadMsg.textContent = 'Failed to load: ' + e.message;
@@ -2419,7 +2449,7 @@ function prtRender(d) {
     engWrap.style.display = '';
     const noEng = !d.sentSet.size;
     engEl.innerHTML = noEng
-      ? `<div style="font-size:12px;color:var(--muted);padding:10px 0;font-style:italic">No engagement data loaded for this period. Check that the engagement CSV path is set correctly in Settings.</div>`
+      ? `<div style="font-size:12px;color:var(--muted);padding:10px 0;font-style:italic">No engagement data loaded. ${d.engLoadMsg ? '(' + d.engLoadMsg + ')' : 'Check the engagement CSV path in Settings → CSV File Paths.'}</div>`
       : `<div style="display:grid;grid-template-columns:repeat(4,1fr);gap:12px">
         <div class="prt-kpi grey"><div class="prt-kpi-lbl">Contacts Reached</div><div class="prt-kpi-val" style="color:#0678D5">${d.sentSet.size.toLocaleString()}</div></div>
         <div class="prt-kpi grey"><div class="prt-kpi-lbl">Opened</div><div class="prt-kpi-val" style="color:#0678D5">${d.openSet.size.toLocaleString()}</div></div>
