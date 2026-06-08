@@ -397,6 +397,7 @@
               <div class="form-grp"><label class="form-lbl">Insureds</label><input type="text" id="s-tl-insureds" placeholder="data/trustlayer/insureds.csv"></div>
               <div class="form-grp"><label class="form-lbl">Coverages</label><input type="text" id="s-tl-coverages" placeholder="data/trustlayer/coverages.csv"></div>
               <div class="form-grp"><label class="form-lbl">Criteria</label><input type="text" id="s-tl-criteria" placeholder="data/trustlayer/criteria.csv"></div>
+              <div class="form-grp"><label class="form-lbl">Engagement</label><input type="text" id="s-tl-notifications" placeholder="data/trustlayer/engagement.csv"></div>
             </div>
           </div>
         </div>
@@ -750,6 +751,7 @@
       <button class="prt-preset"        id="prt-f-plat-ev"  onclick="prtSetFilter('plat','evident')">EV</button>
       <button class="prt-preset"        id="prt-f-plat-tl"  onclick="prtSetFilter('plat','trustlayer')">TL</button>
     </div>
+    <button class="prt-dl-btn" style="border-color:rgba(6,120,213,.4);color:#0678D5;background:rgba(6,120,213,.06)" onclick="prtCheckPaths()" title="Check CSV file paths">&#128269; Paths</button>
     <button class="prt-dl-btn pdf" onclick="prtDownloadPDF()" title="Download PDF Report">&#8659; PDF</button>
     <button class="prt-dl-btn xl" onclick="prtDownloadExcel()" title="Download Excel">&#8659; Excel</button>
   </div>
@@ -2205,6 +2207,7 @@ async function prtLoad() {
     try { liveCrit = await fetchCSV(s.criteriaPath  || 'data/evident/criteria.csv'); }  catch(e) {}
     try { liveCov  = await fetchCSV(s.coveragesPath || 'data/evident/coverages.csv'); } catch(e) {}
     try { liveEng  = await fetchCSV(s.notificationsPath || 'data/evident/engagement.csv'); } catch(e) {}
+    try { const tlEng = await fetchCSV(s.tlNotificationsPath || 'data/trustlayer/engagement.csv'); liveEng = [...liveEng, ...tlEng]; } catch(e) {}
     try { const tlI = await fetchCSV(s.tlInsuredsPath  || 'data/trustlayer/insureds.csv');  liveIns  = [...liveIns,  ...tlI]; } catch(e) {}
     try { const tlC = await fetchCSV(s.tlCriteriaPath  || 'data/trustlayer/criteria.csv');  liveCrit = [...liveCrit, ...tlC]; } catch(e) {}
     try { const tlV = await fetchCSV(s.tlCoveragesPath || 'data/trustlayer/coverages.csv'); liveCov  = [...liveCov,  ...tlV]; } catch(e) {}
@@ -2904,6 +2907,91 @@ async function buildPRTExcel(d) {
 }
 // ── END PRT EXPORTS ───────────────────────────────────────────────────────────
 
+async function prtCheckPaths() {
+  const s = getSettings();
+  const base = `https://api.github.com/repos/${s.owner}/${s.repo}/contents/`;
+  const auth = { headers: { 'Authorization': `token ${s.pat}`, 'Accept': 'application/vnd.github.v3+json' } };
+  if (!s.pat) { toast('No PAT configured — open Settings first', 'error'); return; }
+
+  const btn = document.querySelector('.prt-dl-btn[onclick="prtCheckPaths()"]');
+  if (btn) { btn.textContent = '⏳ Checking…'; btn.disabled = true; }
+
+  const paths = [
+    { label: 'EV Insureds',   path: s.insuredsPath  || 'data/evident/insureds.csv' },
+    { label: 'EV Criteria',   path: s.criteriaPath  || 'data/evident/criteria.csv' },
+    { label: 'EV Coverages',  path: s.coveragesPath || 'data/evident/coverages.csv' },
+    { label: 'EV Engagement', path: s.notificationsPath || 'data/evident/engagement.csv' },
+    { label: 'TL Insureds',   path: s.tlInsuredsPath  || 'data/trustlayer/insureds.csv' },
+    { label: 'TL Criteria',   path: s.tlCriteriaPath  || 'data/trustlayer/criteria.csv' },
+    { label: 'TL Coverages',  path: s.tlCoveragesPath || 'data/trustlayer/coverages.csv' },
+    { label: 'TL Engagement', path: s.tlNotificationsPath || 'data/trustlayer/engagement.csv' },
+  ];
+
+  const results = await Promise.all(paths.map(async ({ label, path }) => {
+    try {
+      const res = await fetch(base + path + '?ref=' + (s.branch || 'main'), auth);
+      if (!res.ok) return { label, path, ok: false, detail: `HTTP ${res.status}` };
+      const meta = await res.json();
+      // Get row count from content or blob
+      let raw = '';
+      if (meta.content && meta.content.trim()) {
+        raw = atob(meta.content.replace(/
+/g, ''));
+      } else if (meta.sha) {
+        try {
+          const blob = await (await fetch(`https://api.github.com/repos/${s.owner}/${s.repo}/git/blobs/${meta.sha}`, auth)).json();
+          raw = atob(blob.content.replace(/
+/g, ''));
+        } catch(_) { return { label, path, ok: true, detail: 'exists (size unknown)' }; }
+      }
+      const rows = raw.trim() ? raw.trim().split('
+').length - 1 : 0;
+      // Sample client values from first 3 columns
+      let sample = '';
+      if (rows > 0 && typeof Papa !== 'undefined') {
+        const parsed = Papa.parse(raw, { header: true, skipEmptyLines: true });
+        const clientCol = parsed.meta.fields?.find(f => f.toLowerCase() === 'client') || parsed.meta.fields?.[0];
+        const vals = [...new Set(parsed.data.slice(0, 200).map(r => r[clientCol] || '').filter(Boolean))].slice(0, 4);
+        if (vals.length) sample = ' · clients: ' + vals.join(', ');
+      }
+      return { label, path, ok: true, detail: `${rows.toLocaleString()} rows${sample}` };
+    } catch(e) {
+      return { label, path, ok: false, detail: e.message };
+    }
+  }));
+
+  if (btn) { btn.textContent = '🔍 Paths'; btn.disabled = false; }
+
+  // Show results inline below the topbar
+  const existing = document.getElementById('prt-path-check');
+  if (existing) existing.remove();
+
+  const panel = document.createElement('div');
+  panel.id = 'prt-path-check';
+  panel.style.cssText = 'background:var(--card);border-bottom:1px solid var(--border);padding:12px 24px;font-size:12px;display:flex;flex-direction:column;gap:6px;flex-shrink:0';
+
+  const header = document.createElement('div');
+  header.style.cssText = 'display:flex;align-items:center;justify-content:space-between';
+  header.innerHTML = `<span style="font-weight:700;font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted)">CSV Path Check</span><button onclick="document.getElementById('prt-path-check').remove()" style="background:none;border:none;cursor:pointer;color:var(--muted);font-size:14px">✕</button>`;
+  panel.appendChild(header);
+
+  const grid = document.createElement('div');
+  grid.style.cssText = 'display:grid;grid-template-columns:repeat(auto-fill,minmax(340px,1fr));gap:6px';
+  results.forEach(r => {
+    const row = document.createElement('div');
+    row.style.cssText = `display:flex;align-items:flex-start;gap:8px;padding:6px 10px;border-radius:6px;background:${r.ok ? 'rgba(62,189,62,.07)' : 'rgba(172,21,52,.06)'};border:1px solid ${r.ok ? 'rgba(62,189,62,.2)' : 'rgba(172,21,52,.2)'}`;
+    row.innerHTML = `<span style="font-size:14px;flex-shrink:0">${r.ok ? '✅' : '❌'}</span><div><div style="font-weight:700;color:var(--text)">${r.label}</div><div style="color:var(--muted);font-size:11px">${r.path}</div><div style="font-size:11px;color:${r.ok ? '#2E8B2E' : '#AC1534'}">${r.detail}</div></div>`;
+    grid.appendChild(row);
+  });
+  panel.appendChild(grid);
+
+  // Insert after topbar
+  const topbar = document.querySelector('.prt-topbar');
+  if (topbar && topbar.nextSibling) {
+    topbar.parentNode.insertBefore(panel, topbar.nextSibling);
+  }
+}
+
 function prtDownloadPDF() {
   if (!_prtData) { toast('Load data first', 'error'); return; }
   printHTMLasPDF(buildPRTHTML(_prtData));
@@ -3125,6 +3213,7 @@ const DEFAULTS = {
   insuredsPath:'data/evident/insureds.csv', coveragesPath:'data/evident/coverages.csv',
   criteriaPath:'data/evident/criteria.csv', customPropsPath:'data/evident/custom_properties.csv',
   notificationsPath:'data/evident/engagement.csv',
+  tlNotificationsPath:'data/trustlayer/engagement.csv',
   tlInsuredsPath:'data/trustlayer/insureds.csv', tlCoveragesPath:'data/trustlayer/coverages.csv', tlCriteriaPath:'data/trustlayer/criteria.csv',
 };
 function getSettings() { return { ...DEFAULTS, ...JSON.parse(localStorage.getItem('cs-settings') || '{}') }; }
@@ -3140,6 +3229,7 @@ function openSettings() {
   document.getElementById('s-criteria').value      = s.criteriaPath;
   document.getElementById('s-customprops').value   = s.customPropsPath;
   document.getElementById('s-notifications').value = s.notificationsPath;
+  const stln = document.getElementById('s-tl-notifications'); if (stln) stln.value = s.tlNotificationsPath || 'data/trustlayer/engagement.csv';
   document.getElementById('s-tl-insureds').value   = s.tlInsuredsPath;
   document.getElementById('s-tl-coverages').value  = s.tlCoveragesPath;
   document.getElementById('s-tl-criteria').value   = s.tlCriteriaPath;
@@ -3256,6 +3346,7 @@ function saveSettings() {
     insuredsPath: document.getElementById('s-insureds').value.trim(), coveragesPath: document.getElementById('s-coverages').value.trim(),
     criteriaPath: document.getElementById('s-criteria').value.trim(), customPropsPath: document.getElementById('s-customprops').value.trim(),
     notificationsPath: document.getElementById('s-notifications').value.trim(),
+    tlNotificationsPath: (document.getElementById('s-tl-notifications')?.value||'').trim() || 'data/trustlayer/engagement.csv',
     tlInsuredsPath: document.getElementById('s-tl-insureds').value.trim(), tlCoveragesPath: document.getElementById('s-tl-coverages').value.trim(), tlCriteriaPath: document.getElementById('s-tl-criteria').value.trim(),
   }));
   // Also persist Monday token independently so it survives page refreshes
@@ -8380,9 +8471,15 @@ async function tlsApi(method, path, body=null, baseUrl=TLS_BASE_V2) {
     let res;
     if (isWrite) {
       // Route writes through Supabase edge proxy to bypass TrustLayer CORS restriction
+      // Supabase edge functions require Authorization: Bearer <session_token or anon_key>
+      let supaAuthToken = SUPABASE_KEY; // fallback to anon key
+      try {
+        const { data: { session } } = await getSupabase().auth.getSession();
+        if (session?.access_token) supaAuthToken = session.access_token;
+      } catch(_) {}
       res = await fetch(TLS_PROXY_URL, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${supaAuthToken}` },
         body: JSON.stringify({ method: method.toUpperCase(), url, body: body || undefined, token }),
       });
     } else {
