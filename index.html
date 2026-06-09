@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>CertSecure Tools</title>
-  <link href="https://fonts.googleapis.com/css2?family=Barlow:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+  <!-- Font: Arial (HUB brand approved) -->
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="https://cdn.jsdelivr.net/npm/exceljs@4.4.0/dist/exceljs.min.js"></script>
   <script>if(typeof ExcelJS==='undefined'){document.write('<scr'+'ipt src="https://cdnjs.cloudflare.com/ajax/libs/exceljs/4.4.0/exceljs.min.js"><\/scr'+'ipt>');}</script>
@@ -12,7 +12,7 @@
   <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
   <style>
     *{box-sizing:border-box;margin:0;padding:0}*{scrollbar-width:none!important;-ms-overflow-style:none!important}*::-webkit-scrollbar{display:none!important}
-    :root{--transition:0.22s ease;--navy:#263746;--blue:#0678D5;--blue-hover:#005BB5;--blue-light:#EBF4FF;--bg:#F0F4F8;--white:#FFFFFF;--border:#D1DCE8;--text:#1E2E3D;--muted:#5A6B7B;--green:#3EBD3E;--green-bg:rgba(62,189,62,0.12);--red:#AC1534;--red-bg:#FEF2F2;--orange:#F3B921;--font:'Barlow',Arial,sans-serif;--radius:8px;--shadow:0 2px 8px rgba(0,0,0,0.08);--shadow-lg:0 8px 24px rgba(0,0,0,0.12);--classic-dark:#18252D;--electric-blue:#0678D5;--shocking-blue:#00AEEF}
+    :root{--transition:0.22s ease;--navy:#263746;--blue:#0678D5;--blue-hover:#005BB5;--blue-light:#EBF4FF;--bg:#F0F4F8;--white:#FFFFFF;--border:#D1DCE8;--text:#1E2E3D;--muted:#5A6B7B;--green:#3EBD3E;--green-bg:rgba(62,189,62,0.12);--red:#AC1534;--red-bg:#FEF2F2;--orange:#F3B921;--font:Arial,sans-serif;--radius:8px;--shadow:0 2px 8px rgba(0,0,0,0.08);--shadow-lg:0 8px 24px rgba(0,0,0,0.12);--classic-dark:#18252D;--electric-blue:#0678D5;--shocking-blue:#00AEEF}
     body{font-family:var(--font);background:var(--bg);color:var(--text);min-height:100vh;transition:background var(--transition),color var(--transition)}
     html.dark{--navy:#263746;--blue:#0678D5;--blue-hover:#005BB5;--blue-light:#EBF4FF;--bg:#F0F4F8;--white:#FFFFFF;--border:#D1DCE8;--text:#1E2E3D;--muted:#5A6B7B;--green:#3EBD3E;--green-bg:rgba(62,189,62,0.12);--red:#AC1534;--red-bg:#FEF2F2;--shadow:0 2px 8px rgba(0,0,0,0.08);--shadow-lg:0 8px 24px rgba(0,0,0,0.12)}
     html.dark .header{background:#18252D;border-bottom:1px solid rgba(0,174,239,0.2)}html.dark .client-card,html.dark .report-card{background:var(--white)}html.dark .login-card{background:#fff}html.dark .login-input{background:#FAFBFD;border-color:#D1DCE8;color:#1E2E3D}html.dark select,html.dark input[type="text"],html.dark input[type="date"]{background:#0F1620;color:var(--text);border-color:var(--border)}html.dark .modal{background:#fff;border-radius:12px;box-shadow:0 20px 60px rgba(0,0,0,0.18);border:1px solid rgba(6,120,213,0.1)}html.dark .notif-drawer{background:#1A2332;border-color:var(--border)}
@@ -53,11 +53,11 @@
     #auth-overlay{position:fixed;inset:0;z-index:9999;background:linear-gradient(135deg,#18252D 0%,#263746 55%,#1C3A52 100%);display:flex;align-items:center;justify-content:center}
     .login-wrap{width:100%;max-width:860px;display:flex;border-radius:14px;overflow:hidden;box-shadow:0 24px 64px rgba(0,0,0,0.4);margin:20px}.login-card{flex:1;background:#fff;padding:44px 40px 36px;border-radius:0}
     .login-logo{display:none}.logo-cert{display:none}.logo-secure{display:none}.logo-sub{display:none}
-    .login-title{font-size:22px;font-weight:700;color:#263746;margin-bottom:6px;font-family:"Barlow",Arial,sans-serif}.login-sub{font-size:12px;color:#5A6B7B;margin-bottom:24px;line-height:1.5}
+    .login-title{font-size:22px;font-weight:700;color:#263746;margin-bottom:6px;font-family:Arial,sans-serif}.login-sub{font-size:12px;color:#5A6B7B;margin-bottom:24px;line-height:1.5}
     .login-err{background:#FDF0EE;border:1px solid #F5CFC9;border-radius:8px;padding:10px 14px;font-size:12px;color:#C0392B;margin-bottom:16px}
     .login-field{margin-bottom:16px}.login-label{display:block;font-size:10px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:#5A6B7B;margin-bottom:6px}
-    .login-input{width:100%;box-sizing:border-box;padding:11px 14px;border:1.5px solid #D1DCE8;border-radius:7px;font-size:14px;font-family:"Barlow",Arial,sans-serif;color:#1E2E3D;outline:none;transition:border-color .15s,box-shadow .15s;background:#FAFBFD}.login-input:focus{border-color:#0678D5;box-shadow:0 0 0 3px rgba(6,120,213,0.1);background:#fff}
-    .login-btn{width:100%;padding:13px;background:#0678D5;color:#fff;border:none;border-radius:7px;font-size:14px;font-weight:700;font-family:"Barlow",Arial,sans-serif;cursor:pointer;margin-top:8px;transition:background .15s;letter-spacing:.04em}.login-btn:hover{background:#005BB5}.login-btn:disabled{background:#94A3B8;cursor:not-allowed}
+    .login-input{width:100%;box-sizing:border-box;padding:11px 14px;border:1.5px solid #D1DCE8;border-radius:7px;font-size:14px;font-family:Arial,sans-serif;color:#1E2E3D;outline:none;transition:border-color .15s,box-shadow .15s;background:#FAFBFD}.login-input:focus{border-color:#0678D5;box-shadow:0 0 0 3px rgba(6,120,213,0.1);background:#fff}
+    .login-btn{width:100%;padding:13px;background:#0678D5;color:#fff;border:none;border-radius:7px;font-size:14px;font-weight:700;font-family:Arial,sans-serif;cursor:pointer;margin-top:8px;transition:background .15s;letter-spacing:.04em}.login-btn:hover{background:#005BB5}.login-btn:disabled{background:#94A3B8;cursor:not-allowed}
     .login-footer{font-size:10px;color:#94A3B8;text-align:center;margin-top:20px;line-height:1.4}.login-link{font-size:12px;color:#0678D5;text-decoration:none;font-weight:600}.login-link:hover{text-decoration:underline}
     .role-badge{display:inline-block;font-size:9px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;padding:2px 7px;border-radius:10px}
     .btn-sm-ghost{font-size:11px;padding:4px 10px;border:1px solid var(--border);border-radius:5px;background:var(--white);cursor:pointer;color:var(--navy);font-family:inherit}.btn-sm-ghost:hover{background:var(--bg)}
