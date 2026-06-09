@@ -65,7 +65,7 @@
 //   compliance_profiles.csv
 //   branding.csv
 //   reports.csv
-//   document_requests.csv        (DEMO only)
+//   document_requests.csv        (all clients — sent_at/opened_at per vendor)
 //   waivers.csv                  (DEMO only)
 //   party_comments.csv           (DEMO only)
 // ============================================================
@@ -883,35 +883,36 @@ async function main() {
       console.log(`  Reports: ${reports.length}`);
     } catch(e) { err("reports", {}, e); }
 
-    // ── DEMO-ONLY: DOCUMENT REQUESTS, WAIVERS, PARTY COMMENTS ─
-    if (client.name === DEMO_CLIENT_NAME) {
-      console.log(`\n  [DEMO] Fetching document requests, waivers, comments...`);
-
-      // GET /parties/{id}/document-request  (v1)
-      await pooled(vendors, 5, async (v) => {
-        const id = v._id || v.id;
-        try {
-          const dr = await apiGet(client.token, BASE_V1, `/parties/${id}/document-request`);
-          if (dr) {
-            rows.document_requests.push({
-              client:      client.name,
-              vendor_id:   id,
-              vendor_name: v.name || "",
-              request_id:  dr.id || dr._id || "",
-              status:      dr.status || "",
-              sent_at:     dt(dr.sentAt || dr.createdAt),
-              opened_at:   dt(dr.openedAt),
-              message:     dr.message || "",
-              link:        dr.link || dr.url || "",
-              sync_date:   TODAY,
-            });
-          }
-        } catch(e) {
-          // 404 = no document request for this vendor — normal, skip silently
-          if (!e.message.includes("404")) err("document_requests", { vendor_id: id }, e);
+    // ── DOCUMENT REQUESTS (all clients) ──────────────────────────
+    // GET /parties/{id}/document-request (v1) — sent_at/opened_at per vendor
+    await pooled(vendors, 5, async (v) => {
+      const id = v._id || v.id;
+      try {
+        const dr = await apiGet(client.token, BASE_V1, `/parties/${id}/document-request`);
+        if (dr) {
+          rows.document_requests.push({
+            client:      client.name,
+            vendor_id:   id,
+            vendor_name: v.name || "",
+            request_id:  dr.id || dr._id || "",
+            status:      dr.status || "",
+            sent_at:     dt(dr.sentAt || dr.createdAt),
+            opened_at:   dt(dr.openedAt),
+            message:     dr.message || "",
+            link:        dr.link || dr.url || "",
+            sync_date:   TODAY,
+          });
         }
-      });
-      console.log(`  [DEMO] Document requests: ${rows.document_requests.length}`);
+      } catch(e) {
+        // 404 = no document request for this vendor — normal, skip silently
+        if (!e.message.includes("404")) err("document_requests", { vendor_id: id }, e);
+      }
+    });
+    console.log(`  Document requests: ${rows.document_requests.length}`);
+
+    // ── DEMO-ONLY: WAIVERS, PARTY COMMENTS ────────────────────────
+    if (client.name === DEMO_CLIENT_NAME) {
+      console.log(`\n  [DEMO] Fetching waivers and comments...`);
 
       // GET /parties?include=complianceProfile  (v1) — waiver data lives in subjects
       try {
