@@ -51,6 +51,15 @@ jobs:
           GOOGLE_SHEET_ID:              ${{ secrets.GOOGLE_SHEET_ID }}
         run: node sync.js
 
+      - name: Run engagement sync (Google Sheets)
+        working-directory: evident-sync/src
+        env:
+          GOOGLE_SERVICE_ACCOUNT_KEY: ${{ secrets.GOOGLE_SERVICE_ACCOUNT_KEY }}
+          GOOGLE_SHEET_ID:            ${{ secrets.GOOGLE_SHEET_ID }}
+          GOOGLE_SHEET_TAB:           'Email Events'
+          DATA_DIR:                   ${{ github.workspace }}/data/evident
+        run: node sync-engagement.js
+
       - name: Commit Evident data
         uses: stefanzweifel/git-auto-commit-action@v5
         with:
@@ -129,7 +138,6 @@ jobs:
 
           echo "Snapshot: EV -> ${EV_DIR}, TL -> ${TL_DIR}"
 
-          # Configure git with PAT for push
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git config user.name "github-actions[bot]"
           git remote set-url origin "https://x-access-token:${GH_PAT}@github.com/HUBCertSecure/client-management-platform.git"
