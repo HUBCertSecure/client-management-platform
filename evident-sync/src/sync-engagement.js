@@ -9,7 +9,7 @@ const crypto  = require("crypto");
 const fs      = require("fs");
 const path    = require("path");
 
-const DATA_DIR  = path.join(__dirname, "..", "..", "data", "evident");
+const DATA_DIR  = process.env.DATA_DIR || path.join(__dirname, "..", "data");
 const SHEET_ID  = process.env.GOOGLE_SHEET_ID || "1FLvwmSEb2rd2-NJHl1vaDiSm4rkwWj9P3WzySJsAd2k";   // set in GitHub Actions env
 const SHEET_TAB = process.env.GOOGLE_SHEET_TAB || "Email Events"; // tab name
 
