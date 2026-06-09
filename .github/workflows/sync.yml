@@ -140,3 +140,4 @@ jobs:
           commit_message: 'chore: daily snapshot ${{ env.DATE }} [skip ci]'
           file_pattern: 'snapshots/**'
           push_options: '--force-with-lease'
+          token: ${{ secrets.GH_PAT }}
