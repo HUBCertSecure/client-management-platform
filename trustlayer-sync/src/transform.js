@@ -254,6 +254,69 @@ function main() {
     });
   }
 
+  // ── engagement.csv ───────────────────────────────────────────
+  // Join document_requests with contacts to get email per vendor
+  // Output columns match Evident engagement CSV: Client, Email, Type, Date, Subject
+  const engagementRows = [];
+  try {
+    const docRequests = readCsv("document_requests.csv");
+    const contacts    = readCsv("contacts.csv");
+
+    // Build vendor_id -> primary email map from contacts
+    const emailByVendor = {};
+    for (const c of contacts) {
+      const vid = (c.vendor_id || "").trim();
+      if (!vid) continue;
+      // Prefer default_request_recipient, then primary, then first contact
+      if (!emailByVendor[vid] || c.is_default_request_recipient === "true" || c.is_primary === "true") {
+        if (c.email) emailByVendor[vid] = c.email.trim();
+      }
+    }
+
+    // 90-day cutoff
+    const cutoff = new Date();
+    cutoff.setDate(cutoff.getDate() - 90);
+
+    for (const dr of docRequests) {
+      const vid   = (dr.vendor_id || "").trim();
+      const email = emailByVendor[vid] || "";
+      if (!email) continue; // skip if no email found
+
+      // sent_at row — Type: send
+      if (dr.sent_at) {
+        const sentDate = new Date(dr.sent_at);
+        if (!isNaN(sentDate) && sentDate >= cutoff) {
+          engagementRows.push({
+            Client:  dr.client || "",
+            Email:   email,
+            Type:    "send",
+            Date:    dr.sent_at,
+            Subject: dr.message || "Compliance Request",
+          });
+        }
+      }
+
+      // opened_at row — Type: open (only if vendor opened it)
+      if (dr.opened_at) {
+        const openDate = new Date(dr.opened_at);
+        if (!isNaN(openDate) && openDate >= cutoff) {
+          engagementRows.push({
+            Client:  dr.client || "",
+            Email:   email,
+            Type:    "open",
+            Date:    dr.opened_at,
+            Subject: dr.message || "Compliance Request",
+          });
+        }
+      }
+    }
+
+    fs.writeFileSync(path.join(DATA_DIR, "engagement.csv"), toCsv(engagementRows));
+    console.log(`✅ engagement.csv — ${engagementRows.length} rows`);
+  } catch (e) {
+    console.log(`⚠️  engagement.csv — skipped (${e.message})`);
+  }
+
   fs.writeFileSync(path.join(DATA_DIR, "insureds.csv"),  toCsv(insuredRows));
   fs.writeFileSync(path.join(DATA_DIR, "coverages.csv"), toCsv(coverageRows));
   fs.writeFileSync(path.join(DATA_DIR, "criteria.csv"),  toCsv(criteriaRows));
