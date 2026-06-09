@@ -261,9 +261,9 @@
     #tab-home { padding: 32px 28px; }
     /* ── Program Review Tool ── */
     #tab-prt { padding: 0; display: flex; flex-direction: column; height: 100%; min-height: 0; }
-    .prt-topbar { display: flex; align-items: center; gap: 10px; padding: 14px 24px 12px; border-bottom: 1px solid var(--border); flex-wrap: wrap; flex-shrink: 0; background: var(--card); }
+    .prt-topbar { display: flex; align-items: center; gap: 8px; padding: 10px 20px; border-bottom: 1px solid var(--border); flex-wrap: nowrap; flex-shrink: 0; background: var(--card); overflow-x: auto; }
     .prt-topbar-title { font-size: 15px; font-weight: 800; color: var(--text); letter-spacing: .02em; margin-right: 4px; }
-    .prt-preset { background: none; border: 1.5px solid var(--border); border-radius: 6px; padding: 5px 12px; font-size: 12px; font-weight: 600; font-family: var(--font); color: var(--muted); cursor: pointer; transition: all .15s; }
+    .prt-preset { background: none; border: 1.5px solid var(--border); border-radius: 5px; padding: 4px 10px; font-size: 11px; font-weight: 600; font-family: var(--font); color: var(--muted); cursor: pointer; transition: all .15s; white-space: nowrap; }
     .prt-preset:hover { border-color: #00AEEF; color: #00AEEF; }
     .prt-preset.active { background: #00AEEF; border-color: #00AEEF; color: white; }
     .prt-custom-range { display: flex; gap: 8px; align-items: center; }
@@ -828,8 +828,10 @@
       <button class="prt-preset"        id="prt-f-plat-ev"  onclick="prtSetFilter('plat','evident')">EV</button>
       <button class="prt-preset"        id="prt-f-plat-tl"  onclick="prtSetFilter('plat','trustlayer')">TL</button>
     </div>
-        <button class="prt-dl-btn pdf" style="margin-left:auto" onclick="prtDownloadPDF()" title="Download PDF Report">&#8659; PDF</button>
-    <button class="prt-dl-btn xl" onclick="prtDownloadExcel()" title="Download Excel">&#8659; Excel</button>
+    <div style="display:flex;align-items:center;gap:6px;border-left:1px solid var(--border);padding-left:12px">
+      <button class="prt-dl-btn pdf" onclick="prtDownloadPDF()" title="Download PDF Report">&#8659; PDF</button>
+      <button class="prt-dl-btn xl" onclick="prtDownloadExcel()" title="Download Excel">&#8659; Excel</button>
+    </div>
   </div>
   <div class="prt-body" id="prt-body">
     <div class="prt-loading" id="prt-loading">
@@ -2471,6 +2473,11 @@ async function prtLoad() {
                         .sort((a,b) => b[1]-a[1]).slice(0, 4)
         }))
         .sort((a, b) => b.ncVendors - a.ncVendors);
+      // Also build flat per-client reason map (all reasons across all types)
+      const clientReasonMap = {};
+      Object.values(clientCovReasons).forEach(rm => {
+        Object.entries(rm).forEach(([r,n]) => { clientReasonMap[r] = (clientReasonMap[r]||0)+n; });
+      });
       // Keep clientTopNC for backward compat with other sections
       const clientTopNC = clientCovGaps.slice(0, 6).map(g => [g.name, g.ncVendors]);
       const meta = (typeof CLIENT_META_MAP !== 'undefined' && CLIENT_META_MAP[ck]) || {};
@@ -2481,7 +2488,7 @@ async function prtLoad() {
         structure: clientDef.structure || meta.structure || 'general',
         total: liveActive.length, comp: lComp, nc: lNC, rate: lRate,
         expired: clientExpired, noCOI: clientNoCOI,
-        vendors: liveActive, improvement, clientTopNC, clientCovGaps, monthlyRates,
+        vendors: liveActive, improvement, clientTopNC, clientCovGaps, clientReasonMap, monthlyRates,
         engSent: engByClient[ck] ? engByClient[ck].sent.size : 0,
         engOpen: engByClient[ck] ? engByClient[ck].open.size : 0,
         engIssue: engByClient[ck] ? engByClient[ck].issue.size : 0
@@ -2587,21 +2594,17 @@ function prtRenderTopNC(d) {
   if (!isFiltered) {
     topReasons = d.topNCReasons;
   } else {
-    // Rebuild from filtered clients' clientTopNC data
+    // Rebuild directly from filtered clients' clientCovGaps.topReasons
+    // This is the most accurate path — per-client, per-type reasons already stored
     const filtered = d.clientStats.filter(c => {
       if (_prtFilter.struct !== 'all' && c.structure !== _prtFilter.struct) return false;
       if (_prtFilter.plat   !== 'all' && c.platform  !== _prtFilter.plat)   return false;
       return true;
     });
-    // Re-derive NC reasons from filtered clients' criteria rows
-    // clientTopNC stores [covType, count] pairs — we need reasons
-    // Use ncReasonsByType filtered by coverage types that appear in filtered clients
-    const filteredCovTypes = new Set();
-    filtered.forEach(c => c.clientTopNC.forEach(([cov]) => filteredCovTypes.add(cov)));
     const reasonMap = {};
-    filteredCovTypes.forEach(covType => {
-      const typeReasons = (d.ncReasonsByType || {})[covType] || {};
-      Object.entries(typeReasons).forEach(([r, n]) => {
+    filtered.forEach(c => {
+      // Use full clientReasonMap which includes all reasons across all types
+      Object.entries(c.clientReasonMap || {}).forEach(([r, n]) => {
         reasonMap[r] = (reasonMap[r] || 0) + n;
       });
     });
@@ -2689,6 +2692,7 @@ function prtBuildNarratives(d, filtered, fTotal, fComp, fNC, fExpired, fNoCOI) {
       { key:'project',  label:'Construction' },
       { key:'location', label:'Real Estate' },
     ];
+    // Always show all 3 segments for comparison — the industry tab ignores struct filter by design
     const platF = d.clientStats.filter(c => _prtFilter.plat === 'all' || c.platform === _prtFilter.plat);
     const segStats = structs.map(s => {
       const cl = platF.filter(c => (c.structure||'general') === s.key);
@@ -2697,12 +2701,25 @@ function prtBuildNarratives(d, filtered, fTotal, fComp, fNC, fExpired, fNoCOI) {
       const r = tot ? Math.round(comp/tot*100) : null;
       return { ...s, clients: cl.length, total: tot, rate: r };
     }).filter(s => s.rate !== null);
+    // If struct filter is active, highlight that specific segment
+    const activeSegKey = _prtFilter.struct !== 'all' ? _prtFilter.struct : null;
+    const activeSeg = activeSegKey ? segStats.find(s => s.key === activeSegKey) : null;
     if (!segStats.length) {
       indNarEl.textContent = 'No segment data available for this filter.';
+    } else if (activeSeg) {
+      // Focused narrative for selected segment
+      const rateCol = activeSeg.rate>=95?'#3EBD3E':activeSeg.rate>=85?'#D97706':activeSeg.rate>=70?'#EA580C':'#AC1534';
+      const rateLabel = activeSeg.rate>=95?'Best-in-Class':activeSeg.rate>=85?'Average / On Track':activeSeg.rate>=70?'Below Average':'Needs Attention';
+      const platNote = _prtFilter.plat !== 'all' ? ` (${_prtFilter.plat === 'trustlayer' ? 'TrustLayer' : 'Evident'} only)` : '';
+      const otherSegs = segStats.filter(s => s.key !== activeSegKey).sort((a,b) => b.rate - a.rate);
+      const compNote = otherSegs.length
+        ? ` Compared to ${otherSegs.map(s=>`<strong>${s.label}</strong> (${s.rate}%)`).join(' and ')}.`
+        : '';
+      indNarEl.innerHTML = `<strong>${activeSeg.label}</strong>${platNote} — <strong>${activeSeg.clients}</strong> program${activeSeg.clients!==1?'s':''} across <strong>${activeSeg.total.toLocaleString()}</strong> vendors. Compliance: <strong style="color:${rateCol}">${activeSeg.rate}% — ${rateLabel}</strong>.${compNote} All three segments shown below for comparison.`;
     } else {
       const worst = segStats.reduce((a,b) => (a.rate < b.rate ? a : b));
       const best  = segStats.reduce((a,b) => (a.rate > b.rate ? a : b));
-      const platNote = isF && _prtFilter.plat !== 'all' ? ` (${_prtFilter.plat === 'trustlayer' ? 'TrustLayer' : 'Evident'} only)` : '';
+      const platNote = _prtFilter.plat !== 'all' ? ` (${_prtFilter.plat === 'trustlayer' ? 'TrustLayer' : 'Evident'} only)` : '';
       const multiSeg = segStats.length > 1;
       indNarEl.innerHTML = `Industry breakdown shows ${segStats.length} active segment${segStats.length!==1?'s':''}${platNote}. `
         + (multiSeg
@@ -3091,7 +3108,7 @@ function prtRenderEngagement(d) {
   if (!el) return;
   const noEng = !d.sentSet.size;
   if (noEng) {
-    el.innerHTML = `<div style="font-size:12px;color:var(--muted);padding:16px 0;font-style:italic">No engagement data loaded. (${d.engLoadMsg || 'Check the engagement CSV path in Settings.'})</div>`;
+    el.innerHTML = `<div style="font-size:12px;color:var(--muted);padding:16px 0"><strong>No engagement data loaded.</strong><br><span style="font-style:italic">${d.engLoadMsg || ''}</span><br><span style="margin-top:6px;display:block">Check: Settings → Data Source → Engagement path. The file must exist in the repo and have at least one row. The sync script filters to the last 90 days — if the Google Sheet is empty or the tab name changed, the file will have 0 rows.</span></div>`;
     return;
   }
   const filteredClients = d.clientStats.filter(c => {
@@ -3249,8 +3266,6 @@ function prtShowClient(clientName) {
   if (!client) return;
   const drill = document.getElementById('prt-drill-panel');
   if (!drill) return;
-  drill.style.display = '';
-  drill.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
   const rateColor = client.rate >= 95 ? '#3EBD3E' : client.rate >= 85 ? '#D97706' : client.rate >= 70 ? '#EA580C' : '#AC1534';
   const chgStr = client.improvement !== null
     ? `<span style="color:${client.improvement>=0?'#3EBD3E':'#AC1534'};font-size:13px;font-weight:700">${client.improvement>=0?'\u25b2':'\u25bc'}${Math.abs(client.improvement)}% over period</span>`
@@ -3279,6 +3294,8 @@ function prtShowClient(clientName) {
     <div style="display:flex;flex-wrap:wrap;gap:8px">${client.clientTopNC.map(([cov,n]) =>
       `<div style="background:rgba(172,21,52,.07);border:1px solid rgba(172,21,52,.15);border-radius:6px;padding:6px 12px;font-size:12px"><span style="font-weight:700;color:#AC1534">${n}</span> <span style="color:var(--muted)">${esc(cov)}</span></div>`
     ).join('')}</div>` : '';
+  // Build content first, then show — ensures scroll target has height
+  drill.style.display = '';
   drill.innerHTML = `<div class="prt-drill">
     <div class="prt-drill-hdr">
       <div style="flex:1;min-width:0">
@@ -3301,6 +3318,13 @@ function prtShowClient(clientName) {
       <tbody>${vendorRows}</tbody>
     </table>
   </div>`;
+  // Switch to Clients tab and scroll to drill — content is now set
+  const clientsTabBtn = document.querySelector('.prt-tab[onclick*="clients"]');
+  if (clientsTabBtn) prtSwitchTab('clients', clientsTabBtn);
+  setTimeout(() => {
+    const body = document.getElementById('prt-body');
+    if (body) body.scrollTop = body.scrollHeight;
+  }, 60);
 }
 
 // ── PRT EXPORTS ──────────────────────────────────────────────────────────────
