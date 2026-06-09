@@ -2,18 +2,17 @@ name: Sync Data
 
 on:
   schedule:
-    - cron: '0 8 * * *'    # daily at 8 AM UTC (3 AM CT)
-  workflow_dispatch:         # manual "Run workflow" button
+    - cron: '0 8 * * *'
+  workflow_dispatch:
 
 concurrency:
   group: sync
-  cancel-in-progress: false  # let the running sync finish
+  cancel-in-progress: false
 
 permissions:
   contents: write
 
 jobs:
-  # ── Job 1: Evident sync ────────────────────────────────────────────────────
   sync-evident:
     runs-on: ubuntu-latest
     steps:
@@ -59,7 +58,6 @@ jobs:
           file_pattern: 'data/evident/**'
           push_options: '--force-with-lease'
 
-  # ── Job 2: TrustLayer sync ─────────────────────────────────────────────────
   sync-trustlayer:
     runs-on: ubuntu-latest
     needs: sync-evident
@@ -93,9 +91,6 @@ jobs:
           file_pattern: 'data/trustlayer/**'
           push_options: '--force-with-lease'
 
-  # ── Job 3: Daily snapshot ──────────────────────────────────────────────────
-  # Runs after both syncs. Copies today's live CSVs into
-  # snapshots/YYYY/YYYY-MM/ so the PRT trend charts fill in daily.
   snapshot:
     runs-on: ubuntu-latest
     needs: [sync-evident, sync-trustlayer]
@@ -106,18 +101,13 @@ jobs:
         with:
           ref: main
           fetch-depth: 1
-          token: ${{ secrets.GH_PAT }}
 
       - name: Pull latest committed data
         run: git pull --rebase origin main
 
-      - name: Configure git with PAT
-        run: |
-          git config --local user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git config --local user.name "github-actions[bot]"
-          git remote set-url origin https://x-access-token:${{ secrets.GH_PAT }}@github.com/HUBCertSecure/client-management-platform.git
-
-      - name: Take daily snapshot
+      - name: Take daily snapshot and push
+        env:
+          GH_PAT: ${{ secrets.GH_PAT }}
         run: |
           DATE=$(date -u +%Y-%m-%d)
           YEAR=$(date -u +%Y)
@@ -137,12 +127,19 @@ jobs:
           [ -f "data/trustlayer/criteria.csv"  ] && cp "data/trustlayer/criteria.csv"  "$TL_DIR/criteria.csv"
           [ -f "data/trustlayer/coverages.csv" ] && cp "data/trustlayer/coverages.csv" "$TL_DIR/coverages.csv"
 
-          echo "Snapshot: EV → ${EV_DIR}, TL → ${TL_DIR}"
-          echo "DATE=${DATE}" >> $GITHUB_ENV
+          echo "Snapshot: EV -> ${EV_DIR}, TL -> ${TL_DIR}"
 
-      - name: Commit snapshot
-        uses: stefanzweifel/git-auto-commit-action@v5
-        with:
-          commit_message: 'chore: daily snapshot ${{ env.DATE }} [skip ci]'
-          file_pattern: 'snapshots/**'
-          push_options: '--force-with-lease'
+          # Configure git with PAT for push
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git config user.name "github-actions[bot]"
+          git remote set-url origin "https://x-access-token:${GH_PAT}@github.com/HUBCertSecure/client-management-platform.git"
+
+          git add snapshots/
+          if git diff --cached --quiet; then
+            echo "No snapshot changes to commit"
+            exit 0
+          fi
+
+          git commit -m "chore: daily snapshot ${DATE} [skip ci]"
+          git push origin main --force-with-lease
+          echo "Snapshot pushed successfully"
