@@ -398,6 +398,7 @@
             <label class="form-lbl">Access Token <span style="font-weight:400;color:var(--muted)">(PAT)</span></label>
             <div style="position:relative"><input type="password" id="s-pat" placeholder="ghp_..." style="padding-right:40px"><button type="button" onclick="toggleReveal('s-pat',this)" style="position:absolute;right:10px;top:50%;transform:translateY(-50%);background:none;border:none;cursor:pointer;color:var(--muted)">&#128065;</button></div>
             <div class="form-hint">Requires <strong>workflow</strong> scope for Refresh Data.</div>
+            <div id="pat-share-warning" style="display:none;margin-top:8px;padding:9px 12px;background:rgba(172,21,52,.06);border:1px solid rgba(172,21,52,.2);border-radius:7px;font-size:11px;line-height:1.6;color:#7A1020"><strong>&#9888; Token sharing notice:</strong> When you click <em>Publish to Team</em>, this PAT is stamped into each team member's account in Supabase so they can load data without entering their own token. It is not displayed to them, but it is stored server-side tied to their login. Consider using a <strong>read-only fine-grained PAT</strong> scoped only to this repository for sharing.</div>
           </div>
         </div>
       </div>
@@ -423,6 +424,11 @@
               <div class="form-grp"><label class="form-lbl">Engagement</label><input type="text" id="s-tl-notifications" placeholder="data/trustlayer/engagement.csv"></div>
             </div>
           </div>
+          <div style="margin-top:14px;padding-top:12px;border-top:1px solid var(--border);display:flex;align-items:center;gap:12px">
+            <button class="btn btn-secondary" onclick="prtCheckPathsFromSettings()" style="font-size:12px;padding:7px 14px;gap:6px">&#128269; Check Data Paths</button>
+            <span style="font-size:11px;color:var(--muted)">Verifies all CSV files are reachable in the repository.</span>
+          </div>
+          <div id="s-paths-result" style="display:none;margin-top:10px"></div>
         </div>
       </div>
       <div style="display:flex;gap:10px;justify-content:flex-end;align-items:center">
@@ -774,8 +780,7 @@
       <button class="prt-preset"        id="prt-f-plat-ev"  onclick="prtSetFilter('plat','evident')">EV</button>
       <button class="prt-preset"        id="prt-f-plat-tl"  onclick="prtSetFilter('plat','trustlayer')">TL</button>
     </div>
-    <button class="prt-dl-btn" style="border-color:rgba(6,120,213,.4);color:#0678D5;background:rgba(6,120,213,.06);margin-left:auto" onclick="prtCheckPaths()" title="Check CSV file paths">&#128269; Paths</button>
-    <button class="prt-dl-btn pdf" onclick="prtDownloadPDF()" title="Download PDF Report">&#8659; PDF</button>
+        <button class="prt-dl-btn pdf" style="margin-left:auto" onclick="prtDownloadPDF()" title="Download PDF Report">&#8659; PDF</button>
     <button class="prt-dl-btn xl" onclick="prtDownloadExcel()" title="Download Excel">&#8659; Excel</button>
   </div>
   <div class="prt-body" id="prt-body">
@@ -1743,9 +1748,11 @@ const ROLE_DISPLAY = {
   account_executive:    { label: 'Account Executive',    bg: '#0D9488', color: '#FFFFFF' },
 };
 function applyUserDisplay(displayName, role) {
-  // Show "Publish to Team" only for system admins
+  // Show "Publish to Team" and PAT warning only for system admins
   const publishBtn = document.getElementById('publish-team-btn');
   if (publishBtn) publishBtn.style.display = role === 'system_administrator' ? '' : 'none';
+  const patWarn = document.getElementById('pat-share-warning');
+  if (patWarn) patWarn.style.display = role === 'system_administrator' ? '' : 'none';
   const wrap  = document.getElementById('welcome-wrap');
   const nameEl= document.getElementById('welcome-name');
   const roleEl= document.getElementById('welcome-role');
@@ -3434,6 +3441,63 @@ async function prtCheckPaths() {
     topbar.parentNode.insertBefore(panel, topbar.nextSibling);
   }
 }
+
+async function prtCheckPathsFromSettings() {
+  const btn = document.querySelector('[onclick="prtCheckPathsFromSettings()"]');
+  const resultEl = document.getElementById('s-paths-result');
+  if (btn) { btn.textContent = '&#9203; Checking…'; btn.disabled = true; }
+  if (resultEl) resultEl.style.display = 'none';
+  // Save first so paths are current
+  saveSettings();
+  const s = getSettings();
+  if (!s.pat) {
+    if (resultEl) {
+      resultEl.style.cssText = 'display:block;padding:10px 14px;border-radius:8px;background:rgba(172,21,52,.06);border:1px solid rgba(172,21,52,.2);font-size:12px;color:#7A1020';
+      resultEl.textContent = '✗ No Access Token configured. Add a PAT above before checking paths.';
+    }
+    if (btn) { btn.innerHTML = '&#128269; Check Data Paths'; btn.disabled = false; }
+    return;
+  }
+  const rawBase = 'https://raw.githubusercontent.com/' + s.owner + '/' + s.repo + '/' + s.branch + '/';
+  const auth = { headers: { 'Authorization': 'token ' + s.pat } };
+  const paths = [
+    { label: 'EV Insureds',   path: s.insuredsPath  || 'data/evident/insureds.csv' },
+    { label: 'EV Criteria',   path: s.criteriaPath  || 'data/evident/criteria.csv' },
+    { label: 'EV Coverages',  path: s.coveragesPath || 'data/evident/coverages.csv' },
+    { label: 'EV Engagement', path: s.notificationsPath || 'data/evident/engagement.csv' },
+    { label: 'TL Insureds',   path: s.tlInsuredsPath  || 'data/trustlayer/insureds.csv' },
+    { label: 'TL Criteria',   path: s.tlCriteriaPath  || 'data/trustlayer/criteria.csv' },
+    { label: 'TL Coverages',  path: s.tlCoveragesPath || 'data/trustlayer/coverages.csv' },
+    { label: 'TL Engagement', path: s.tlNotificationsPath || 'data/trustlayer/engagement.csv' },
+  ];
+  const results = await Promise.all(paths.map(async p => {
+    try {
+      const r = await fetch(rawBase + p.path, auth);
+      const text = r.ok ? await r.text() : '';
+      const rows = text ? text.trim().split('\n').length - 1 : 0;
+      return { ...p, ok: r.ok, status: r.status, rows };
+    } catch(e) { return { ...p, ok: false, status: 0, rows: 0 }; }
+  }));
+  const allOk = results.every(r => r.ok);
+  const rows = results.map(r => {
+    const col = r.ok ? '#2E8B2E' : '#AC1534';
+    const icon = r.ok ? '✓' : '✗';
+    const detail = r.ok ? r.rows.toLocaleString() + ' rows' : 'HTTP ' + r.status;
+    return `<div style="display:flex;align-items:center;gap:10px;padding:4px 0;border-bottom:1px solid var(--border);font-size:12px">
+      <span style="color:${col};font-weight:700;width:14px">${icon}</span>
+      <span style="width:100px;font-weight:600;color:var(--text)">${r.label}</span>
+      <span style="flex:1;color:var(--muted);font-size:11px">${r.path}</span>
+      <span style="color:${col};font-size:11px;white-space:nowrap">${detail}</span>
+    </div>`;
+  }).join('');
+  if (resultEl) {
+    resultEl.style.cssText = 'display:block;margin-top:10px;padding:12px 14px;border-radius:8px;background:var(--bg);border:1px solid var(--border)';
+        const statusHtml = allOk ? '<span style="color:#3EBD3E">All reachable</span>' : '<span style="color:#AC1534">Some unreachable</span>';
+    resultEl.innerHTML = '<div style="font-size:11px;font-weight:700;letter-spacing:.07em;text-transform:uppercase;color:var(--muted);margin-bottom:8px">Path Check Results — ' + statusHtml + '</div>' + rows;
+  }
+  if (btn) { btn.innerHTML = '&#128269; Check Data Paths'; btn.disabled = false; }
+}
+
 
 function prtDownloadPDF() {
   if (!_prtData) { toast('Load data first', 'error'); return; }
