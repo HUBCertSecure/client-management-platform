@@ -11,6 +11,8 @@
   "tlCoveragesPath": "data/trustlayer/coverages.csv",
   "tlCriteriaPath": "data/trustlayer/criteria.csv",
   "mondayToken": "eyJhbGciOiJIUzI1NiJ9.eyJ0aWQiOjU0NzU2ODQ4NywiYWFpIjoxMSwidWlkIjo2Mzg3MzQxMSwiaWFkIjoiMjAyNS0wOC0wNlQxODozODowOC4wMDBaIiwicGVyIjoibWU6d3JpdGUiLCJhY3RpZCI6MTk3NTU3MDgsInJnbiI6InVzZTEifQ.kZuC8NVVgbf5h6zOu1CFkfPVLgw4XTvueWb_MEM7jLg",
-  "_published": "2026-05-13",
+  "tlTokenBlock": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJuYW1lIjoiQmxvY2sgVEwgQVBJIiwibGV2ZWwiOjEsIm9yZ2FuaXphdGlvbklkIjoiNjliYzBkNjg2YmMxOTVhYTAyYTdlMzFkIiwiaWF0IjoxNzc3OTAzMjgzfQ.k0r55AaLU6kvXDiiUVqSvBzHhu-Bc-SyoadscNHfYcc",
+  "tlTokenDemo": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJuYW1lIjoiREVNTyBUTCBBUEkiLCJsZXZlbCI6Miwib3JnYW5pemF0aW9uSWQiOiI2OWZhNDdkOGFkOTRmMWZlMzA1NmE1YzQiLCJpYXQiOjE3ODA0MDU4NjF9.Kc07wd3fNVe35O15RcFge5FP-OYlqAAtjqKOfMPXP1U",
+  "_published": "2026-06-09",
   "_publishedBy": "System Administrator"
 }
