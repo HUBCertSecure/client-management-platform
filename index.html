@@ -14,8 +14,52 @@
     *{box-sizing:border-box;margin:0;padding:0}*{scrollbar-width:none!important;-ms-overflow-style:none!important}*::-webkit-scrollbar{display:none!important}
     :root{--transition:0.22s ease;--navy:#263746;--blue:#0678D5;--blue-hover:#005BB5;--blue-light:#EBF4FF;--bg:#E8EDF2;--page-bg:#E8EDF2;--card:#FFFFFF;--white:#FFFFFF;--border:#D1DCE8;--text:#1E2E3D;--muted:#5A6B7B;--green:#3EBD3E;--green-bg:rgba(62,189,62,0.12);--red:#AC1534;--red-bg:#FEF2F2;--orange:#F3B921;--font:Arial,sans-serif;--radius:8px;--shadow:0 2px 10px rgba(30,46,61,0.10);--shadow-md:0 4px 16px rgba(30,46,61,0.12);--shadow-lg:0 8px 28px rgba(30,46,61,0.15);--classic-dark:#18252D;--electric-blue:#0678D5;--shocking-blue:#00AEEF}
     body{font-family:var(--font);background:var(--bg);color:var(--text);min-height:100vh;transition:background var(--transition),color var(--transition)}
-    html.dark{--navy:#263746;--blue:#0678D5;--blue-hover:#005BB5;--blue-light:#EBF4FF;--bg:#F0F4F8;--white:#FFFFFF;--border:#D1DCE8;--text:#1E2E3D;--muted:#5A6B7B;--green:#3EBD3E;--green-bg:rgba(62,189,62,0.12);--red:#AC1534;--red-bg:#FEF2F2;--shadow:0 2px 8px rgba(0,0,0,0.08);--shadow-lg:0 8px 24px rgba(0,0,0,0.12)}
-    html.dark .header{background:#18252D;border-bottom:1px solid rgba(0,174,239,0.2)}html.dark .client-card,html.dark .report-card{background:var(--white)}html.dark .login-card{background:#fff}html.dark .login-input{background:#FAFBFD;border-color:#D1DCE8;color:#1E2E3D}html.dark select,html.dark input[type="text"],html.dark input[type="date"]{background:#0F1620;color:var(--text);border-color:var(--border)}html.dark .modal{background:#fff;border-radius:12px;box-shadow:0 20px 60px rgba(0,0,0,0.18);border:1px solid rgba(6,120,213,0.1)}html.dark .notif-drawer{background:#1A2332;border-color:var(--border)}
+    html.dark{--navy:#1A2B38;--blue:#3A9FE8;--blue-hover:#2D8AD0;--blue-light:rgba(58,159,232,.12);--bg:#0F1923;--page-bg:#0F1923;--card:#162030;--white:#162030;--border:#1E2D3D;--text:#E2EAF0;--muted:#6A8499;--green:#3EBD3E;--green-bg:rgba(62,189,62,0.1);--red:#D94040;--red-bg:rgba(217,64,64,.1);--shadow:0 2px 10px rgba(0,0,0,0.35);--shadow-md:0 4px 16px rgba(0,0,0,0.4);--shadow-lg:0 8px 28px rgba(0,0,0,0.5)}
+    html.dark .header{background:#0D1620;border-bottom:1px solid rgba(0,174,239,0.15)}
+    html.dark .card{background:var(--card);border-color:var(--border)}
+    html.dark .client-card{background:var(--card)!important;border-color:var(--border)!important}
+    html.dark .report-card{background:var(--card)!important;border-color:var(--border)!important}
+    html.dark .report-card-hdr{background:#1A2B38!important}
+    html.dark .settings-box{background:#162030!important;border-color:var(--border)!important}
+    html.dark .prt-kpi{background:var(--card)!important;border-color:var(--border)!important}
+    html.dark .prt-topbar{background:var(--card);border-color:var(--border)}
+    html.dark .prt-tabs{background:var(--card);border-color:var(--border)}
+    html.dark .prt-tab{color:var(--muted)}
+    html.dark .prt-tab.active{color:var(--blue);border-bottom-color:var(--blue)}
+    html.dark .prt-vendor-table th{background:#1A2B38;color:var(--muted)}
+    html.dark .prt-vendor-table td{border-color:var(--border);color:var(--text)}
+    html.dark .prt-vendor-table tbody tr:nth-child(even) td{background:rgba(255,255,255,.02)}
+    html.dark .prt-vendor-table tbody tr:hover td{background:rgba(58,159,232,.08)}
+    html.dark .cfg-table th{background:#1A2B38;color:var(--muted)}
+    html.dark .cfg-table td{border-color:var(--border);color:var(--text)}
+    html.dark .cfg-table tbody tr:nth-child(even) td{background:rgba(255,255,255,.02)}
+    html.dark .cfg-table tbody tr:hover td{background:rgba(58,159,232,.08)}
+    html.dark select,html.dark input[type="text"],html.dark input[type="date"]{background:#0F1923;color:var(--text);border-color:var(--border)}
+    html.dark .btn-secondary{border-color:var(--blue);color:var(--blue)}
+    html.dark .btn-secondary:hover{background:rgba(58,159,232,.1)}
+    html.dark .prt-narrative{background:rgba(58,159,232,.07);border-color:rgba(58,159,232,.15)}
+    html.dark .prt-section-hdr-line{background:var(--border)}
+    html.dark .prt-trend-bar-bg{background:var(--border)}
+    html.dark .prt-drill{background:var(--card);border-color:var(--blue)}
+    html.dark .prt-client-card{background:var(--card)!important;border-color:var(--border)!important}
+    html.dark .prt-eng-client-row{border-color:var(--border)}
+    html.dark .prt-eng-bar-bg{background:var(--border)}
+    html.dark .bc-page{color:var(--text)}
+    html.dark .page-title{color:var(--text)}
+    html.dark .page-sub{color:var(--muted)}
+    html.dark .breadcrumb-bar{border-color:var(--border)}
+    html.dark .tab-btn{color:var(--muted)}
+    html.dark .tab-btn.active{color:var(--blue);border-bottom-color:var(--blue)}
+    html.dark .tab-btn:hover{color:var(--text)}
+    html.dark .cm-card{background:var(--card);border-color:var(--border)}
+    html.dark .cm-card:hover{background:#1A2B38;border-color:var(--blue)}
+    html.dark .form-lbl{color:var(--muted)}
+    html.dark .form-hint{color:var(--muted)}
+    html.dark .overlay{background:rgba(0,0,0,.7)}
+    html.dark #tab-home{background:var(--bg)}
+    html.dark .home-card{background:var(--card);border-color:var(--border)}
+    html.dark .home-card:hover{border-color:var(--blue)}
+    html.dark .ind-card,.prt-ind-card{background:var(--card)!important;border-color:var(--border)!important}html.dark .client-card,html.dark .report-card{background:var(--white)}html.dark .login-card{background:#fff}html.dark .login-input{background:#FAFBFD;border-color:#D1DCE8;color:#1E2E3D}html.dark select,html.dark input[type="text"],html.dark input[type="date"]{background:#0F1620;color:var(--text);border-color:var(--border)}html.dark .modal{background:#fff;border-radius:12px;box-shadow:0 20px 60px rgba(0,0,0,0.18);border:1px solid rgba(6,120,213,0.1)}html.dark .notif-drawer{background:#1A2332;border-color:var(--border)}
     /* Settings dark mode */
     html.dark .settings-box{background:#FFFFFF;border:1px solid rgba(30,46,61,0.09);border-radius:10px;padding:18px 20px;margin-bottom:16px;box-shadow:0 1px 4px rgba(30,46,61,0.07)}
     html.dark .section-lbl{display:block;font-size:10px;font-weight:800;letter-spacing:.1em;text-transform:uppercase;color:#5A6B7B;margin-bottom:14px;padding-bottom:8px;border-bottom:2px solid rgba(6,120,213,0.12)}
@@ -2348,6 +2392,17 @@ async function prtLoad() {
     const openSet  = new Set(liveEng.filter(isEngOpen).map(normEm).filter(Boolean));
     const issueSet = new Set(liveEng.filter(isEngIssue).map(normEm).filter(Boolean));
     const engRate  = sentSet.size ? Math.round(openSet.size / sentSet.size * 100) : 0;
+    // Per-client engagement using Client column in engagement CSV
+    const engByClient = {};
+    liveEng.forEach(row => {
+      const cl = (row[C.notif_client] || '').trim();
+      if (!cl) return;
+      if (!engByClient[cl]) engByClient[cl] = { sent: new Set(), open: new Set(), issue: new Set() };
+      const em = normEm(row); if (!em) return;
+      if (isEngSend(row))  engByClient[cl].sent.add(em);
+      if (isEngOpen(row))  engByClient[cl].open.add(em);
+      if (isEngIssue(row)) engByClient[cl].issue.add(em);
+    });
     const makeClientMatcher = ck => {
       const meta = (typeof CLIENT_META_MAP !== 'undefined' && CLIENT_META_MAP[ck]) || {};
       const rpName = (meta.rp_common_name || '').toLowerCase().replace(/[^a-z0-9]/g, '');
@@ -2426,14 +2481,17 @@ async function prtLoad() {
         structure: clientDef.structure || meta.structure || 'general',
         total: liveActive.length, comp: lComp, nc: lNC, rate: lRate,
         expired: clientExpired, noCOI: clientNoCOI,
-        vendors: liveActive, improvement, clientTopNC, clientCovGaps, monthlyRates
+        vendors: liveActive, improvement, clientTopNC, clientCovGaps, monthlyRates,
+        engSent: engByClient[ck] ? engByClient[ck].sent.size : 0,
+        engOpen: engByClient[ck] ? engByClient[ck].open.size : 0,
+        engIssue: engByClient[ck] ? engByClient[ck].issue.size : 0
       });
     }
     const trendWord = rateChange > 2 ? 'improving' : rateChange < -2 ? 'declining' : 'stable';
     const moNames = {1:'Jan',2:'Feb',3:'Mar',4:'Apr',5:'May',6:'Jun',7:'Jul',8:'Aug',9:'Sep',10:'Oct',11:'Nov',12:'Dec'};
     const fmtYM = ym => { const [y,m] = ym.split('-'); return `${moNames[parseInt(m)]} ${y}`; };
     const narrative = `As of ${new Date().toLocaleDateString('en-US',{month:'long',day:'numeric',year:'numeric'})}, the CertSecure program manages ${clientStats.length} active client programs across ${totalActive.toLocaleString()} tracked vendors. Overall compliance stands at ${overallRate}% \u2014 ${countCompliant.toLocaleString()} compliant, ${countNC.toLocaleString()} non-compliant, ${countExpired.toLocaleString()} with expired coverage, and ${countNoCOI.toLocaleString()} with no certificate on file. Program compliance is ${trendWord} over the selected period${rateChange !== 0 ? ' (' + (rateChange > 0 ? '+' : '') + rateChange + '% from start of range)' : ''}.`;
-    _prtData = { fromYM, toYM, fmtYM, monthlyTrend, totalActive, countCompliant, countNC, countExpired, countNoCOI, overallRate, firstRate, rateChange, criteriaSorted, topNCReasons, ncReasonsByType, sentSet, openSet, issueSet, engRate, engLoadMsg, clientStats, expiredEntities, noCOIEntities, narrative };
+    _prtData = { fromYM, toYM, fmtYM, monthlyTrend, totalActive, countCompliant, countNC, countExpired, countNoCOI, overallRate, firstRate, rateChange, criteriaSorted, topNCReasons, ncReasonsByType, sentSet, openSet, issueSet, engRate, engLoadMsg, engByClient, clientStats, expiredEntities, noCOIEntities, narrative };
     prtRender(_prtData);
   } catch(e) {
     if (loadMsg) loadMsg.textContent = 'Failed to load: ' + e.message;
@@ -2657,19 +2715,40 @@ function prtBuildNarratives(d, filtered, fTotal, fComp, fNC, fExpired, fNoCOI) {
   // ── Tab 3: Coverage Gaps ───────────────────────────────────────────────────
   const covNarEl = document.getElementById('prt-cov-narrative');
   if (covNarEl) {
+    // Use per-client data for specific callouts
+    const filteredForCov = filtered.length ? filtered : d.clientStats;
+    // Find the client with the worst single coverage gap (most NC vendors for one type)
+    let worstClient = null, worstGap = null, worstCount = 0;
+    filteredForCov.forEach(c => {
+      (c.clientCovGaps || []).forEach(g => {
+        if (g.ncVendors > worstCount) {
+          worstCount = g.ncVendors;
+          worstClient = c;
+          worstGap = g;
+        }
+      });
+    });
     const topCov = d.criteriaSorted[0];
     const second = d.criteriaSorted[1];
-    const totalNC = d.criteriaSorted.reduce((a,c)=>a+c.nonCompliant,0);
-    if (!topCov) {
+    if (!topCov && !worstGap) {
       covNarEl.textContent = 'No coverage gap data available.';
     } else {
-      const pctTop = fTotal ? Math.round(topCov.nonCompliant / fTotal * 100) : 0;
-      const pctSec = second && fTotal ? Math.round(second.nonCompliant / fTotal * 100) : 0;
-      const filterNote = isF ? ' Note: coverage gap data reflects the full book — it cannot be split by type or platform from aggregated snapshots.' : '';
-      covNarEl.innerHTML = `<strong>${topCov.name}</strong> is the most widespread gap, affecting <strong style="color:#AC1534">${topCov.nonCompliant.toLocaleString()} vendors (${pctTop}% of active)</strong>. `
-        + (second ? `<strong>${second.name}</strong> is second at ${second.nonCompliant.toLocaleString()} vendors (${pctSec}%). ` : '')
-        + `Together the top gaps account for ${totalNC.toLocaleString()} non-compliance instances across all coverage types. Address the highest-volume types first — resolving them moves the most vendors to compliant.`
-        + (filterNote ? `<em style="color:var(--muted);display:block;margin-top:6px;font-size:11px">${filterNote}</em>` : '');
+      const pctTop = fTotal ? Math.round((topCov ? topCov.nonCompliant : 0) / fTotal * 100) : 0;
+      // Build specific client callout
+      let clientCallout = '';
+      if (worstClient && worstGap) {
+        const pctOfProg = worstClient.total ? Math.round(worstGap.ncVendors / worstClient.total * 100) : 0;
+        clientCallout = `<strong>${esc(worstClient.name)}</strong> has the most concentrated gap — <strong style="color:#AC1534">${worstGap.ncVendors.toLocaleString()} of ${worstClient.total.toLocaleString()} entities</strong> (${pctOfProg}%) failing <strong>${esc(worstGap.name)}</strong>. `;
+        if (worstGap.topReasons && worstGap.topReasons.length) {
+          clientCallout += `Top reason: ${esc(worstGap.topReasons[0][0])} (${worstGap.topReasons[0][1]}). `;
+        }
+      }
+      const bookNote = topCov ? `Book-wide, <strong>${esc(topCov.name)}</strong> affects the most distinct vendors (${topCov.nonCompliant.toLocaleString()}${pctTop ? ', ' + pctTop + '% of active' : ''}). ` : '';
+      const secondNote = second ? `<strong>${esc(second.name)}</strong> is second at ${second.nonCompliant.toLocaleString()} vendors. ` : '';
+      const filterNote = isF ? `<em style="color:var(--muted);display:block;margin-top:6px;font-size:11px">Per-client gaps reflect selected filter. Book-wide coverage data is shown for all programs.</em>` : '';
+      covNarEl.innerHTML = clientCallout + bookNote + secondNote
+        + 'Expand any client below to see their full coverage type breakdown.'
+        + filterNote;
     }
   }
 
@@ -3009,81 +3088,89 @@ function prtToggleCovClient(uid) {
 
 function prtRenderEngagement(d) {
   const el = document.getElementById('prt-engagement');
-  const wrap = document.getElementById('prt-eng-wrap');
   if (!el) return;
-
   const noEng = !d.sentSet.size;
   if (noEng) {
-    el.innerHTML = `<div style="font-size:12px;color:var(--muted);padding:16px 0;font-style:italic">
-      No engagement data loaded. (${d.engLoadMsg || 'Check the engagement CSV path in Settings.'})
-    </div>`;
+    el.innerHTML = `<div style="font-size:12px;color:var(--muted);padding:16px 0;font-style:italic">No engagement data loaded. (${d.engLoadMsg || 'Check the engagement CSV path in Settings.'})</div>`;
     return;
   }
-
-  // Apply plat/struct filter to client list for per-client breakdown
   const filteredClients = d.clientStats.filter(c => {
     if (_prtFilter.struct !== 'all' && c.structure !== _prtFilter.struct) return false;
     if (_prtFilter.plat   !== 'all' && c.platform  !== _prtFilter.plat)   return false;
     return true;
   });
-
-  // KPIs
-  const openRate  = d.engRate;
-  const openRateCls = openRate>=50?'green':openRate>=25?'amber':'red';
-  const unreachable = d.totalActive - d.sentSet.size;
+  const hasPerClient = d.engByClient && Object.keys(d.engByClient).length > 0;
   const coveragePct = d.totalActive ? Math.round(d.sentSet.size / d.totalActive * 100) : 0;
   const coverageCls = coveragePct>=70?'green':coveragePct>=40?'amber':'red';
+  const openRateCls = d.engRate>=50?'green':d.engRate>=25?'amber':'red';
+  const neverOpened = d.sentSet.size - d.openSet.size;
+  const unreachable = d.totalActive - d.sentSet.size;
+  const issueRate   = d.sentSet.size ? Math.round(d.issueSet.size/d.sentSet.size*100) : 0;
 
-  const kpis = `<div class="prt-eng-grid">
+  const kpis = `<div class="prt-eng-grid" style="margin-bottom:20px">
     <div class="prt-kpi grey"><div class="prt-kpi-accent"></div><div class="prt-kpi-body"><div class="prt-kpi-lbl">Contacts Reached</div><div class="prt-kpi-val" style="color:#0678D5">${d.sentSet.size.toLocaleString()}</div><div class="prt-kpi-sub">${coveragePct}% of active vendors</div></div></div>
     <div class="prt-kpi grey"><div class="prt-kpi-accent"></div><div class="prt-kpi-body"><div class="prt-kpi-lbl">Opened At Least Once</div><div class="prt-kpi-val" style="color:#0678D5">${d.openSet.size.toLocaleString()}</div><div class="prt-kpi-sub">${d.sentSet.size?Math.round(d.openSet.size/d.sentSet.size*100):0}% of reached</div></div></div>
-    <div class="prt-kpi ${openRateCls}"><div class="prt-kpi-lbl">Open Rate</div><div class="prt-kpi-val">${openRate}%</div><div class="prt-kpi-sub">${openRate>=50?'Strong':'Below target (50%)'}</div></div>
-    <div class="prt-kpi ${d.issueSet.size===0?'green':'red'}"><div class="prt-kpi-lbl">Delivery Issues</div><div class="prt-kpi-val">${d.issueSet.size.toLocaleString()}</div><div class="prt-kpi-sub">${d.issueSet.size?'Bounces / rejects':'No issues'}</div></div>
-    <div class="prt-kpi ${coverageCls}"><div class="prt-kpi-lbl">Outreach Coverage</div><div class="prt-kpi-val">${coveragePct}%</div><div class="prt-kpi-sub">${unreachable.toLocaleString()} vendors never reached</div></div>
-    <div class="prt-kpi grey"><div class="prt-kpi-accent"></div><div class="prt-kpi-body"><div class="prt-kpi-lbl">Never Opened</div><div class="prt-kpi-val" style="color:#EA580C">${(d.sentSet.size-d.openSet.size).toLocaleString()}</div><div class="prt-kpi-sub">Sent but no open recorded</div></div></div>
-    <div class="prt-kpi ${d.issueSet.size===0?'grey':'amber'}"><div class="prt-kpi-lbl">Issue Rate</div><div class="prt-kpi-val">${d.sentSet.size?Math.round(d.issueSet.size/d.sentSet.size*100):0}%</div><div class="prt-kpi-sub">Of emails sent</div></div>
+    <div class="prt-kpi ${openRateCls}"><div class="prt-kpi-accent"></div><div class="prt-kpi-body"><div class="prt-kpi-lbl">Open Rate</div><div class="prt-kpi-val">${d.engRate}%</div><div class="prt-kpi-sub">${d.engRate>=50?'Strong':'Below target (50%)'}</div></div></div>
+    <div class="prt-kpi ${d.issueSet.size===0?'green':'red'}"><div class="prt-kpi-accent"></div><div class="prt-kpi-body"><div class="prt-kpi-lbl">Delivery Issues</div><div class="prt-kpi-val">${d.issueSet.size.toLocaleString()}</div><div class="prt-kpi-sub">${d.issueSet.size?'Bounces / rejects':'No issues'}</div></div></div>
+    <div class="prt-kpi ${coverageCls}"><div class="prt-kpi-accent"></div><div class="prt-kpi-body"><div class="prt-kpi-lbl">Outreach Coverage</div><div class="prt-kpi-val">${coveragePct}%</div><div class="prt-kpi-sub">${unreachable.toLocaleString()} never reached</div></div></div>
+    <div class="prt-kpi ${neverOpened>0?'amber':'green'}"><div class="prt-kpi-accent"></div><div class="prt-kpi-body"><div class="prt-kpi-lbl">Never Opened</div><div class="prt-kpi-val" style="color:#EA580C">${neverOpened.toLocaleString()}</div><div class="prt-kpi-sub">Sent, no open recorded</div></div></div>
+    <div class="prt-kpi ${d.issueSet.size===0?'grey':'amber'}"><div class="prt-kpi-accent"></div><div class="prt-kpi-body"><div class="prt-kpi-lbl">Issue Rate</div><div class="prt-kpi-val">${issueRate}%</div><div class="prt-kpi-sub">Of emails sent</div></div></div>
     <div class="prt-kpi grey"><div class="prt-kpi-accent"></div><div class="prt-kpi-body"><div class="prt-kpi-lbl">Not Reached</div><div class="prt-kpi-val" style="color:#D97706">${unreachable.toLocaleString()}</div><div class="prt-kpi-sub">Active vendors, no email</div></div></div>
   </div>`;
 
-  // Per-client outreach breakdown
-  const clientRows = filteredClients.map(c => {
-    // Count emails sent/opened for this client from engagement data
-    // We use clientTopNC + vendor list as proxy since liveEng is global
-    const totalVendors = c.total;
-    const ncVendors = c.nc;
-    // Engagement by client name match in sentSet/openSet is hard without per-row client field
-    // Use rate and nc as engagement signal gap indicator
-    const gapScore = Math.round((ncVendors / totalVendors) * 100);
-    const rateCol  = c.rate>=95?'#3EBD3E':c.rate>=85?'#D97706':c.rate>=70?'#EA580C':'#AC1534';
-    const platBadge = c.platform==='trustlayer'
-      ? `<span style="font-size:9px;background:rgba(62,189,62,.15);color:#2a9e2a;padding:1px 5px;border-radius:3px;font-weight:700">TL</span>`
-      : `<span style="font-size:9px;background:rgba(6,120,213,.12);color:#0678D5;padding:1px 5px;border-radius:3px;font-weight:700">EV</span>`;
+  const platBadge = p => p==='trustlayer'
+    ? `<span style="font-size:9px;background:rgba(62,189,62,.15);color:#2a9e2a;padding:1px 6px;border-radius:3px;font-weight:700">TL</span>`
+    : `<span style="font-size:9px;background:rgba(6,120,213,.12);color:#0678D5;padding:1px 6px;border-radius:3px;font-weight:700">EV</span>`;
+
+  const clientRows = filteredClients.sort((a,b) => a.rate - b.rate).map(c => {
+    const rateCol = c.rate>=95?'#3EBD3E':c.rate>=85?'#D97706':c.rate>=70?'#EA580C':'#AC1534';
     const barW = Math.round(c.rate);
+    let engHtml = '';
+    if (hasPerClient && (c.engSent > 0 || c.engOpen > 0)) {
+      const engCovPct  = c.total ? Math.round(c.engSent / c.total * 100) : 0;
+      const engOpenPct = c.engSent ? Math.round(c.engOpen / c.engSent * 100) : 0;
+      const engCovCol  = engCovPct>=70?'#3EBD3E':engCovPct>=40?'#D97706':'#AC1534';
+      const engOpenCol = engOpenPct>=50?'#3EBD3E':engOpenPct>=25?'#D97706':'#AC1534';
+      engHtml = `<div style="display:flex;gap:10px;margin-top:4px;flex-wrap:wrap">
+        <span style="font-size:10px;color:var(--muted)">Sent: <strong style="color:${engCovCol}">${c.engSent.toLocaleString()} (${engCovPct}%)</strong></span>
+        <span style="font-size:10px;color:var(--muted)">Opened: <strong style="color:${engOpenCol}">${c.engOpen.toLocaleString()} (${engOpenPct}%)</strong></span>
+        ${c.engIssue>0?`<span style="font-size:10px;color:#AC1534">&#9888; ${c.engIssue} issue${c.engIssue!==1?'s':''}</span>`:''}
+      </div>`;
+    } else if (hasPerClient) {
+      engHtml = `<div style="font-size:10px;color:var(--muted);margin-top:3px;font-style:italic">No engagement data</div>`;
+    }
     return `<div class="prt-eng-client-row">
-      <div style="width:170px;display:flex;align-items:center;gap:5px">${platBadge}<span style="font-size:12px;font-weight:700;color:var(--text)">${esc(c.name)}</span></div>
+      <div style="width:210px;flex-shrink:0">
+        <div style="display:flex;align-items:center;gap:5px">${platBadge(c.platform)}<span style="font-size:12px;font-weight:700;color:var(--text)">${esc(c.name)}</span></div>
+        ${engHtml}
+      </div>
       <div class="prt-eng-bar-bg"><div class="prt-eng-bar-fill" style="width:${barW}%;background:${rateCol}"></div></div>
-      <div style="width:44px;text-align:right;font-size:13px;font-weight:800;color:${rateCol}">${c.rate}%</div>
-      <div style="width:90px;text-align:right;font-size:11px;color:var(--muted)">${c.total.toLocaleString()} vendors</div>
-      <div style="width:80px;text-align:right;font-size:11px;color:#AC1534">${c.nc} NC</div>
-      <div style="width:70px;text-align:right;font-size:11px;color:#EA580C">${c.expired.length} exp</div>
+      <div style="width:48px;text-align:right;font-size:13px;font-weight:800;color:${rateCol}">${c.rate}%</div>
+      <div style="width:80px;text-align:right;font-size:11px;color:var(--muted)">${c.total.toLocaleString()} vendors</div>
+      <div style="width:60px;text-align:right;font-size:11px;color:#AC1534">${c.nc} NC</div>
+      <div style="width:60px;text-align:right;font-size:11px;color:#EA580C">${c.expired.length} exp</div>
     </div>`;
   }).join('');
 
-  // Issues list
   const issueList = d.issueSet.size
-    ? `<div class="prt-section-hdr" style="margin-top:20px"><div class="prt-section-hdr-lbl">Delivery Issues — ${d.issueSet.size} Contacts</div><div class="prt-section-hdr-line"></div></div>
-       <div style="font-size:11px;color:var(--muted);margin-bottom:8px">These contacts had bounces, hard rejects, or spam flags. Addresses need updating in the platform.</div>
-       <div style="display:flex;flex-wrap:wrap;gap:6px">${[...d.issueSet].slice(0,60).map(e=>`<span style="font-size:11px;background:rgba(172,21,52,.08);color:#AC1534;padding:3px 8px;border-radius:4px;border:1px solid rgba(172,21,52,.15)">${esc(e)}</span>`).join('')}${d.issueSet.size>60?`<span style="font-size:11px;color:var(--muted);padding:3px 8px">+${d.issueSet.size-60} more</span>`:''}</div>`
+    ? `<div class="prt-section-hdr" style="margin-top:22px"><div class="prt-section-hdr-lbl">Delivery Issues — ${d.issueSet.size} Contacts</div><div class="prt-section-hdr-line"></div></div>
+       <div style="font-size:11px;color:var(--muted);margin-bottom:8px">These addresses had bounces, rejects, or spam flags. Update them in the platform.</div>
+       <div style="display:flex;flex-wrap:wrap;gap:6px">${[...d.issueSet].slice(0,60).map(e=>`<span style="font-size:11px;background:rgba(172,21,52,.08);color:#AC1534;padding:3px 8px;border-radius:4px;border:1px solid rgba(172,21,52,.15)">${esc(e)}</span>`).join('')}${d.issueSet.size>60?`<span style="font-size:11px;color:var(--muted)">+${d.issueSet.size-60} more</span>`:''}</div>`
     : '';
 
-  el.innerHTML = kpis
-    + `<div class="prt-section-hdr"><div class="prt-section-hdr-lbl">Compliance vs. Outreach — By Client</div><div class="prt-section-hdr-line"></div></div>
-       <div style="font-size:12px;color:var(--muted);margin-bottom:10px">Compliance rate per client. Low-rate clients are your highest-priority outreach targets.</div>
+  const engNote = !hasPerClient
+    ? `<div style="font-size:11px;color:var(--muted);margin-bottom:12px;padding:8px 12px;background:rgba(243,185,33,.07);border:1px solid rgba(243,185,33,.2);border-radius:6px">&#9432; Per-client engagement breakdown requires a <strong>Client</strong> column in the engagement CSV. Book-wide totals above are accurate.</div>`
+    : '';
+
+  el.innerHTML = kpis + engNote
+    + `<div class="prt-section-hdr"><div class="prt-section-hdr-lbl">Compliance &amp; Outreach — By Client</div><div class="prt-section-hdr-line"></div></div>
+       <div style="font-size:12px;color:var(--muted);margin-bottom:10px">Sorted lowest compliance first.${hasPerClient?' Outreach stats from engagement CSV.':''}</div>
        <div style="display:flex;gap:28px;font-size:10px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);padding:0 10px;margin-bottom:4px">
-         <div style="width:175px">Client</div><div style="flex:1">Compliance Rate</div><div style="width:44px;text-align:right">Rate</div><div style="width:90px;text-align:right">Vendors</div><div style="width:80px;text-align:right">NC</div><div style="width:70px;text-align:right">Expired</div>
+         <div style="width:210px">Client</div><div style="flex:1">Compliance</div><div style="width:48px;text-align:right">Rate</div><div style="width:80px;text-align:right">Vendors</div><div style="width:60px;text-align:right">NC</div><div style="width:60px;text-align:right">Exp</div>
        </div>
        ${clientRows || '<div style="font-size:12px;color:var(--muted);padding:8px 0">No clients match filter.</div>'}` + issueList;
 }
+
 
 function prtRenderClients(d) {
   const gridEl = document.getElementById('prt-clients-grid');
