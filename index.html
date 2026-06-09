@@ -2106,7 +2106,7 @@ function prtRenderFiltered(d) {
   if (scoreEl) {
     scoreEl.innerHTML = [
       { cls:'grey',   lbl:'Total Active',   val: fTotal.toLocaleString(),   sub: `${filtered.length} programs` },
-      { cls:'green',  lbl:'Compliant',      val: fComp.toLocaleString(),    sub: pct(fComp,fTotal) + ' of active' },
+      { cls: fRate>=95?'green':fRate>=85?'amber':fRate>=70?'orange':'red', lbl:'Compliant', val: fComp.toLocaleString(), sub: pct(fComp,fTotal) + ' — ' + (fRate>=95?'Best-in-Class':fRate>=85?'On Track':fRate>=70?'Below Avg':'Needs Attention') },
       { cls:'red',    lbl:'Non-Compliant',  val: fNC.toLocaleString(),      sub: pct(fNC,fTotal) + ' of active' },
       { cls:'orange', lbl:'Expired COI',    val: fExpired.toLocaleString(), sub: pct(fExpired,fTotal) + ' of active' },
       { cls:'amber',  lbl:'No COI on File', val: fNoCOI.toLocaleString(),   sub: pct(fNoCOI,fTotal) + ' of active' },
@@ -2137,7 +2137,7 @@ function prtRenderFiltered(d) {
     } else {
       const moNames = {1:'Jan',2:'Feb',3:'Mar',4:'Apr',5:'May',6:'Jun',7:'Jul',8:'Aug',9:'Sep',10:'Oct',11:'Nov',12:'Dec'};
       trendEl.innerHTML = filteredTrend.map(pt => {
-        const color = pt.rate >= 80 ? '#3EBD3E' : pt.rate >= 60 ? '#D97706' : '#AC1534';
+        const color = pt.rate >= 95 ? '#3EBD3E' : pt.rate >= 85 ? '#D97706' : pt.rate >= 70 ? '#EA580C' : '#AC1534';
         const mo = moNames[parseInt(pt.month.split('-')[1])] || pt.month.split('-')[1];
         const h = Math.max(3, Math.round(pt.rate / 100 * 56));
         return `<div class="prt-trend-bar-wrap" title="${pt.month}: ${pt.rate}% (${pt.total} vendors)">
@@ -2450,7 +2450,7 @@ function prtRender(d) {
   if (scoreEl) {
     scoreEl.innerHTML = [
       { cls:'grey',   lbl:'Total Active',   val: d.totalActive.toLocaleString(), sub: `${d.clientStats.length} clients` },
-      { cls:'green',  lbl:'Compliant',      val: d.countCompliant.toLocaleString(), sub: pct(d.countCompliant, d.totalActive) + ' of active' },
+      { cls: d.overallRate>=95?'green':d.overallRate>=85?'amber':d.overallRate>=70?'orange':'red', lbl:'Compliant', val: d.countCompliant.toLocaleString(), sub: pct(d.countCompliant, d.totalActive) + ' — ' + (d.overallRate>=95?'Best-in-Class':d.overallRate>=85?'On Track':d.overallRate>=70?'Below Avg':'Needs Attention') },
       { cls:'red',    lbl:'Non-Compliant',  val: d.countNC.toLocaleString(), sub: pct(d.countNC, d.totalActive) + ' of active' },
       { cls:'orange', lbl:'Expired COI',    val: d.countExpired.toLocaleString(), sub: pct(d.countExpired, d.totalActive) + ' of active' },
       { cls:'amber',  lbl:'No COI on File', val: d.countNoCOI.toLocaleString(), sub: pct(d.countNoCOI, d.totalActive) + ' of active' },
@@ -2464,7 +2464,7 @@ function prtRender(d) {
     } else {
       const moNames = {1:'Jan',2:'Feb',3:'Mar',4:'Apr',5:'May',6:'Jun',7:'Jul',8:'Aug',9:'Sep',10:'Oct',11:'Nov',12:'Dec'};
       trendEl.innerHTML = d.monthlyTrend.map(pt => {
-        const color = pt.rate >= 80 ? '#3EBD3E' : pt.rate >= 60 ? '#D97706' : '#AC1534';
+        const color = pt.rate >= 95 ? '#3EBD3E' : pt.rate >= 85 ? '#D97706' : pt.rate >= 70 ? '#EA580C' : '#AC1534';
         const mo = moNames[parseInt(pt.month.split('-')[1])] || pt.month.split('-')[1];
         const h = Math.max(3, Math.round(pt.rate / 100 * 56));
         return `<div class="prt-trend-bar-wrap" title="${pt.month}: ${pt.rate}%">
@@ -2607,7 +2607,8 @@ function prtBuildNarratives(d, filtered, fTotal, fComp, fNC, fExpired, fNoCOI) {
   // ── Tab 1: Program Health ──────────────────────────────────────────────────
   const healthEl = document.getElementById('prt-narrative');
   if (healthEl) {
-    const rateCol = rate >= 80 ? '#3EBD3E' : rate >= 60 ? '#D97706' : '#AC1534';
+    const rateCol = rate >= 95 ? '#3EBD3E' : rate >= 85 ? '#D97706' : rate >= 70 ? '#EA580C' : '#AC1534';
+    const rateLabel = rate >= 95 ? 'Best-in-Class' : rate >= 85 ? 'Average / On Track' : rate >= 70 ? 'Below Average' : 'Needs Attention';
     const gap = fNC + fExpired + fNoCOI;
     const prio = fExpired > fNoCOI
       ? `<strong>${fExpired.toLocaleString()} vendors with expired coverage</strong> are the most urgent — policies lapsed but a COI exists, so a renewal request is the next action.`
@@ -2616,8 +2617,7 @@ function prtBuildNarratives(d, filtered, fTotal, fComp, fNC, fExpired, fNoCOI) {
         : fNC > 0
           ? `<strong>${fNC.toLocaleString()} non-compliant vendors</strong> need follow-up on specific coverage gaps.`
           : 'All tracked vendors are currently compliant.';
-    healthEl.innerHTML = `As of ${today}, ${isF ? '<strong>' + scope + '</strong> cover' : 'the CertSecure program covers'} <strong>${nClients} active program${nClients!==1?'s':''}</strong> across <strong>${fTotal.toLocaleString()} tracked vendors</strong>. Overall compliance stands at <strong style="color:${rateCol}">${rate}%</strong> — ${fComp.toLocaleString()} compliant, ${fNC.toLocaleString()} non-compliant, ${fExpired.toLocaleString()} expired, ${fNoCOI.toLocaleString()} no COI on file. Program compliance is <strong style="color:${trendCol}">${trendWord}</strong> over the selected period. ${gap > 0 ? prio : ''}`;
-  }
+    healthEl.innerHTML = `As of ${today}, ${isF ? '<strong>' + scope + '</strong> cover' : 'the CertSecure program covers'} <strong>${nClients} active program${nClients!==1?'s':''}</strong> across <strong>${fTotal.toLocaleString()} tracked vendors</strong>. Overall compliance stands at <strong style="color:${rateCol}">${rate}% — ${rateLabel}</strong>. Industry average: 85–90%; best-in-class: 95%+. ${fComp.toLocaleString()} compliant, ${fNC.toLocaleString()} non-compliant, ${fExpired.toLocaleString()} expired, ${fNoCOI.toLocaleString()} no COI on file. Program compliance is <strong style="color:${trendCol}">${trendWord}</strong> over the selected period. ${gap > 0 ? prio : ''}`;  }
 
   // ── Tab 2: Industry ────────────────────────────────────────────────────────
   const indNarEl = document.getElementById('prt-ind-narrative');
@@ -2644,7 +2644,7 @@ function prtBuildNarratives(d, filtered, fTotal, fComp, fNC, fExpired, fNoCOI) {
       const multiSeg = segStats.length > 1;
       indNarEl.innerHTML = `Industry breakdown shows ${segStats.length} active segment${segStats.length!==1?'s':''}${platNote}. `
         + (multiSeg
-          ? `<strong>${best.label}</strong> leads at <strong style="color:${best.rate>=80?'#3EBD3E':'#D97706'}">${best.rate}%</strong> compliance across ${best.total.toLocaleString()} vendors. `
+          ? `<strong>${best.label}</strong> leads at <strong style="color:${best.rate>=95?'#3EBD3E':best.rate>=85?'#D97706':'#EA580C'}">${best.rate}%</strong> compliance across ${best.total.toLocaleString()} vendors. `
             + `<strong>${worst.label}</strong> has the most room to improve at <strong style="color:#AC1534">${worst.rate}%</strong> — focus outreach here for the fastest gains.`
           : `<strong>${segStats[0].label}</strong> is at <strong>${segStats[0].rate}%</strong> compliance across ${segStats[0].total.toLocaleString()} vendors.`);
     }
@@ -2694,12 +2694,13 @@ function prtBuildNarratives(d, filtered, fTotal, fComp, fNC, fExpired, fNoCOI) {
   const clientNarEl = document.getElementById('prt-clients-narrative');
   if (clientNarEl) {
     const avgRate = nClients ? Math.round(filtered.reduce((a,c)=>a+c.rate,0)/nClients) : 0;
-    const below50 = filtered.filter(c=>c.rate<50).length;
-    const above80 = filtered.filter(c=>c.rate>=80).length;
+    const below70 = filtered.filter(c=>c.rate<70).length;
+    const above95 = filtered.filter(c=>c.rate>=95).length;
+    const above85 = filtered.filter(c=>c.rate>=85).length;
     const scopeStr = isF ? `<strong>${scope}</strong>` : 'all active programs';
     clientNarEl.innerHTML = `Showing ${scopeStr} — <strong>${nClients} program${nClients!==1?'s':''}</strong>, average compliance <strong>${avgRate}%</strong>. `
-      + (above80 ? `${above80} program${above80!==1?'s':''} at or above 80%. ` : '')
-      + (below50 ? `<strong style="color:#AC1534">${below50} program${below50!==1?'s':''} below 50%</strong> — these need the most attention. ` : '')
+      + (above95 ? `${above95} program${above95!==1?'s':''} at best-in-class (95%+). ` : above85 ? `${above85} program${above85!==1?'s':''} on track (85%+). ` : '')
+      + (below70 ? `<strong style="color:#AC1534">${below70} program${below70!==1?'s':''} below 70%</strong> — these need immediate attention. ` : '')
       + `Click any card to drill into vendor-level detail for that program.`;
   }
 }
@@ -2757,7 +2758,7 @@ function prtRenderIndustry(d) {
     const expired = clients.reduce((a,c) => a + c.expired.length, 0);
     const noCOI   = clients.reduce((a,c) => a + c.noCOI.length, 0);
     const rate    = total ? Math.round(comp / total * 100) : 0;
-    const rateCol = rate >= 80 ? '#3EBD3E' : rate >= 60 ? '#D97706' : '#AC1534';
+    const rateCol = rate >= 95 ? '#3EBD3E' : rate >= 85 ? '#D97706' : rate >= 70 ? '#EA580C' : '#AC1534';
     // Trend: avg improvement across clients with enough snapshots
     const improving = clients.filter(c => c.improvement !== null && c.improvement > 2).length;
     const declining = clients.filter(c => c.improvement !== null && c.improvement < -2).length;
@@ -2806,7 +2807,7 @@ function prtRenderIndustry(d) {
 
   const maxRate = Math.max(...compRows.map(s => s.rate), 1);
   const comparisonBars = compRows.map(s => {
-    const rateCol = s.rate>=80?'#3EBD3E':s.rate>=60?'#D97706':'#AC1534';
+    const rateCol = s.rate>=95?'#3EBD3E':s.rate>=85?'#D97706':s.rate>=70?'#EA580C':'#AC1534';
     const barW = Math.round(s.rate / maxRate * 100);
     return `<div style="display:flex;align-items:center;gap:12px;margin-bottom:10px">
       <div style="width:110px;font-size:12px;font-weight:700;color:${s.color}">${s.label}</div>
@@ -2906,7 +2907,7 @@ function prtRenderCoverage(d) {
     .map(c => {
       const gaps = c.clientCovGaps || [];
       if (!gaps.length) return '';
-      const rateCol = c.rate>=80?'#3EBD3E':c.rate>=60?'#D97706':'#AC1534';
+      const rateCol = c.rate>=95?'#3EBD3E':c.rate>=85?'#D97706':c.rate>=70?'#EA580C':'#AC1534';
       const clientMaxNC = gaps[0]?.ncVendors || 1;
       const uid = 'cov-client-' + c.name.replace(/[^a-z0-9]/gi,'_');
 
@@ -3049,7 +3050,7 @@ function prtRenderEngagement(d) {
     // Engagement by client name match in sentSet/openSet is hard without per-row client field
     // Use rate and nc as engagement signal gap indicator
     const gapScore = Math.round((ncVendors / totalVendors) * 100);
-    const rateCol  = c.rate>=80?'#3EBD3E':c.rate>=60?'#D97706':'#AC1534';
+    const rateCol  = c.rate>=95?'#3EBD3E':c.rate>=85?'#D97706':c.rate>=70?'#EA580C':'#AC1534';
     const platBadge = c.platform==='trustlayer'
       ? `<span style="font-size:9px;background:rgba(62,189,62,.15);color:#2a9e2a;padding:1px 5px;border-radius:3px;font-weight:700">TL</span>`
       : `<span style="font-size:9px;background:rgba(6,120,213,.12);color:#0678D5;padding:1px 5px;border-radius:3px;font-weight:700">EV</span>`;
@@ -3114,7 +3115,7 @@ function prtRenderClients(d) {
   gridEl.innerHTML = filtered
     .sort((a, b) => a.rate - b.rate)
     .map(c => {
-      const color = c.rate >= 80 ? '#3EBD3E' : c.rate >= 60 ? '#D97706' : '#AC1534';
+      const color = c.rate >= 95 ? '#3EBD3E' : c.rate >= 85 ? '#D97706' : c.rate >= 70 ? '#EA580C' : '#AC1534';
       const platBadge = c.platform === 'trustlayer'
         ? `<span style="font-size:9px;background:rgba(62,189,62,.15);color:#2a9e2a;padding:1px 6px;border-radius:3px;font-weight:700">TL</span>`
         : `<span style="font-size:9px;background:rgba(6,120,213,.12);color:#0678D5;padding:1px 6px;border-radius:3px;font-weight:700">EV</span>`;
@@ -3159,7 +3160,7 @@ function prtShowClient(clientName) {
   if (!drill) return;
   drill.style.display = '';
   drill.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
-  const rateColor = client.rate >= 80 ? '#3EBD3E' : client.rate >= 60 ? '#D97706' : '#AC1534';
+  const rateColor = client.rate >= 95 ? '#3EBD3E' : client.rate >= 85 ? '#D97706' : client.rate >= 70 ? '#EA580C' : '#AC1534';
   const chgStr = client.improvement !== null
     ? `<span style="color:${client.improvement>=0?'#3EBD3E':'#AC1534'};font-size:13px;font-weight:700">${client.improvement>=0?'\u25b2':'\u25bc'}${Math.abs(client.improvement)}% over period</span>`
     : '';
@@ -3218,7 +3219,7 @@ function buildPRTHTML(d) {
   const logoTag = logoSrc ? `<img src="${logoSrc}" style="height:32px;object-fit:contain">` : `<div style="font-family:Arial,sans-serif;font-size:16px;font-weight:700;color:#1E2E3D">CERT<span style="background:#3872B8;color:white;padding:1px 6px;border-radius:3px">SECURE</span></div>`;
   const moNames = {1:'Jan',2:'Feb',3:'Mar',4:'Apr',5:'May',6:'Jun',7:'Jul',8:'Aug',9:'Sep',10:'Oct',11:'Nov',12:'Dec'};
   const fmtYM = ym => { const [y,m] = ym.split('-'); return `${moNames[parseInt(m)]} ${y}`; };
-  const rateColor = d.overallRate >= 80 ? '#16A34A' : d.overallRate >= 60 ? '#D97706' : '#DC2626';
+  const rateColor = d.overallRate >= 95 ? '#16A34A' : d.overallRate >= 85 ? '#D97706' : d.overallRate >= 70 ? '#EA580C' : '#DC2626';
   const chgColor  = d.rateChange >= 0 ? '#16A34A' : '#DC2626';
   const pctStr = (n, t) => t ? Math.round(n / t * 100) + '%' : '—';
 
@@ -3231,7 +3232,7 @@ function buildPRTHTML(d) {
 
   // Monthly trend bars
   const trendBars = d.monthlyTrend.map(pt => {
-    const color = pt.rate >= 80 ? '#16A34A' : pt.rate >= 60 ? '#D97706' : '#DC2626';
+    const color = pt.rate >= 95 ? '#16A34A' : pt.rate >= 85 ? '#D97706' : pt.rate >= 70 ? '#EA580C' : '#DC2626';
     const mo = moNames[parseInt(pt.month.split('-')[1])] || pt.month.split('-')[1];
     const h = Math.max(2, Math.round(pt.rate / 100 * 44));
     return `<div style="display:flex;flex-direction:column;align-items:center;flex:1;gap:2px">
@@ -3266,7 +3267,7 @@ function buildPRTHTML(d) {
 
   const structLabelMap = { general:'General', project:'Construction', location:'Real Estate' };
   const clientRows = filteredClients.map((c, i) => {
-    const rColor = c.rate >= 80 ? '#16A34A' : c.rate >= 60 ? '#D97706' : '#DC2626';
+    const rColor = c.rate >= 95 ? '#16A34A' : c.rate >= 85 ? '#D97706' : c.rate >= 70 ? '#EA580C' : '#DC2626';
     const chgStr = c.improvement !== null
       ? (c.improvement > 0 ? `<span style="color:#16A34A">▲${c.improvement}%</span>`
        : c.improvement < 0 ? `<span style="color:#DC2626">▼${Math.abs(c.improvement)}%</span>`
@@ -3470,7 +3471,7 @@ async function buildPRTExcel(d) {
     if (c.nc > 0) row.getCell(6).font = xlFont(XL.RED, true);
     if (c.expired.length > 0) row.getCell(7).font = xlFont('FFC97A00', true);
     if (c.noCOI.length > 0) row.getCell(8).font = xlFont('FFC97A00', true);
-    const rColor = c.rate >= 80 ? XL.GREEN : c.rate >= 60 ? 'FFC97A00' : XL.RED;
+    const rColor = c.rate >= 95 ? XL.GREEN : c.rate >= 85 ? 'FFC97A00' : c.rate >= 70 ? 'FFEA580C' : XL.RED;
     row.getCell(9).font = xlFont(rColor, true, 10);
     if (c.improvement !== null && c.improvement > 0)  row.getCell(10).font = xlFont(XL.GREEN, true);
     if (c.improvement !== null && c.improvement < 0)  row.getCell(10).font = xlFont(XL.RED, true);
@@ -4893,15 +4894,15 @@ function buildHubWideHTML(year, data) {
   const stamp   = new Date().toLocaleString('en-US',{month:'long',day:'numeric',year:'numeric',hour:'numeric',minute:'2-digit',timeZoneName:'short'});
   const logoSrc = (document.querySelector('.header-logo')?.src?.startsWith('data:')) ? document.querySelector('.header-logo').src : null;
   const logoTag = logoSrc ? `<img src="${logoSrc}" style="height:38px;object-fit:contain">` : `<div style="font-family:Arial,sans-serif;font-size:18px;font-weight:700;color:#1E2E3D">CERT<span style="background:#3872B8;color:white;padding:1px 7px;border-radius:3px">SECURE</span></div>`;
-  const rateColor = overallRate >= 80 ? '#16A34A' : overallRate >= 60 ? '#D97706' : '#DC2626';
+  const rateColor = overallRate >= 95 ? '#16A34A' : overallRate >= 85 ? '#D97706' : overallRate >= 70 ? '#EA580C' : '#DC2626';
   const chgColor  = rateChange >= 0 ? '#16A34A' : '#DC2626';
   const trendBars = monthlyTrend.map(d => {
-    const color = d.rate >= 80 ? '#16A34A' : d.rate >= 60 ? '#D97706' : '#DC2626';
+    const color = d.rate >= 95 ? '#16A34A' : d.rate >= 85 ? '#D97706' : d.rate >= 70 ? '#EA580C' : '#DC2626';
     const mo = d.month.split('-')[1];
     return `<div style="display:flex;flex-direction:column;align-items:center;flex:1;gap:2px"><div style="font-size:9px;font-weight:700;color:${color}">${d.rate}%</div><div style="width:100%;background:#F1F5F9;border-radius:2px 2px 0 0;height:50px;display:flex;align-items:flex-end"><div style="width:100%;background:${color};border-radius:2px 2px 0 0;height:${Math.max(2,Math.round(d.rate/100*50))}px"></div></div><div style="font-size:8px;color:#8A94A8">${moNames[parseInt(mo)]||mo}</div></div>`;
   }).join('');
   const clientRows = clientStats.map((c,i) => {
-    const rate = c.end.rate, rColor = rate >= 80 ? '#16A34A' : rate >= 60 ? '#D97706' : '#DC2626', chg = c.improvement;
+    const rate = c.end.rate, rColor = rate >= 95 ? '#16A34A' : rate >= 85 ? '#D97706' : rate >= 70 ? '#EA580C' : '#DC2626', chg = c.improvement;
     const chgStr = chg === null ? '\u2014' : (chg > 0 ? `<span style="color:#16A34A">\u25b2${chg}%</span>` : chg < 0 ? `<span style="color:#DC2626">\u25bc${Math.abs(chg)}%</span>` : '<span style="color:#8A94A8">\u2014</span>');
     return `<tr style="background:${i%2===0?'#FAFBFC':'white'}"><td style="font-weight:600;font-size:10px">${esc(c.name)}</td><td style="text-align:center">${c.end.total}</td><td style="text-align:center;color:#16A34A;font-weight:600">${c.end.comp}</td><td style="text-align:center;color:${c.end.nc>0?'#DC2626':'#16A34A'};font-weight:600">${c.end.nc}</td><td style="text-align:center;font-weight:800;color:${rColor}">${rate}%</td><td style="text-align:center">${chgStr}</td></tr>`;
   }).join('');
@@ -5522,7 +5523,7 @@ function buildComplianceSummaryHTML(insureds,coverages,criteria,{reportDate}){
   const nc=active.filter(r=>normStatus(r[C.status])==='non_compliant').length,newp=total-comp-nc;
   const rate=total?Math.round(comp/total*100):0;
   const stamp=new Date().toLocaleString('en-US',{month:'long',day:'numeric',year:'numeric',hour:'numeric',minute:'2-digit',timeZoneName:'short'});
-  const rateColor=rate>=80?'#16A34A':rate>=60?'#D97706':'#DC2626'; 
+  const rateColor=rate>=95?'#16A34A':rate>=85?'#D97706':rate>=70?'#EA580C':'#DC2626'; 
   const logoSrc=typeof CERTSECURE_LOGO_SRC!=='undefined'?CERTSECURE_LOGO_SRC:(document.querySelector('.header-logo')?.src?.startsWith('data:')?document.querySelector('.header-logo').src:null);
   const logoTag=logoSrc?`<img src="${logoSrc}" style="height:34px;object-fit:contain">`:`<div style="font-family:Arial,sans-serif;font-size:16px;font-weight:700;color:#1E2E3D">CERT<span style="background:#3872B8;color:white;padding:1px 6px;border-radius:3px">SECURE</span></div>`;
 
@@ -5684,7 +5685,7 @@ async function buildProgramOverviewHTML(year, producer) {
   if(usingLive&&active.length){const comp=active.filter(r=>normStatus(r[C.status])==='compliant').length;monthlyData.push({month:year+'-current',total:active.length,comp,nc:active.length-comp,rate:Math.round(comp/active.length*100)});}
   const first=monthlyData[0],last=monthlyData[monthlyData.length-1];
   const change=last.rate-first.rate;
-  const rateColor=last.rate>=80?'#16A34A':last.rate>=60?'#D97706':'#DC2626';
+  const rateColor=last.rate>=95?'#16A34A':last.rate>=85?'#D97706':last.rate>=70?'#EA580C':'#DC2626';
   const critSrc=(lastCrit.length?lastCrit:liveCrit).filter(r=>r[C.client]===clientName);
   const ncMap={};
   critSrc.filter(r=>normStatus(r[C.overall_comp])==='non_compliant').forEach(r=>{(r[C.nc_reasons]||'').split(' | ').forEach(p=>{const ci=p.indexOf(':');if(ci<0)return;const rs=mapNCReason(p.slice(ci+1).trim());if(rs)ncMap[rs]=(ncMap[rs]||0)+1;});});
@@ -5786,7 +5787,7 @@ function buildThankYouCardHTML(insureds,meta,contactName,producer){
   const logoSrc=typeof CERTSECURE_LOGO_SRC!=='undefined'?CERTSECURE_LOGO_SRC:(document.querySelector('.header-logo')?.src?.startsWith('data:')?document.querySelector('.header-logo').src:null);
   const logoTag=logoSrc?`<img src="${logoSrc}" style="height:28px;object-fit:contain">`:`<div style="font-family:Arial,sans-serif;font-size:14px;font-weight:700;color:white">CERT<span style="background:rgba(255,255,255,0.25);padding:1px 5px;border-radius:3px">SECURE</span></div>`;
   const goLive=meta.go_live_date?new Date(meta.go_live_date).toLocaleDateString('en-US',{month:'long',year:'numeric'}):'',year=new Date().getFullYear();
-  const rateColor=rate>=80?'#16A34A':rate>=60?'#D97706':'#DC2626';
+  const rateColor=rate>=95?'#16A34A':rate>=85?'#D97706':rate>=70?'#EA580C':'#DC2626';
   const msg=rate>=80?'Thank you for your commitment to a fully compliant insurance program \u2014 your diligence protects everyone involved.':rate>=60?'Thank you for your continued partnership. Together we\u2019re making meaningful progress toward a fully compliant program.':'Thank you for your trust. Our team is working alongside you to move toward a fully compliant program \u2014 we appreciate your partnership.';
   return `<!DOCTYPE html><html><head><meta charset="UTF-8"><title>${esc(selectedClient.name)} \u2014 Thank You Card</title><style>@import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800;900&display=swap');*{box-sizing:border-box;margin:0;padding:0}body{font-family:'Outfit',Arial,sans-serif;background:#F4F7FB;display:flex;align-items:center;justify-content:center;min-height:100vh;padding:20px;-webkit-print-color-adjust:exact;print-color-adjust:exact}.card{background:white;border-radius:16px;width:700px;overflow:hidden;box-shadow:0 8px 40px rgba(0,0,0,0.15)}.card-top{background:linear-gradient(135deg,#1E2E3D 0%,#2B3A52 60%,#3872B8 100%);padding:28px 32px 22px;color:white}.card-body{padding:28px 32px 24px}.stat-row{display:flex;gap:14px;margin-top:18px}.stat{background:#F8FAFC;border:1px solid rgba(6,120,213,0.12);border-radius:10px;padding:12px 16px;flex:1;text-align:center}@media print{body{min-height:unset;background:white}@page{size:letter landscape;margin:8mm}}<\/style><\/head><body>
 <div class="card"><div class="card-top"><div style="display:flex;justify-content:space-between;align-items:center">${logoTag}<div style="font-size:9px;letter-spacing:.14em;text-transform:uppercase;color:rgba(255,255,255,0.6)">Client Recognition ${year}</div></div><div style="margin-top:18px"><div style="font-size:11px;font-weight:600;letter-spacing:.1em;text-transform:uppercase;color:rgba(255,255,255,0.55);margin-bottom:5px">For the team at</div><div style="font-size:26px;font-weight:900;color:white;line-height:1.1">${esc(selectedClient.name)}</div>${contactName?`<div style="font-size:14px;color:rgba(255,255,255,0.75);margin-top:5px">Attention: ${esc(contactName)}</div>`:''}</div></div>
