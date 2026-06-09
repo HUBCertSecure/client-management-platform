@@ -743,7 +743,7 @@
       <button class="prt-preset active" id="prt-f-all"      onclick="prtSetFilter('struct','all')">All</button>
       <button class="prt-preset"        id="prt-f-general"  onclick="prtSetFilter('struct','general')">General</button>
       <button class="prt-preset"        id="prt-f-project"  onclick="prtSetFilter('struct','project')">Subs</button>
-      <button class="prt-preset"        id="prt-f-location" onclick="prtSetFilter('struct','location')">Tenants</button>
+      <button class="prt-preset"        id="prt-f-location" onclick="prtSetFilter('struct','location')">Real Estate</button>
     </div>
     <div style="display:flex;align-items:center;gap:6px;border-left:1px solid var(--border);padding-left:12px">
       <span style="font-size:10px;font-weight:700;letter-spacing:.07em;text-transform:uppercase;color:var(--muted)">Platform</span>
@@ -789,8 +789,8 @@
     
     <div class="card">
       <div class="struct-label">General &#8212; Shown by Entity Type</div><div class="client-grid" id="grid-general"></div>
-      <div class="struct-label">Subcontractors &#8212; Shown by Project</div><div class="client-grid" id="grid-project"></div>
-      <div class="struct-label">Tenants &#8212; Shown by Location</div><div class="client-grid" id="grid-location"></div>
+      <div class="struct-label">Construction &#8212; Shown by Project</div><div class="client-grid" id="grid-project"></div>
+      <div class="struct-label">Real Estate &#8212; Shown by Location</div><div class="client-grid" id="grid-location"></div>
     </div>
   </div>
   <div id="step-2" class="step-panel" style="display:none">
@@ -1076,8 +1076,8 @@
       
       <div class="card">
         <div class="struct-label">General &#8212; Shown by Entity Type</div><div class="client-grid" id="tg-grid-general"></div>
-        <div class="struct-label">Subcontractors &#8212; Shown by Project</div><div class="client-grid" id="tg-grid-project"></div>
-        <div class="struct-label">Tenants &#8212; Shown by Location</div><div class="client-grid" id="tg-grid-location"></div>
+        <div class="struct-label">Construction &#8212; Shown by Project</div><div class="client-grid" id="tg-grid-project"></div>
+        <div class="struct-label">Real Estate &#8212; Shown by Location</div><div class="client-grid" id="tg-grid-location"></div>
       </div>
     </div>
 
@@ -1296,7 +1296,7 @@
         <div class="form-grp" style="grid-column:1/-1"><label class="form-lbl">Client Name <span id="client-name-lock" style="color:var(--muted);font-weight:400;font-size:10px">(locked &#8212; matches CSV data)</span></label><input type="text" id="ce-client-name" placeholder="e.g. Canadian Pacific Kansas City"><div class="form-hint" id="ce-name-hint" style="display:none">Must exactly match the <code>client</code> column in your CSVs.</div></div>
         <div class="form-grp"><label class="form-lbl">API Name</label><input type="text" id="ce-api-name" placeholder="e.g. cpkansascity"></div>
         <div class="form-grp"><label class="form-lbl">Platform</label><select id="ce-platform"><option value="evident">Evident</option><option value="trustlayer">TrustLayer</option></select></div>
-        <div class="form-grp"><label class="form-lbl">Structure</label><select id="ce-structure"><option value="general">General</option><option value="project">Project (Subcontractors)</option><option value="location">Location (Tenants)</option></select></div>
+        <div class="form-grp"><label class="form-lbl">Structure</label><select id="ce-structure"><option value="general">General</option><option value="project">Project (Construction)</option><option value="location">Location (Real Estate)</option></select></div>
         <div class="form-grp"><label class="form-lbl">Program Start Date</label><input type="date" id="ce-program-start"></div>
         <div class="form-grp"><label class="form-lbl">Go-Live Date</label><input type="date" id="ce-go-live"></div>
         <div class="form-grp"><label class="form-lbl">Producer Name</label><input type="text" id="ce-producer" placeholder="e.g. Philip Irving"></div>
@@ -1353,7 +1353,7 @@ function renderCmClients(){
   var source=(_allClientsData&&_allClientsData.length)?_allClientsData:CLIENTS_FALLBACK;
   var clients=source.filter(function(cl){return cl.active!==false;});
   if(!clients.length){wrap.innerHTML='<p style="color:#5A6B7B;padding:16px">No clients. Check Settings.</p>';return;}
-  var groups={general:'General \u2014 Shown by Entity Type',project:'Subcontractors \u2014 Shown by Project',location:'Tenants \u2014 Shown by Location'};
+  var groups={general:'General \u2014 Shown by Entity Type',project:'Construction \u2014 Shown by Project',location:'Real Estate \u2014 Shown by Location'};
   var html='<div style="padding:16px">';
   ['general','project','location'].forEach(function(struct){
     var grp=clients.filter(function(cl){return (cl.structure||'general')===struct;});
@@ -2019,7 +2019,7 @@ function prtRenderFiltered(d) {
   const fRate = fTotal ? Math.round(fComp / fTotal * 100) : 0;
 
   // Build filter label for narrative
-  const structLabels = { general:'General', project:'Subcontractors', location:'Tenants' };
+  const structLabels = { general:'General', project:'Construction', location:'Real Estate' };
   const filterParts = [];
   if (_prtFilter.struct !== 'all') filterParts.push(structLabels[_prtFilter.struct] || _prtFilter.struct);
   if (_prtFilter.plat   !== 'all') filterParts.push(_prtFilter.plat === 'trustlayer' ? 'TrustLayer' : 'Evident');
@@ -2492,7 +2492,7 @@ function prtRenderClients(d) {
   const clientsMeta = document.getElementById('prt-clients-meta');
   if (!gridEl) return;
 
-  const structLabels = { general: 'General', project: 'Subs', location: 'Tenants' };
+  const structLabels = { general: 'General', project: 'Construction', location: 'Real Estate' };
   const structColors = { general: '#0678D5', project: '#7C3AED', location: '#D97706' };
 
   // Apply filters
@@ -2598,7 +2598,7 @@ function prtShowClient(clientName) {
     <div class="prt-drill-hdr">
       <div style="flex:1;min-width:0">
         <div class="prt-drill-name">${esc(clientName)}</div>
-        <div style="font-size:12px;color:var(--muted);margin-top:2px">${client.total.toLocaleString()} active vendors &nbsp;&middot;&nbsp; <span style="font-weight:700;color:${rateColor}">${client.rate}% compliant</span> &nbsp;&middot;&nbsp; ${({'general':'General','project':'Subcontractors','location':'Tenants'})[client.structure]||'General'} &nbsp;&middot;&nbsp; ${client.platform==='trustlayer'?'TrustLayer':'Evident'} &nbsp;&middot;&nbsp; ${chgStr}</div>
+        <div style="font-size:12px;color:var(--muted);margin-top:2px">${client.total.toLocaleString()} active vendors &nbsp;&middot;&nbsp; <span style="font-weight:700;color:${rateColor}">${client.rate}% compliant</span> &nbsp;&middot;&nbsp; ${({'general':'General','project':'Construction','location':'Real Estate'})[client.structure]||'General'} &nbsp;&middot;&nbsp; ${client.platform==='trustlayer'?'TrustLayer':'Evident'} &nbsp;&middot;&nbsp; ${chgStr}</div>
         ${client.monthlyRates && client.monthlyRates.length ? `<div style="margin-top:10px;max-width:320px">${prtSparkline(client.monthlyRates, client.rate, rateColor)}<div style="font-size:9px;color:var(--muted);display:flex;justify-content:space-between;margin-top:2px"><span>${client.monthlyRates[0].month}</span><span>${client.monthlyRates[client.monthlyRates.length-1].month} → now</span></div></div>` : ''}
       </div>
       <button class="prt-drill-close" onclick="prtShowClient('${clientName.replace(/'/g,"\\'")}')" title="Close">&#10005;</button>
@@ -2630,7 +2630,7 @@ function buildPRTHTML(d) {
   const pctStr = (n, t) => t ? Math.round(n / t * 100) + '%' : '—';
 
   // Filter label
-  const structLabels = { general:'General', project:'Subcontractors', location:'Tenants' };
+  const structLabels = { general:'General', project:'Construction', location:'Real Estate' };
   const filterParts = [];
   if (_prtFilter.struct !== 'all') filterParts.push(structLabels[_prtFilter.struct] || _prtFilter.struct);
   if (_prtFilter.plat  !== 'all') filterParts.push(_prtFilter.plat === 'trustlayer' ? 'TrustLayer' : 'Evident');
@@ -2671,7 +2671,7 @@ function buildPRTHTML(d) {
     return true;
   }).sort((a, b) => a.rate - b.rate);
 
-  const structLabelMap = { general:'General', project:'Subcontractors', location:'Tenants' };
+  const structLabelMap = { general:'General', project:'Construction', location:'Real Estate' };
   const clientRows = filteredClients.map((c, i) => {
     const rColor = c.rate >= 80 ? '#16A34A' : c.rate >= 60 ? '#D97706' : '#DC2626';
     const chgStr = c.improvement !== null
@@ -2789,10 +2789,10 @@ async function buildPRTExcel(d) {
   wb.creator = 'HUB CertSecure';
   wb.created = new Date();
   const stamp = new Date().toLocaleString('en-US',{month:'long',day:'numeric',year:'numeric'});
-  const structLabelMap = { general:'General', project:'Subcontractors', location:'Tenants' };
+  const structLabelMap = { general:'General', project:'Construction', location:'Real Estate' };
 
   // Filter label
-  const structLabels = { general:'General', project:'Subcontractors', location:'Tenants' };
+  const structLabels = { general:'General', project:'Construction', location:'Real Estate' };
   const filterParts = [];
   if (_prtFilter.struct !== 'all') filterParts.push(structLabels[_prtFilter.struct] || _prtFilter.struct);
   if (_prtFilter.plat   !== 'all') filterParts.push(_prtFilter.plat === 'trustlayer' ? 'TrustLayer' : 'Evident');
@@ -3200,8 +3200,8 @@ document.addEventListener('DOMContentLoaded', preloadClientPanelData);
 <script>
 const STRUCT = {
   general:  { label: "General",        groupLabel: null,      badgeClass: "badge-general"  },
-  project:  { label: "Subcontractors", groupLabel: "Project", badgeClass: "badge-project"  },
-  location: { label: "Tenants",        groupLabel: "Location",badgeClass: "badge-location" },
+  project:  { label: "Construction", groupLabel: "Project", badgeClass: "badge-project"  },
+  location: { label: "Real Estate",        groupLabel: "Location",badgeClass: "badge-location" },
 };
 const CLIENT_FIELD_CONFIG = {
   "A G Equipment Company":              [{key:"entityId",label:"Entity ID",on:false},{key:"entityType",label:"Entity Type",on:false}],
@@ -3858,7 +3858,7 @@ async function loadAndRenderConfig() {
   }
   renderConfigTable();
 }
-const STRUCT_LABEL = { general:'General', project:'Subcontractors', location:'Tenants' };
+const STRUCT_LABEL = { general:'General', project:'Construction', location:'Real Estate' };
 function renderConfigTable(filter='') {
   const q = (filter||'').toLowerCase();
   const rows = _allClientsData.filter(c => !q || c.client_name.toLowerCase().includes(q) || (c.rp_common_name||'').toLowerCase().includes(q)).sort((a,b) => a.client_name.localeCompare(b.client_name));
@@ -3951,7 +3951,7 @@ async function saveClientEdit() {
       }
       if (itemId) {
         const platMap={evident:'Evident',trustlayer:'TrustLayer'};
-        const structMap={general:'General',project:'Subcontractors',location:'Tenants'};
+        const structMap={general:'General',project:'Construction',location:'Real Estate'};
         const colVals={};
         const push=(colKey,val,transform)=>{const id=mondayColId(colKey);if(id&&val!==undefined&&val!=='')colVals[id]=transform?transform(val):val;};
         push('platform',  platform, v=>({label:platMap[v]||v}));
@@ -5393,7 +5393,7 @@ function switchMondayTab(tab) {
 const CP_SECTIONS = [
   { id:'program', label:'Program', fields:[
     { key:'platform',          label:'Platform',           type:'select', opts:['evident','trustlayer'], display:['Evident','TrustLayer'], src:'config' },
-    { key:'structure',         label:'Structure',          type:'select', opts:['general','project','location'], display:['General','Subcontractors','Tenants'], src:'config' },
+    { key:'structure',         label:'Structure',          type:'select', opts:['general','project','location'], display:['General','Construction','Real Estate'], src:'config' },
     { key:'program_start_date',label:'Service Start Date', type:'date',   src:'config' },
     { key:'go_live_date',      label:'Go-Live Date',       type:'date',   src:'config' },
     { key:'epic_id',           label:'EPIC ID',            type:'text',   src:'monday' },
@@ -5521,7 +5521,7 @@ function cpRenderEditor(key) {
   let html = `<div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:20px">
     <div>
       <div style="font-size:18px;font-weight:700;color:var(--text)">${esc(key)}</div>
-      <div style="font-size:11px;font-weight:600;color:${platColor};text-transform:uppercase;letter-spacing:.06em;margin-top:2px">${plat==='trustlayer'?'TrustLayer':'Evident'} · ${(meta.structure||'general').replace('project','Subcontractors').replace('location','Tenants').replace('general','General')}</div>
+      <div style="font-size:11px;font-weight:600;color:${platColor};text-transform:uppercase;letter-spacing:.06em;margin-top:2px">${plat==='trustlayer'?'TrustLayer':'Evident'} · ${(meta.structure||'general').replace('project','Construction').replace('location','Real Estate').replace('general','General')}</div>
     </div>
     <div style="display:flex;gap:8px;align-items:center">
       <span id="cp-unsaved" style="display:none;font-size:11px;color:#D97706;font-weight:600">&#9679; Unsaved</span>
@@ -5729,7 +5729,7 @@ async function cpSave(key) {
         const colVals={};
         const meta = CLIENT_META_MAP[key]||{};
         const platMap={evident:'Evident',trustlayer:'TrustLayer'};
-        const structMap={general:'General',project:'Subcontractors',location:'Tenants'};
+        const structMap={general:'General',project:'Construction',location:'Real Estate'};
         // Build column values
         const push = (colKey,val,transform) => { const id=mondayColId(colKey); if(id&&val!==undefined&&val!=='') colVals[id]=transform?transform(val):val; };
         push('platform',    state['platform']||meta.platform,  v=>({label:platMap[v]||v}));
@@ -6111,7 +6111,7 @@ let WS_DROPDOWNS = [
   {
     boardKey: 'overview', boardName: 'Clients \u2013 Overview',
     column: 'Structure', type: 'dropdown',
-    labels: ['General', 'Subcontractors', 'Tenants']
+    labels: ['General', 'Construction', 'Real Estate']
   },
   {
     boardKey: 'overview', boardName: 'Clients \u2013 Overview',
@@ -6515,7 +6515,7 @@ async function wsImportClients() {
       const meta = typeof CLIENT_META_MAP !== 'undefined' ? CLIENT_META_MAP[clientKey]||{} : {};
       const colVals = {};
       const platMap = {evident:'Evident',trustlayer:'TrustLayer'};
-      const structMap = {general:'General',project:'Subcontractors',location:'Tenants'};
+      const structMap = {general:'General',project:'Construction',location:'Real Estate'};
       const platId = mondayColId('platform');    if (platId) colVals[platId] = {label: platMap[meta.platform||meta.source||'evident']||'Evident'};
       const structId = mondayColId('structure'); if (structId) colVals[structId] = {label: structMap[meta.structure||'general']||'General'};
       const glId = mondayColId('golive');        if (glId && meta.go_live_date) colVals[glId] = {date: meta.go_live_date};
@@ -8382,7 +8382,7 @@ function breRenderPanelHTML(){
       <div style="font-size:15px;font-weight:700;color:#263746">Current TrustLayer Roster</div>
       <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
         <div class="bre-stat" style="min-width:90px"><div class="bre-stat-lbl">Properties</div><div class="bre-stat-val" id="bre-stat-props">\u2014</div></div>
-        <div class="bre-stat" style="min-width:90px"><div class="bre-stat-lbl">Tenants</div><div class="bre-stat-val" id="bre-stat-tenants">\u2014</div></div>
+        <div class="bre-stat" style="min-width:90px"><div class="bre-stat-lbl">Real Estate</div><div class="bre-stat-val" id="bre-stat-tenants">\u2014</div></div>
         <button id="bre-btn-refresh" onclick="breLoadRoster()" style="padding:8px 16px;background:transparent;border:1px solid #D1DCE8;border-radius:6px;font-size:13px;cursor:pointer;font-family:inherit;color:#263746">\u21bb Refresh</button>
         <button onclick="breSetStep(2)" style="padding:8px 20px;background:#0678D5;color:white;border:none;border-radius:6px;font-size:13px;font-weight:700;cursor:pointer;font-family:inherit">Upload Sheet \u2192</button>
       </div>
