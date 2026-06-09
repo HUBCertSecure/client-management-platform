@@ -3807,13 +3807,24 @@ async function publishSharedSettings() {
     const encoded = btoa(unescape(encodeURIComponent(payload)));
     const fileUrl = 'https://api.github.com/repos/'+s.owner+'/'+s.repo+'/contents/config/shared-settings.json';
     const headers = { Authorization: 'Bearer '+s.pat, 'Content-Type':'application/json', Accept:'application/vnd.github.v3+json' };
-    // Get current SHA (file may not exist yet)
-    let sha = null;
-    const getRes = await fetch(fileUrl+'?ref='+s.branch, { headers });
-    if (getRes.ok) { sha = (await getRes.json()).sha; }
-    const body = { message:'config: publish shared settings ['+shared._published+']', content: encoded, branch: s.branch };
-    if (sha) body.sha = sha;
-    const putRes = await fetch(fileUrl, { method:'PUT', headers, body: JSON.stringify(body) });
+    // Fetch current SHA — retry once if stale (409 conflict)
+    const fetchSHA = async () => {
+      const r = await fetch(fileUrl+'?ref='+s.branch+'&t='+Date.now(), { headers });
+      if (!r.ok) return null;
+      return (await r.json()).sha || null;
+    };
+    const tryPut = async (sha) => {
+      const body = { message:'config: publish shared settings ['+shared._published+']', content: encoded, branch: s.branch };
+      if (sha) body.sha = sha;
+      return fetch(fileUrl, { method:'PUT', headers, body: JSON.stringify(body) });
+    };
+    let sha = await fetchSHA();
+    let putRes = await tryPut(sha);
+    // If 409 (SHA conflict), fetch fresh SHA and retry once
+    if (putRes.status === 409 || putRes.status === 422) {
+      sha = await fetchSHA();
+      putRes = await tryPut(sha);
+    }
     if (!putRes.ok) { const e=await putRes.json().catch(()=>({})); throw new Error(e.message||'HTTP '+putRes.status); }
     // Stamp PAT on all non-admin users so they auto-load on login
     try {
