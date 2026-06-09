@@ -111,6 +111,12 @@ jobs:
       - name: Pull latest committed data
         run: git pull --rebase origin main
 
+      - name: Configure git with PAT
+        run: |
+          git config --local user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git config --local user.name "github-actions[bot]"
+          git remote set-url origin https://x-access-token:${{ secrets.GH_PAT }}@github.com/HUBCertSecure/client-management-platform.git
+
       - name: Take daily snapshot
         run: |
           DATE=$(date -u +%Y-%m-%d)
@@ -140,4 +146,3 @@ jobs:
           commit_message: 'chore: daily snapshot ${{ env.DATE }} [skip ci]'
           file_pattern: 'snapshots/**'
           push_options: '--force-with-lease'
-          token: ${{ secrets.GH_PAT }}
