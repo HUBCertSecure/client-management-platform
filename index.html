@@ -2302,33 +2302,43 @@ async function prtLoad() {
     });
     const firstRate  = monthlyTrend.length ? monthlyTrend[0].rate : overallRate;
     const rateChange = overallRate - firstRate;
-    // Build criteria stats AND per-type NC reason map in one pass
-    const criteriaStats = {};
+    // Build criteria stats — count DISTINCT VENDORS affected per coverage type
+    // One vendor can fail multiple coverage types — we count vendors, not instances
+    const criteriaVendors = {}; // covType -> Set of vendor names
+    const criteriaInstances = {}; // covType -> instance count (for reference)
     const ncReasonsByType = {};
+    const globalNcReasonMap = {}; // for top NC reasons — also vendor-deduplicated per reason
     liveCrit.forEach(r => {
       if (normStatus(r[C.overall_comp]) === 'non_compliant') {
+        const vendorName = (r[C.entity_name] || r['insured_name'] || '').trim().toLowerCase();
         (r[C.nc_reasons] || '').split(' | ').forEach(p => {
           const ci = p.indexOf(':'); if (ci < 0) return;
           const covType = fmtCoverage(p.slice(0, ci).trim()); if (!covType) return;
           const reason  = mapNCReason(p.slice(ci + 1).trim());
-          if (!criteriaStats[covType]) criteriaStats[covType] = { compliant: 0, nonCompliant: 0 };
-          criteriaStats[covType].nonCompliant++;
+          // Distinct vendor count per coverage type
+          if (!criteriaVendors[covType]) criteriaVendors[covType] = new Set();
+          criteriaVendors[covType].add(vendorName);
+          // Instance count (secondary)
+          criteriaInstances[covType] = (criteriaInstances[covType] || 0) + 1;
+          // NC reasons per type
           if (reason) {
             if (!ncReasonsByType[covType]) ncReasonsByType[covType] = {};
             ncReasonsByType[covType][reason] = (ncReasonsByType[covType][reason] || 0) + 1;
+            globalNcReasonMap[reason] = (globalNcReasonMap[reason] || 0) + 1;
           }
         });
       }
     });
-    const criteriaSorted = Object.entries(criteriaStats)
-      .map(([name, d]) => ({ name, ...d, total: d.compliant + d.nonCompliant }))
+    const criteriaSorted = Object.entries(criteriaVendors)
+      .map(([name, vendorSet]) => ({
+        name,
+        nonCompliant: vendorSet.size,      // distinct vendors
+        instances: criteriaInstances[name] || 0, // raw pipe-segment count
+        total: vendorSet.size
+      }))
       .sort((a, b) => b.nonCompliant - a.nonCompliant);
-    // Global top NC reasons (for summary)
-    const ncReasonMap = {};
-    Object.values(ncReasonsByType).forEach(typeMap => {
-      Object.entries(typeMap).forEach(([r, n]) => { ncReasonMap[r] = (ncReasonMap[r] || 0) + n; });
-    });
-    const topNCReasons = Object.entries(ncReasonMap).sort((a, b) => b[1] - a[1]).slice(0, 8);
+    // Global top NC reasons — by instance count (each reason occurrence counts)
+    const topNCReasons = Object.entries(globalNcReasonMap).sort((a, b) => b[1] - a[1]).slice(0, 8);
     const normEm   = n => (n[C.notif_email] || '').trim().toLowerCase();
     const sentSet  = new Set(liveEng.filter(isEngSend).map(normEm).filter(Boolean));
     const openSet  = new Set(liveEng.filter(isEngOpen).map(normEm).filter(Boolean));
@@ -2373,15 +2383,37 @@ async function prtLoad() {
       const lastClientRate  = monthlyRates.length ? monthlyRates[monthlyRates.length - 1].rate : null;
       const improvement = (firstClientRate !== null && lastClientRate !== null) ? lastClientRate - firstClientRate : null;
       const clientCritRows = liveCrit.filter(matchRow);
-      const clientNCMap = {};
+      // Per-client coverage gap data — distinct vendors per type + reasons
+      const clientCovVendors  = {}; // covType -> Set of vendor names
+      const clientCovInstances= {}; // covType -> raw count
+      const clientCovReasons  = {}; // covType -> { reason: count }
       clientCritRows.filter(r => normStatus(r[C.overall_comp]) === 'non_compliant').forEach(r => {
+        const vName = (r[C.entity_name] || r['insured_name'] || '').trim().toLowerCase();
         (r[C.nc_reasons] || '').split(' | ').forEach(p => {
           const ci = p.indexOf(':'); if (ci < 0) return;
           const covType = fmtCoverage(p.slice(0, ci).trim()); if (!covType) return;
-          clientNCMap[covType] = (clientNCMap[covType] || 0) + 1;
+          const reason  = mapNCReason(p.slice(ci + 1).trim());
+          if (!clientCovVendors[covType])   clientCovVendors[covType]   = new Set();
+          clientCovVendors[covType].add(vName);
+          clientCovInstances[covType] = (clientCovInstances[covType] || 0) + 1;
+          if (reason) {
+            if (!clientCovReasons[covType]) clientCovReasons[covType] = {};
+            clientCovReasons[covType][reason] = (clientCovReasons[covType][reason] || 0) + 1;
+          }
         });
       });
-      const clientTopNC = Object.entries(clientNCMap).sort((a, b) => b[1] - a[1]).slice(0, 6);
+      // Full sorted coverage gap list for this client
+      const clientCovGaps = Object.entries(clientCovVendors)
+        .map(([name, vSet]) => ({
+          name,
+          ncVendors:  vSet.size,
+          instances:  clientCovInstances[name] || 0,
+          topReasons: Object.entries(clientCovReasons[name] || {})
+                        .sort((a,b) => b[1]-a[1]).slice(0, 4)
+        }))
+        .sort((a, b) => b.ncVendors - a.ncVendors);
+      // Keep clientTopNC for backward compat with other sections
+      const clientTopNC = clientCovGaps.slice(0, 6).map(g => [g.name, g.ncVendors]);
       const meta = (typeof CLIENT_META_MAP !== 'undefined' && CLIENT_META_MAP[ck]) || {};
       // Also look up structure from CLIENTS array
       const clientDef = (typeof CLIENTS !== 'undefined' ? CLIENTS : []).find(c => c.key === ck || c.client_name === ck) || {};
@@ -2390,7 +2422,7 @@ async function prtLoad() {
         structure: clientDef.structure || meta.structure || 'general',
         total: liveActive.length, comp: lComp, nc: lNC, rate: lRate,
         expired: clientExpired, noCOI: clientNoCOI,
-        vendors: liveActive, improvement, clientTopNC, monthlyRates
+        vendors: liveActive, improvement, clientTopNC, clientCovGaps, monthlyRates
       });
     }
     const trendWord = rateChange > 2 ? 'improving' : rateChange < -2 ? 'declining' : 'stable';
@@ -2487,12 +2519,39 @@ function prtSparkline(monthlyRates, currentRate, color) {
 function prtRenderTopNC(d) {
   const el = document.getElementById('prt-top-nc');
   if (!el) return;
-  if (!d.topNCReasons || !d.topNCReasons.length) {
-    el.innerHTML = '<div style="font-size:12px;color:var(--muted);padding:8px 0">No non-compliance reason data available.</div>';
+  // Re-derive from filtered clients so this responds to Type/Platform filter
+  const isFiltered = _prtFilter.struct !== 'all' || _prtFilter.plat !== 'all';
+  let topReasons;
+  if (!isFiltered) {
+    topReasons = d.topNCReasons;
+  } else {
+    // Rebuild from filtered clients' clientTopNC data
+    const filtered = d.clientStats.filter(c => {
+      if (_prtFilter.struct !== 'all' && c.structure !== _prtFilter.struct) return false;
+      if (_prtFilter.plat   !== 'all' && c.platform  !== _prtFilter.plat)   return false;
+      return true;
+    });
+    // Re-derive NC reasons from filtered clients' criteria rows
+    // clientTopNC stores [covType, count] pairs — we need reasons
+    // Use ncReasonsByType filtered by coverage types that appear in filtered clients
+    const filteredCovTypes = new Set();
+    filtered.forEach(c => c.clientTopNC.forEach(([cov]) => filteredCovTypes.add(cov)));
+    const reasonMap = {};
+    filteredCovTypes.forEach(covType => {
+      const typeReasons = (d.ncReasonsByType || {})[covType] || {};
+      Object.entries(typeReasons).forEach(([r, n]) => {
+        reasonMap[r] = (reasonMap[r] || 0) + n;
+      });
+    });
+    topReasons = Object.entries(reasonMap).sort((a,b) => b[1]-a[1]).slice(0,8);
+  }
+  if (!topReasons || !topReasons.length) {
+    el.innerHTML = '<div style="font-size:12px;color:var(--muted);padding:8px 0">No non-compliance reason data available for this filter.</div>';
     return;
   }
-  const max = d.topNCReasons[0][1] || 1;
-  const rows = d.topNCReasons.slice(0,8).map(([r,n]) => {
+  const scopeNote = isFiltered ? ' for this filter' : ' across all programs';
+  const max = topReasons[0][1] || 1;
+  const rows = topReasons.slice(0,8).map(([r,n]) => {
     const pct = max ? Math.round(n/max*100) : 0;
     const col = pct>=70?'#AC1534':pct>=40?'#EA580C':'#D97706';
     return `<div style="display:flex;align-items:center;gap:10px;margin-bottom:8px">
@@ -2503,7 +2562,7 @@ function prtRenderTopNC(d) {
       <div style="width:32px;text-align:right;font-size:12px;font-weight:700;color:${col}">${n}</div>
     </div>`;
   }).join('');
-  el.innerHTML = `<div style="font-size:12px;color:var(--muted);margin-bottom:10px">Most common reasons vendors are flagged non-compliant across all programs.</div>${rows}`;
+  el.innerHTML = `<div style="font-size:12px;color:var(--muted);margin-bottom:10px">Most common reasons vendors are flagged non-compliant${scopeNote}. Counts reflect individual requirement failures — one vendor may appear in multiple rows.</div>${rows}`;
 }
 
 function prtSwitchTab(name, btn) {
@@ -2768,68 +2827,179 @@ function prtRenderIndustry(d) {
 function prtRenderCoverage(d) {
   const el = document.getElementById('prt-criteria');
   if (!el) return;
-  const src = (typeof _prtFilter !== 'undefined' && (_prtFilter.struct !== 'all' || _prtFilter.plat !== 'all'))
-    ? (() => {
-        const filtered = d.clientStats.filter(c => {
-          if (_prtFilter.struct !== 'all' && c.structure !== _prtFilter.struct) return false;
-          if (_prtFilter.plat   !== 'all' && c.platform  !== _prtFilter.plat)   return false;
-          return true;
-        });
-        const m = {};
-        filtered.forEach(c => c.clientTopNC.forEach(([cov,n]) => { m[cov]=(m[cov]||0)+n; }));
-        const tot = filtered.reduce((a,c)=>a+c.total,0);
-        return { sorted: Object.entries(m).sort((a,b)=>b[1]-a[1]).map(([name,n])=>({name,nonCompliant:n,total:0})), totalActive: tot };
-      })()
-    : { sorted: d.criteriaSorted, totalActive: d.totalActive };
 
-  if (!src.sorted.length) {
-    el.innerHTML = '<div style="font-size:12px;color:var(--muted);padding:8px 0">No coverage gap data available.</div>';
+  // Apply filters to client list
+  const filteredClients = d.clientStats.filter(c => {
+    if (_prtFilter.struct !== 'all' && c.structure !== _prtFilter.struct) return false;
+    if (_prtFilter.plat   !== 'all' && c.platform  !== _prtFilter.plat)   return false;
+    return true;
+  });
+  if (!filteredClients.length) {
+    el.innerHTML = '<div style="font-size:12px;color:var(--muted);padding:8px 0">No clients match the current filter.</div>';
     return;
   }
-  const maxNC = src.sorted[0]?.nonCompliant || 1;
-  const rows = src.sorted.slice(0,15).map(c => {
-    const pctOfActive = src.totalActive ? Math.round(c.nonCompliant / src.totalActive * 100) : 0;
-    const barW = Math.round(c.nonCompliant / maxNC * 100);
-    const sev = pctOfActive >= 30 ? 'red' : pctOfActive >= 15 ? 'orange' : 'amber';
-    const sevCol = { red:'#AC1534', orange:'#EA580C', amber:'#D97706' }[sev];
-    // Top reasons
-    const typeReasons = d.ncReasonsByType[c.name] || {};
-    const topReasons = Object.entries(typeReasons).sort((a,b)=>b[1]-a[1]).slice(0,3);
-    const reasonHtml = topReasons.length
-      ? topReasons.map(([r,n])=>`<div style="color:var(--muted);font-size:10px">• ${esc(r.length>55?r.slice(0,55)+'…':r)} <span style="color:var(--text);font-weight:600">(${n})</span></div>`).join('')
-      : '<div style="color:var(--muted);font-size:10px">—</div>';
+
+  // ── Build overview (book-wide aggregate across filtered clients) ──
+  const overviewMap = {}; // covType -> { ncVendors: Set, instances: 0, reasons: {} }
+  filteredClients.forEach(c => {
+    (c.clientCovGaps || []).forEach(g => {
+      if (!overviewMap[g.name]) overviewMap[g.name] = { vendors: new Set(), instances: 0, reasons: {} };
+      overviewMap[g.name].instances += g.instances;
+      // Add distinct vendor count (we use instances as proxy since Sets aren't serializable)
+      overviewMap[g.name].vendors.add(c.name + '::' + g.ncVendors); // encode client+count
+      overviewMap[g.name].instances += 0; // already added above
+      g.topReasons.forEach(([r, n]) => {
+        overviewMap[g.name].reasons[r] = (overviewMap[g.name].reasons[r] || 0) + n;
+      });
+    });
+  });
+  // Re-aggregate properly: sum ncVendors across clients per type
+  const overviewAgg = {};
+  filteredClients.forEach(c => {
+    (c.clientCovGaps || []).forEach(g => {
+      if (!overviewAgg[g.name]) overviewAgg[g.name] = { ncVendors: 0, instances: 0, reasons: {} };
+      overviewAgg[g.name].ncVendors  += g.ncVendors;
+      overviewAgg[g.name].instances  += g.instances;
+      g.topReasons.forEach(([r, n]) => {
+        overviewAgg[g.name].reasons[r] = (overviewAgg[g.name].reasons[r] || 0) + n;
+      });
+    });
+  });
+  const overviewSorted = Object.entries(overviewAgg)
+    .map(([name, v]) => ({ name, ncVendors: v.ncVendors, instances: v.instances,
+      topReasons: Object.entries(v.reasons).sort((a,b)=>b[1]-a[1]).slice(0,3) }))
+    .sort((a,b) => b.ncVendors - a.ncVendors);
+
+  const totalActive = filteredClients.reduce((a,c) => a+c.total, 0);
+  const maxNC = overviewSorted[0]?.ncVendors || 1;
+
+  const overviewRows = overviewSorted.slice(0,15).map(c => {
+    const pctOfActive = totalActive ? Math.round(c.ncVendors / totalActive * 100) : 0;
+    const barW  = Math.round(c.ncVendors / maxNC * 100);
+    const sev   = pctOfActive >= 30 ? '#AC1534' : pctOfActive >= 15 ? '#EA580C' : '#D97706';
+    const instNote = c.instances > c.ncVendors
+      ? `<div style="font-size:10px;color:var(--muted);margin-top:1px">${c.instances.toLocaleString()} failures</div>` : '';
+    const reasonHtml = c.topReasons.length
+      ? c.topReasons.map(([r,n]) => `<div style="color:var(--muted);font-size:10px">• ${esc(r.length>52?r.slice(0,52)+'…':r)} <span style="color:var(--text);font-weight:600">(${n})</span></div>`).join('')
+      : '<span style="color:var(--muted);font-size:10px">—</span>';
     return `<tr>
       <td style="font-weight:700;font-size:12px">${esc(c.name)}</td>
-      <td style="font-weight:800;color:#AC1534;font-size:13px">${c.nonCompliant.toLocaleString()}</td>
       <td>
-        <span style="font-weight:700;color:${sevCol}">${pctOfActive}%</span>
-        <span style="font-size:10px;color:var(--muted)"> of active</span>
+        <div style="font-weight:800;color:#AC1534;font-size:13px">${c.ncVendors.toLocaleString()}</div>
+        <div style="font-size:10px;color:var(--muted)">vendors</div>
+        ${instNote}
       </td>
-      <td>
-        <div style="display:flex;align-items:center;gap:6px">
-          <div style="width:80px;height:6px;background:var(--border);border-radius:3px;overflow:hidden">
-            <div style="height:100%;width:${barW}%;background:#AC1534;border-radius:3px"></div>
-          </div>
-        </div>
-      </td>
+      <td><span style="font-weight:700;color:${sev}">${pctOfActive}%</span><span style="font-size:10px;color:var(--muted)"> of active</span></td>
+      <td><div style="width:80px;height:6px;background:var(--border);border-radius:3px;overflow:hidden"><div style="height:100%;width:${barW}%;background:#AC1534;border-radius:3px"></div></div></td>
       <td>${reasonHtml}</td>
     </tr>`;
   }).join('');
 
+  // ── Build per-client sections ──
+  const structLabels = { general:'General', project:'Construction', location:'Real Estate' };
+  const platBadge = p => p === 'trustlayer'
+    ? `<span style="font-size:9px;background:rgba(62,189,62,.15);color:#2a9e2a;padding:1px 6px;border-radius:3px;font-weight:700">TL</span>`
+    : `<span style="font-size:9px;background:rgba(6,120,213,.12);color:#0678D5;padding:1px 6px;border-radius:3px;font-weight:700">EV</span>`;
+
+  const clientSections = filteredClients
+    .sort((a,b) => a.rate - b.rate) // worst compliance first — most actionable at top
+    .map(c => {
+      const gaps = c.clientCovGaps || [];
+      if (!gaps.length) return '';
+      const rateCol = c.rate>=80?'#3EBD3E':c.rate>=60?'#D97706':'#AC1534';
+      const clientMaxNC = gaps[0]?.ncVendors || 1;
+      const uid = 'cov-client-' + c.name.replace(/[^a-z0-9]/gi,'_');
+
+      const gapRows = gaps.map(g => {
+        const pct = c.total ? Math.round(g.ncVendors / c.total * 100) : 0;
+        const bw  = Math.round(g.ncVendors / clientMaxNC * 100);
+        const sev = pct >= 40 ? '#AC1534' : pct >= 20 ? '#EA580C' : '#D97706';
+        const instNote = g.instances > g.ncVendors
+          ? `<span style="font-size:10px;color:var(--muted);margin-left:4px">(${g.instances} failures)</span>` : '';
+        const reasonHtml = g.topReasons.length
+          ? g.topReasons.map(([r,n]) => `<div style="color:var(--muted);font-size:10px">• ${esc(r.length>50?r.slice(0,50)+'…':r)} <span style="color:var(--text);font-weight:600">(${n})</span></div>`).join('')
+          : '<span style="color:var(--muted);font-size:10px">—</span>';
+        return `<tr>
+          <td style="font-weight:600;font-size:11px">${esc(g.name)}</td>
+          <td>
+            <span style="font-weight:700;color:#AC1534">${g.ncVendors.toLocaleString()}</span>
+            <span style="font-size:10px;color:var(--muted)"> / ${c.total}</span>
+            ${instNote}
+          </td>
+          <td><span style="font-weight:700;color:${sev}">${pct}%</span></td>
+          <td><div style="width:70px;height:5px;background:var(--border);border-radius:3px;overflow:hidden"><div style="height:100%;width:${bw}%;background:#AC1534;border-radius:3px"></div></div></td>
+          <td>${reasonHtml}</td>
+        </tr>`;
+      }).join('');
+
+      return `<div style="border:1px solid var(--border);border-radius:9px;margin-bottom:10px;overflow:hidden">
+        <div style="display:flex;align-items:center;gap:10px;padding:10px 14px;background:var(--card);cursor:pointer;user-select:none"
+             onclick="prtToggleCovClient('${uid}')">
+          <div style="display:flex;align-items:center;gap:6px;flex:1;min-width:0">
+            ${platBadge(c.platform)}
+            <span style="font-size:13px;font-weight:700;color:var(--text)">${esc(c.name)}</span>
+            <span style="font-size:11px;color:var(--muted);margin-left:4px">${structLabels[c.structure]||'General'}</span>
+          </div>
+          <div style="display:flex;align-items:center;gap:16px;flex-shrink:0">
+            <div style="text-align:right">
+              <div style="font-size:11px;color:var(--muted)">Entities</div>
+              <div style="font-size:13px;font-weight:700;color:var(--text)">${c.total.toLocaleString()}</div>
+            </div>
+            <div style="text-align:right">
+              <div style="font-size:11px;color:var(--muted)">NC Entities</div>
+              <div style="font-size:13px;font-weight:700;color:#AC1534">${c.nc.toLocaleString()}</div>
+            </div>
+            <div style="text-align:right">
+              <div style="font-size:11px;color:var(--muted)">Rate</div>
+              <div style="font-size:13px;font-weight:700;color:${rateCol}">${c.rate}%</div>
+            </div>
+            <div style="text-align:right">
+              <div style="font-size:11px;color:var(--muted)">Gap Types</div>
+              <div style="font-size:13px;font-weight:700;color:var(--text)">${gaps.length}</div>
+            </div>
+            <div id="${uid}-arrow" style="font-size:12px;color:var(--muted);transition:transform .2s">&#9660;</div>
+          </div>
+        </div>
+        <div id="${uid}" style="display:none;padding:14px;border-top:1px solid var(--border)">
+          <table class="prt-vendor-table">
+            <thead><tr>
+              <th style="width:24%">Coverage Type</th>
+              <th>NC / Total</th>
+              <th>% of Program</th>
+              <th style="width:80px">Volume</th>
+              <th>Top NC Reasons</th>
+            </tr></thead>
+            <tbody>${gapRows}</tbody>
+          </table>
+        </div>
+      </div>`;
+    }).filter(Boolean).join('');
+
   el.innerHTML = `
     <div style="font-size:12px;color:var(--muted);margin-bottom:12px">
-      Coverage types ranked by number of non-compliant vendors. <strong>% of active</strong> shows how widespread each gap is across your full book.
+      Each row counts <strong>distinct vendors</strong> with at least one failure of that coverage type across all ${filteredClients.length} programs. One vendor failing multiple types appears once per type.
     </div>
-    <table class="prt-vendor-table">
+    <table class="prt-vendor-table" style="margin-bottom:24px">
       <thead><tr>
         <th style="width:22%">Coverage Type</th>
         <th>NC Vendors</th>
         <th>% Affected</th>
-        <th style="width:100px">Volume</th>
+        <th style="width:90px">Volume</th>
         <th>Top NC Reasons</th>
       </tr></thead>
-      <tbody>${rows}</tbody>
-    </table>`;
+      <tbody>${overviewRows}</tbody>
+    </table>
+    <div class="prt-section-hdr"><div class="prt-section-hdr-lbl">Per-Client Coverage Gaps</div><div class="prt-section-hdr-line"></div><div style="font-size:11px;color:var(--muted)">Sorted worst compliance first &nbsp;·&nbsp; Click to expand</div></div>
+    <div style="margin-top:10px">${clientSections || '<div style="font-size:12px;color:var(--muted);padding:8px 0">No coverage gap data per client.</div>'}</div>`;
+}
+
+function prtToggleCovClient(uid) {
+  const panel = document.getElementById(uid);
+  const arrow = document.getElementById(uid + '-arrow');
+  if (!panel) return;
+  const open = panel.style.display !== 'none';
+  panel.style.display = open ? 'none' : '';
+  if (arrow) arrow.style.transform = open ? '' : 'rotate(180deg)';
 }
 
 function prtRenderEngagement(d) {
