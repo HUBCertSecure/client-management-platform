@@ -819,7 +819,7 @@
       <span style="font-size:10px;font-weight:700;letter-spacing:.07em;text-transform:uppercase;color:var(--muted)">Type</span>
       <button class="prt-preset active" id="prt-f-all"      onclick="prtSetFilter('struct','all')">All</button>
       <button class="prt-preset"        id="prt-f-general"  onclick="prtSetFilter('struct','general')">General</button>
-      <button class="prt-preset"        id="prt-f-project"  onclick="prtSetFilter('struct','project')">Subs</button>
+      <button class="prt-preset"        id="prt-f-project"  onclick="prtSetFilter('struct','project')">Construction</button>
       <button class="prt-preset"        id="prt-f-location" onclick="prtSetFilter('struct','location')">Real Estate</button>
     </div>
     <div style="display:flex;align-items:center;gap:6px;border-left:1px solid var(--border);padding-left:12px">
@@ -2148,14 +2148,30 @@ function prtRenderFiltered(d) {
 
   // Narrative
   const narEl = document.getElementById('prt-narrative');
-  if (narEl) narEl.textContent = `Filtered view: ${filterLabel} — ${filtered.length} of ${d.clientStats.length} programs, ${fTotal.toLocaleString()} active vendors. Overall compliance ${fRate}% — ${fComp.toLocaleString()} compliant, ${fNC.toLocaleString()} non-compliant, ${fExpired.toLocaleString()} expired COI, ${fNoCOI.toLocaleString()} no COI on file.`;
+  if (narEl) {
+    const _sf = _prtFilter.struct;
+    const _tpt = _sf === 'project' ? 'subcontractors' : _sf === 'location' ? 'tenants' : _sf === 'general' ? 'vendors' : 'third parties';
+    const _fHasProj = _sf === 'project' || (_sf === 'all' && filtered.some(c => c.structure === 'project'));
+    const _fUniqueSet = new Set(filtered.flatMap(c => (c.vendors||[]).map(r => (r[C.entity_name]||r['insured_name']||'').trim().toLowerCase() + '||' + (r[C.client]||'').trim().toLowerCase())));
+    const _fUnique = _fUniqueSet.size;
+    const _fUniqueNote = _fHasProj && _fUnique > 0 && _fUnique < fTotal ? ` (${_fUnique.toLocaleString()} unique ${_tpt})` : '';
+    narEl.textContent = `Filtered view: ${filterLabel} — ${filtered.length} of ${d.clientStats.length} programs, ${fTotal.toLocaleString()} tracked ${_tpt}${_fUniqueNote}. Overall compliance ${fRate}% — ${fComp.toLocaleString()} compliant, ${fNC.toLocaleString()} non-compliant, ${fExpired.toLocaleString()} expired COI, ${fNoCOI.toLocaleString()} no COI on file.`;
+  }
 
   // Scorecard
   const pct = (n, t) => t ? Math.round(n/t*100)+'%' : '0%';
   const scoreEl = document.getElementById('prt-scorecard');
   if (scoreEl) {
+    const _sf2 = _prtFilter.struct;
+    const _fHasProj2 = _sf2 === 'project' || (_sf2 === 'all' && filtered.some(c => c.structure === 'project'));
+    const _fUniqueSet2 = new Set(filtered.flatMap(c => (c.vendors||[]).map(r => (r[C.entity_name]||r['insured_name']||'').trim().toLowerCase() + '||' + (r[C.client]||'').trim().toLowerCase())));
+    const _fUnique2 = _fUniqueSet2.size;
+    const _fKpiLbl = _fHasProj2 && _fUnique2 > 0 && _fUnique2 < fTotal ? 'Tracked Relationships' : 'Total Active';
+    const _fKpiSub = _fHasProj2 && _fUnique2 > 0 && _fUnique2 < fTotal
+      ? `${filtered.length} programs · ${_fUnique2.toLocaleString()} unique`
+      : `${filtered.length} programs`;
     scoreEl.innerHTML = [
-      { cls:'grey',   lbl:'Total Active',   val: fTotal.toLocaleString(),   sub: `${filtered.length} programs` },
+      { cls:'grey',   lbl:_fKpiLbl,         val: fTotal.toLocaleString(),   sub: _fKpiSub },
       { cls: fRate>=95?'green':fRate>=85?'amber':fRate>=70?'orange':'red', lbl:'Compliant', val: fComp.toLocaleString(), sub: pct(fComp,fTotal) + ' — ' + (fRate>=95?'Best-in-Class':fRate>=85?'On Track':fRate>=70?'Below Avg':'Needs Attention') },
       { cls:'red',    lbl:'Non-Compliant',  val: fNC.toLocaleString(),      sub: pct(fNC,fTotal) + ' of active' },
       { cls:'orange', lbl:'Expired COI',    val: fExpired.toLocaleString(), sub: pct(fExpired,fTotal) + ' of active' },
@@ -2190,7 +2206,7 @@ function prtRenderFiltered(d) {
         const color = pt.rate >= 95 ? '#3EBD3E' : pt.rate >= 85 ? '#D97706' : pt.rate >= 70 ? '#EA580C' : '#AC1534';
         const mo = moNames[parseInt(pt.month.split('-')[1])] || pt.month.split('-')[1];
         const h = Math.max(3, Math.round(pt.rate / 100 * 56));
-        return `<div class="prt-trend-bar-wrap" title="${pt.month}: ${pt.rate}% (${pt.total} vendors)">
+        return `<div class="prt-trend-bar-wrap" title="${pt.month}: ${pt.rate}% (${pt.total} tracked)">
           <div class="prt-trend-bar-val" style="color:${color}">${pt.rate}%</div>
           <div class="prt-trend-bar-bg"><div class="prt-trend-bar-fill" style="height:${h}px;background:${color}"></div></div>
           <div class="prt-trend-bar-lbl">${mo}</div>
@@ -2316,6 +2332,13 @@ async function prtLoad() {
     setMsg('Calculating compliance\u2026');
     const activeAll = liveIns.filter(r => r[C.active] !== 'false' && r[C.paused] !== 'true');
     const totalActive = activeAll.length;
+    // Unique third-party count: deduplicated by name+client (Construction programs track one vendor across multiple projects)
+    const _uniqueKey = r => (r[C.client]||'').trim().toLowerCase() + '||' + (r[C.entity_name]||r['insured_name']||'').trim().toLowerCase();
+    const uniqueActive = new Set(activeAll.map(_uniqueKey)).size;
+    const hasProjectClients = activeAll.some(r => {
+      const cl = (_prtData?.clientStats || []).find(c => c.key === (r[C.client]||'').trim());
+      return cl && cl.structure === 'project';
+    });
     let countCompliant = 0, countNC = 0;
     activeAll.forEach(r => {
       const st = normStatus(r[C.status]);
@@ -2497,8 +2520,12 @@ async function prtLoad() {
     const trendWord = rateChange > 2 ? 'improving' : rateChange < -2 ? 'declining' : 'stable';
     const moNames = {1:'Jan',2:'Feb',3:'Mar',4:'Apr',5:'May',6:'Jun',7:'Jul',8:'Aug',9:'Sep',10:'Oct',11:'Nov',12:'Dec'};
     const fmtYM = ym => { const [y,m] = ym.split('-'); return `${moNames[parseInt(m)]} ${y}`; };
-    const narrative = `As of ${new Date().toLocaleDateString('en-US',{month:'long',day:'numeric',year:'numeric'})}, the CertSecure program manages ${clientStats.length} active client programs across ${totalActive.toLocaleString()} tracked vendors. Overall compliance stands at ${overallRate}% \u2014 ${countCompliant.toLocaleString()} compliant, ${countNC.toLocaleString()} non-compliant, ${countExpired.toLocaleString()} with expired coverage, and ${countNoCOI.toLocaleString()} with no certificate on file. Program compliance is ${trendWord} over the selected period${rateChange !== 0 ? ' (' + (rateChange > 0 ? '+' : '') + rateChange + '% from start of range)' : ''}.`;
-    _prtData = { fromYM, toYM, fmtYM, monthlyTrend, totalActive, countCompliant, countNC, countExpired, countNoCOI, overallRate, firstRate, rateChange, criteriaSorted, topNCReasons, ncReasonsByType, sentSet, openSet, issueSet, engRate, engLoadMsg, engByClient, clientStats, expiredEntities, noCOIEntities, narrative };
+    const _hasProjectClients = clientStats.some(c => c.structure === 'project');
+    const _uniqueNote = _hasProjectClients && uniqueActive < totalActive
+      ? ` (${uniqueActive.toLocaleString()} unique third parties across ${totalActive.toLocaleString()} tracked relationships)`
+      : ` across ${totalActive.toLocaleString()} tracked third parties`;
+    const narrative = `As of ${new Date().toLocaleDateString('en-US',{month:'long',day:'numeric',year:'numeric'})}, the CertSecure program manages ${clientStats.length} active client programs${_uniqueNote}. Overall compliance stands at ${overallRate}% \u2014 ${countCompliant.toLocaleString()} compliant, ${countNC.toLocaleString()} non-compliant, ${countExpired.toLocaleString()} with expired coverage, and ${countNoCOI.toLocaleString()} with no certificate on file. Program compliance is ${trendWord} over the selected period${rateChange !== 0 ? ' (' + (rateChange > 0 ? '+' : '') + rateChange + '% from start of range)' : ''}.`;
+    _prtData = { fromYM, toYM, fmtYM, monthlyTrend, totalActive, uniqueActive, countCompliant, countNC, countExpired, countNoCOI, overallRate, firstRate, rateChange, criteriaSorted, topNCReasons, ncReasonsByType, sentSet, openSet, issueSet, engRate, engLoadMsg, engByClient, clientStats, expiredEntities, noCOIEntities, narrative };
     prtRender(_prtData);
   } catch(e) {
     if (loadMsg) loadMsg.textContent = 'Failed to load: ' + e.message;
@@ -2517,8 +2544,14 @@ function prtRender(d) {
   if (narEl) narEl.textContent = d.narrative;
   const scoreEl = document.getElementById('prt-scorecard');
   if (scoreEl) {
+    const _hasProj = d.clientStats.some(c => c.structure === 'project');
+    const _totalKpiSub = _hasProj && d.uniqueActive < d.totalActive
+      ? `${d.clientStats.length} clients · ${d.uniqueActive.toLocaleString()} unique`
+      : `${d.clientStats.length} clients`;
+    const _totalKpiVal = d.totalActive.toLocaleString();
+    const _totalKpiLbl = _hasProj && d.uniqueActive < d.totalActive ? 'Tracked Relationships' : 'Total Active';
     scoreEl.innerHTML = [
-      { cls:'grey',   lbl:'Total Active',   val: d.totalActive.toLocaleString(), sub: `${d.clientStats.length} clients` },
+      { cls:'grey',   lbl:_totalKpiLbl,     val: _totalKpiVal, sub: _totalKpiSub },
       { cls: d.overallRate>=95?'green':d.overallRate>=85?'amber':d.overallRate>=70?'orange':'red', lbl:'Compliant', val: d.countCompliant.toLocaleString(), sub: pct(d.countCompliant, d.totalActive) + ' — ' + (d.overallRate>=95?'Best-in-Class':d.overallRate>=85?'On Track':d.overallRate>=70?'Below Avg':'Needs Attention') },
       { cls:'red',    lbl:'Non-Compliant',  val: d.countNC.toLocaleString(), sub: pct(d.countNC, d.totalActive) + ' of active' },
       { cls:'orange', lbl:'Expired COI',    val: d.countExpired.toLocaleString(), sub: pct(d.countExpired, d.totalActive) + ' of active' },
@@ -2675,14 +2708,25 @@ function prtBuildNarratives(d, filtered, fTotal, fComp, fNC, fExpired, fNoCOI) {
     const rateCol = rate >= 95 ? '#3EBD3E' : rate >= 85 ? '#D97706' : rate >= 70 ? '#EA580C' : '#AC1534';
     const rateLabel = rate >= 95 ? 'Best-in-Class' : rate >= 85 ? 'Average / On Track' : rate >= 70 ? 'Below Average' : 'Needs Attention';
     const gap = fNC + fExpired + fNoCOI;
+    // Determine context-aware terminology based on active struct filter
+    const _structFilter = _prtFilter.struct;
+    const _thirdPartyTerm = _structFilter === 'project' ? 'subcontractors' : _structFilter === 'location' ? 'tenants' : _structFilter === 'general' ? 'vendors' : 'third parties';
+    const _thirdPartyTermCap = _structFilter === 'project' ? 'Subcontractors' : _structFilter === 'location' ? 'Tenants' : _structFilter === 'general' ? 'Vendors' : 'Third parties';
+    // For construction (project) filtered view, show unique count context
+    const _filtHasProj = _structFilter === 'project' || (_structFilter === 'all' && d.clientStats.some(c => c.structure === 'project'));
+    const _filtUniqueSet = new Set(filtered.flatMap(c => (c.vendors||[]).map(r => (r[C.entity_name]||r['insured_name']||'').trim().toLowerCase() + '||' + (r[C.client]||'').trim().toLowerCase())));
+    const _filtUnique = _filtUniqueSet.size;
+    const _relNote = _filtHasProj && _filtUnique > 0 && _filtUnique < fTotal
+      ? ` <span style="font-size:11px;color:var(--muted);font-weight:400">(${_filtUnique.toLocaleString()} unique ${_thirdPartyTerm})</span>`
+      : '';
     const prio = fExpired > fNoCOI
-      ? `<strong>${fExpired.toLocaleString()} vendors with expired coverage</strong> are the most urgent — policies lapsed but a COI exists, so a renewal request is the next action.`
+      ? `<strong>${fExpired.toLocaleString()} ${_thirdPartyTerm} with expired coverage</strong> are the most urgent — policies lapsed but a COI exists, so a renewal request is the next action.`
       : fNoCOI > 0
-        ? `<strong>${fNoCOI.toLocaleString()} vendors with no certificate on file</strong> are the highest priority — no COI means no visibility into their coverage at all.`
+        ? `<strong>${fNoCOI.toLocaleString()} ${_thirdPartyTerm} with no certificate on file</strong> are the highest priority — no COI means no visibility into their coverage at all.`
         : fNC > 0
-          ? `<strong>${fNC.toLocaleString()} non-compliant vendors</strong> need follow-up on specific coverage gaps.`
-          : 'All tracked vendors are currently compliant.';
-    healthEl.innerHTML = `As of ${today}, ${isF ? '<strong>' + scope + '</strong> cover' : 'the CertSecure program covers'} <strong>${nClients} active program${nClients!==1?'s':''}</strong> across <strong>${fTotal.toLocaleString()} tracked vendors</strong>. Overall compliance stands at <strong style="color:${rateCol}">${rate}% — ${rateLabel}</strong>. Industry average: 85–90%; best-in-class: 95%+. ${fComp.toLocaleString()} compliant, ${fNC.toLocaleString()} non-compliant, ${fExpired.toLocaleString()} expired, ${fNoCOI.toLocaleString()} no COI on file. Program compliance is <strong style="color:${trendCol}">${trendWord}</strong> over the selected period. ${gap > 0 ? prio : ''}`;  }
+          ? `<strong>${fNC.toLocaleString()} non-compliant ${_thirdPartyTerm}</strong> need follow-up on specific coverage gaps.`
+          : `All tracked ${_thirdPartyTerm} are currently compliant.`;
+    healthEl.innerHTML = `As of ${today}, ${isF ? '<strong>' + scope + '</strong> cover' : 'the CertSecure program covers'} <strong>${nClients} active program${nClients!==1?'s':''}</strong> across <strong>${fTotal.toLocaleString()} tracked ${_thirdPartyTerm}</strong>${_relNote}. Overall compliance stands at <strong style="color:${rateCol}">${rate}% — ${rateLabel}</strong>. Industry average: 85–90%; best-in-class: 95%+. ${fComp.toLocaleString()} compliant, ${fNC.toLocaleString()} non-compliant, ${fExpired.toLocaleString()} expired, ${fNoCOI.toLocaleString()} no COI on file. Program compliance is <strong style="color:${trendCol}">${trendWord}</strong> over the selected period. ${gap > 0 ? prio : ''}`;  }
 
   // ── Tab 2: Industry ────────────────────────────────────────────────────────
   const indNarEl = document.getElementById('prt-ind-narrative');
@@ -2715,7 +2759,8 @@ function prtBuildNarratives(d, filtered, fTotal, fComp, fNC, fExpired, fNoCOI) {
       const compNote = otherSegs.length
         ? ` Compared to ${otherSegs.map(s=>`<strong>${s.label}</strong> (${s.rate}%)`).join(' and ')}.`
         : '';
-      indNarEl.innerHTML = `<strong>${activeSeg.label}</strong>${platNote} — <strong>${activeSeg.clients}</strong> program${activeSeg.clients!==1?'s':''} across <strong>${activeSeg.total.toLocaleString()}</strong> vendors. Compliance: <strong style="color:${rateCol}">${activeSeg.rate}% — ${rateLabel}</strong>.${compNote} All three segments shown below for comparison.`;
+      const _indTerm = activeSeg.key==='project'?'subcontractor relationships':activeSeg.key==='location'?'tenants':'vendors';
+      indNarEl.innerHTML = `<strong>${activeSeg.label}</strong>${platNote} — <strong>${activeSeg.clients}</strong> program${activeSeg.clients!==1?'s':''} across <strong>${activeSeg.total.toLocaleString()}</strong> ${_indTerm}. Compliance: <strong style="color:${rateCol}">${activeSeg.rate}% — ${rateLabel}</strong>.${compNote} All three segments shown below for comparison.`;
     } else {
       const worst = segStats.reduce((a,b) => (a.rate < b.rate ? a : b));
       const best  = segStats.reduce((a,b) => (a.rate > b.rate ? a : b));
@@ -2760,7 +2805,8 @@ function prtBuildNarratives(d, filtered, fTotal, fComp, fNC, fExpired, fNoCOI) {
           clientCallout += `Top reason: ${esc(worstGap.topReasons[0][0])} (${worstGap.topReasons[0][1]}). `;
         }
       }
-      const bookNote = topCov ? `Book-wide, <strong>${esc(topCov.name)}</strong> affects the most distinct vendors (${topCov.nonCompliant.toLocaleString()}${pctTop ? ', ' + pctTop + '% of active' : ''}). ` : '';
+      const _cgTermB = _prtFilter.struct==='project'?'subcontractors':_prtFilter.struct==='location'?'tenants':_prtFilter.struct==='general'?'vendors':'third parties';
+      const bookNote = topCov ? `Book-wide, <strong>${esc(topCov.name)}</strong> affects the most distinct ${_cgTermB} (${topCov.nonCompliant.toLocaleString()}${pctTop ? ', ' + pctTop + '% of active' : ''}). ` : '';
       const secondNote = second ? `<strong>${esc(second.name)}</strong> is second at ${second.nonCompliant.toLocaleString()} vendors. ` : '';
       const filterNote = isF ? `<em style="color:var(--muted);display:block;margin-top:6px;font-size:11px">Per-client gaps reflect selected filter. Book-wide coverage data is shown for all programs.</em>` : '';
       covNarEl.innerHTML = clientCallout + bookNote + secondNote
@@ -2801,7 +2847,7 @@ function prtBuildNarratives(d, filtered, fTotal, fComp, fNC, fExpired, fNoCOI) {
     clientNarEl.innerHTML = `Showing ${scopeStr} — <strong>${nClients} program${nClients!==1?'s':''}</strong>, average compliance <strong>${avgRate}%</strong>. `
       + (above95 ? `${above95} program${above95!==1?'s':''} at best-in-class (95%+). ` : above85 ? `${above85} program${above85!==1?'s':''} on track (85%+). ` : '')
       + (below70 ? `<strong style="color:#AC1534">${below70} program${below70!==1?'s':''} below 70%</strong> — these need immediate attention. ` : '')
-      + `Click any card to drill into vendor-level detail for that program.`;
+      + `Click any card to drill into third-party detail for that program.`;
   }
 }
 
@@ -2875,7 +2921,7 @@ function prtRenderIndustry(d) {
     return `<div class="prt-ind-card">
       <div class="prt-ind-title" style="color:${s.color}">${s.label}</div>
       <div class="prt-ind-rate" style="color:${rateCol}">${rate}%</div>
-      <div class="prt-ind-sub">${clients.length} program${clients.length!==1?'s':''} &nbsp;·&nbsp; ${total.toLocaleString()} vendors</div>
+      <div class="prt-ind-sub">${clients.length} program${clients.length!==1?'s':''} &nbsp;·&nbsp; ${total.toLocaleString()} ${s.key==='project'?'subcontractor relationships':s.key==='location'?'tenants':'vendors'}</div>
       <div style="height:6px;background:var(--border);border-radius:3px;margin-bottom:12px;overflow:hidden">
         <div style="height:100%;width:${bar}%;background:${rateCol};border-radius:3px;transition:width .4s"></div>
       </div>
@@ -2915,7 +2961,7 @@ function prtRenderIndustry(d) {
         <div style="height:100%;width:${barW}%;background:${rateCol};border-radius:4px;transition:width .4s"></div>
       </div>
       <div style="width:48px;text-align:right;font-size:13px;font-weight:800;color:${rateCol}">${s.rate}%</div>
-      <div style="width:80px;text-align:right;font-size:11px;color:var(--muted)">${s.total.toLocaleString()} vendors</div>
+      <div style="width:80px;text-align:right;font-size:11px;color:var(--muted)">${s.total.toLocaleString()} ${s.key==='project'?'relationships':s.key==='location'?'tenants':'vendors'}</div>
     </div>`;
   }).join('');
 
@@ -2973,6 +3019,7 @@ function prtRenderCoverage(d) {
 
   const totalActive = filteredClients.reduce((a,c) => a+c.total, 0);
   const maxNC = overviewSorted[0]?.ncVendors || 1;
+  const _cgTerm = _prtFilter.struct==='project'?'subcontractors':_prtFilter.struct==='location'?'tenants':_prtFilter.struct==='general'?'vendors':'third parties';
 
   const overviewRows = overviewSorted.slice(0,15).map(c => {
     const pctOfActive = totalActive ? Math.round(c.ncVendors / totalActive * 100) : 0;
@@ -2987,7 +3034,7 @@ function prtRenderCoverage(d) {
       <td style="font-weight:700;font-size:12px">${esc(c.name)}</td>
       <td>
         <div style="font-weight:800;color:#AC1534;font-size:13px">${c.ncVendors.toLocaleString()}</div>
-        <div style="font-size:10px;color:var(--muted)">vendors</div>
+        <div style="font-size:10px;color:var(--muted)">${_cgTerm}</div>
         ${instNote}
       </td>
       <td><span style="font-weight:700;color:${sev}">${pctOfActive}%</span><span style="font-size:10px;color:var(--muted)"> of active</span></td>
@@ -3078,7 +3125,7 @@ function prtRenderCoverage(d) {
 
   el.innerHTML = `
     <div style="font-size:12px;color:var(--muted);margin-bottom:12px">
-      Each row counts <strong>distinct vendors</strong> with at least one failure of that coverage type across all ${filteredClients.length} programs. One vendor failing multiple types appears once per type.
+      Each row counts <strong>distinct ${_cgTerm}</strong> with at least one failure of that coverage type across all ${filteredClients.length} programs. One ${_cgTerm.replace(/s$/,'')} failing multiple types appears once per type.
     </div>
     <table class="prt-vendor-table" style="margin-bottom:24px">
       <thead><tr>
@@ -3125,7 +3172,7 @@ function prtRenderEngagement(d) {
   const issueRate   = d.sentSet.size ? Math.round(d.issueSet.size/d.sentSet.size*100) : 0;
 
   const kpis = `<div class="prt-eng-grid" style="margin-bottom:20px">
-    <div class="prt-kpi grey"><div class="prt-kpi-accent"></div><div class="prt-kpi-body"><div class="prt-kpi-lbl">Contacts Reached</div><div class="prt-kpi-val" style="color:#0678D5">${d.sentSet.size.toLocaleString()}</div><div class="prt-kpi-sub">${coveragePct}% of active vendors</div></div></div>
+    <div class="prt-kpi grey"><div class="prt-kpi-accent"></div><div class="prt-kpi-body"><div class="prt-kpi-lbl">Contacts Reached</div><div class="prt-kpi-val" style="color:#0678D5">${d.sentSet.size.toLocaleString()}</div><div class="prt-kpi-sub">${coveragePct}% of active third parties</div></div></div>
     <div class="prt-kpi grey"><div class="prt-kpi-accent"></div><div class="prt-kpi-body"><div class="prt-kpi-lbl">Opened At Least Once</div><div class="prt-kpi-val" style="color:#0678D5">${d.openSet.size.toLocaleString()}</div><div class="prt-kpi-sub">${d.sentSet.size?Math.round(d.openSet.size/d.sentSet.size*100):0}% of reached</div></div></div>
     <div class="prt-kpi ${openRateCls}"><div class="prt-kpi-accent"></div><div class="prt-kpi-body"><div class="prt-kpi-lbl">Open Rate</div><div class="prt-kpi-val">${d.engRate}%</div><div class="prt-kpi-sub">${d.engRate>=50?'Strong':'Below target (50%)'}</div></div></div>
     <div class="prt-kpi ${d.issueSet.size===0?'green':'red'}"><div class="prt-kpi-accent"></div><div class="prt-kpi-body"><div class="prt-kpi-lbl">Delivery Issues</div><div class="prt-kpi-val">${d.issueSet.size.toLocaleString()}</div><div class="prt-kpi-sub">${d.issueSet.size?'Bounces / rejects':'No issues'}</div></div></div>
