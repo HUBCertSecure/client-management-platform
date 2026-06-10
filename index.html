@@ -3301,6 +3301,52 @@ function prtRenderClients(d) {
     }).join('');
 }
 
+function prtBuildGroupBreakdown(client, isProj, isLoc, groupField) {
+  if (!isProj && !isLoc) return '';
+  const groupLabel = isProj ? 'Project' : 'Location';
+  const entityTerm = isProj ? 'Subcontractors' : 'Tenants';
+  const grpMap = {};
+  client.vendors.forEach(function(r) {
+    const grp = (r[groupField] || '').trim() || 'Unassigned';
+    if (!grpMap[grp]) grpMap[grp] = { total:0, comp:0, nc:0 };
+    grpMap[grp].total++;
+    const st = normStatus(r[C.status]);
+    const nm = (r[C.entity_name]||r['insured_name']||'').trim().toLowerCase();
+    const isNC = st === 'non_compliant';
+    if (st === 'compliant') grpMap[grp].comp++;
+    else if (isNC) grpMap[grp].nc++;
+  });
+  const rows = Object.entries(grpMap)
+    .map(function(e) { const name=e[0], g=e[1]; return { name:name, rate:g.total?Math.round(g.comp/g.total*100):0, total:g.total, comp:g.comp, nc:g.nc }; })
+    .sort(function(a,b) { return a.rate - b.rate; });
+  if (!rows.length) return '';
+  const thStyle = 'padding:7px 10px;text-align:left;font-size:10px;font-weight:700;color:#5A6B7B;letter-spacing:.04em;text-transform:uppercase;border-bottom:2px solid var(--border)';
+  const thRStyle = thStyle + ';text-align:right';
+  let html = '<div class="prt-section-hdr" style="margin-top:16px"><div class="prt-section-hdr-lbl">By ' + groupLabel + ' — Worst First</div><div class="prt-section-hdr-line"></div></div>';
+  html += '<table style="width:100%;border-collapse:collapse;margin-bottom:4px">';
+  html += '<thead><tr>';
+  html += '<th style="' + thStyle + '">' + groupLabel + '</th>';
+  html += '<th style="' + thRStyle + '">' + entityTerm + '</th>';
+  html += '<th style="' + thRStyle + '">Compliant</th>';
+  html += '<th style="' + thRStyle + '">Non-Compliant</th>';
+  html += '<th style="' + thRStyle + '">Rate</th>';
+  html += '</tr></thead><tbody>';
+  rows.forEach(function(g, i) {
+    var rc = g.rate>=95?'#3EBD3E':g.rate>=85?'#D97706':g.rate>=70?'#EA580C':'#AC1534';
+    var bg = i%2===0?'':'background:#F9FBFC';
+    var tdBase = 'padding:7px 10px;font-size:12px;border-bottom:1px solid var(--border)';
+    html += '<tr style="' + bg + '">';
+    html += '<td style="' + tdBase + ';font-weight:600">' + esc(g.name) + '</td>';
+    html += '<td style="' + tdBase + ';text-align:right">' + g.total + '</td>';
+    html += '<td style="' + tdBase + ';text-align:right;color:#3EBD3E;font-weight:600">' + g.comp + '</td>';
+    html += '<td style="' + tdBase + ';text-align:right;color:#AC1534;font-weight:600">' + g.nc + '</td>';
+    html += '<td style="' + tdBase + ';text-align:right"><span style="font-weight:800;color:' + rc + '">' + g.rate + '%</span></td>';
+    html += '</tr>';
+  });
+  html += '</tbody></table>';
+  return html;
+}
+
 function prtShowClient(clientName) {
   if (_prtActiveClient === clientName) {
     _prtActiveClient = null;
@@ -3372,49 +3418,7 @@ function prtShowClient(clientName) {
       <div class="prt-kpi amber"><div class="prt-kpi-accent"></div><div class="prt-kpi-body"><div class="prt-kpi-lbl">No COI on File</div><div class="prt-kpi-val">${client.noCOI.length}</div><div class="prt-kpi-sub">${pct(client.noCOI.length,client.total)}</div></div></div>
     </div>
     ${ncSection}
-    ${(_isProj||_isLoc)?`
-    <div class="prt-section-hdr" style="margin-top:16px">
-      <div class="prt-section-hdr-lbl">By ${_isProj?'Project':'Location'} — Worst First</div>
-      <div class="prt-section-hdr-line"></div>
-    </div>
-    ${(()=>{
-      // Group vendors by project/location
-      const grpMap={};
-      client.vendors.forEach(r=>{
-        const grp=(r[_groupField]||'').trim()||'Unassigned';
-        if(!grpMap[grp])grpMap[grp]={total:0,comp:0,nc:0,expired:0,noCOI:0};
-        grpMap[grp].total++;
-        const st=normStatus(r[C.status]);
-        const nm=(r[C.entity_name]||r['insured_name']||'').trim().toLowerCase();
-        const isNC=st==='non_compliant';
-        const isExp=isNC&&client.expired.some(e=>(e[C.entity_name]||e['insured_name']||'').trim().toLowerCase()===nm);
-        const isNoCOI=isNC&&client.noCOI.some(e=>(e[C.entity_name]||e['insured_name']||'').trim().toLowerCase()===nm);
-        if(st==='compliant')grpMap[grp].comp++;
-        else if(isNC){grpMap[grp].nc++;if(isExp)grpMap[grp].expired++;else if(isNoCOI)grpMap[grp].noCOI++;}
-      });
-      const grpRows=Object.entries(grpMap)
-        .map(([name,g])=>({name,rate:g.total?Math.round(g.comp/g.total*100):0,...g}))
-        .sort((a,b)=>a.rate-b.rate); // worst first
-      if(!grpRows.length)return'<div style="font-size:12px;color:var(--muted)">No group data available.</div>';
-      const cols=[_isProj?'Project':'Location','Subcontractors/Tenants','Compliant','Non-Compliant','Compliance Rate'];
-      const thStyle='padding:7px 10px;text-align:left;font-size:10px;font-weight:700;color:#5A6B7B;letter-spacing:.04em;text-transform:uppercase;border-bottom:2px solid var(--border)';
-      const tdStyle=(i)=>'padding:7px 10px;font-size:12px;border-bottom:1px solid var(--border)'+(i===0?';font-weight:600':'');
-      return \`<table style="width:100%;border-collapse:collapse;margin-bottom:4px">
-        <thead><tr>\${cols.map(h=>\`<th style="\${thStyle}">\${h}</th>\`).join('')}</tr></thead>
-        <tbody>\${grpRows.map((g,ri)=>{
-          const rc=g.rate>=95?'#3EBD3E':g.rate>=85?'#D97706':g.rate>=70?'#EA580C':'#AC1534';
-          const bg=ri%2===0?'':'background:#F9FBFC';
-          return \`<tr style="\${bg}">
-            <td style="\${tdStyle(0)}">\${esc(g.name)}</td>
-            <td style="\${tdStyle(1)}">\${g.total}</td>
-            <td style="\${tdStyle(2)};color:#3EBD3E;font-weight:600">\${g.comp}</td>
-            <td style="\${tdStyle(3)};color:#AC1534;font-weight:600">\${g.nc}</td>
-            <td style="\${tdStyle(4)}"><span style="font-weight:800;color:\${rc}">\${g.rate}%</span></td>
-          </tr>\`;
-        }).join('')}</tbody>
-      </table>\`;
-    })()}
-    `:''}
+    ${prtBuildGroupBreakdown(client,_isProj,_isLoc,_groupField)}
     <div class="prt-section-hdr" style="margin-top:16px"><div class="prt-section-hdr-lbl">All ${_isProj?'Subcontractors':_isLoc?'Tenants':'Vendors'} (${client.vendors.length})</div><div class="prt-section-hdr-line"></div></div>
     <table class="prt-vendor-table">
       <thead><tr><th style="width:30%">${_entityCol}</th>${_groupCol?`<th style="width:22%">${_groupCol}</th>`:''}<th style="width:120px">Status</th><th>Contact Email</th><th>Next Expiration</th></tr></thead>
