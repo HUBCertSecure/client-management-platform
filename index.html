@@ -5535,6 +5535,7 @@ async function buildComplianceDetailXL(insureds,coverages,criteria,{statusFilter
   }
   if(chk('cd-entitylist')){
     let rows=statusFilter!=='all'?active.filter(r=>normStatus(r[C.status])===statusFilter):active;
+    rows=[...rows].sort((a,b)=>(a[C.entity_name]||'').localeCompare(b[C.entity_name]||''));
     const grpSkip=new Set(isProj?['projectName','jobDescription']:isLoc?['propertyLocation']:[]);
     const hdrs=['Insured Name'];if(groupLabel)hdrs.push(groupLabel);
     cfFields.filter(f=>!grpSkip.has(f.key)).forEach(f=>hdrs.push(f.label));
@@ -5580,6 +5581,7 @@ async function buildComplianceDetailXL(insureds,coverages,criteria,{statusFilter
     const grpSkip3=new Set(isProj?['projectName','jobDescription']:isLoc?['propertyLocation']:[]);
     const hdrs=['Insured Name'];if(groupLabel)hdrs.push(groupLabel);cfFields.filter(f=>!grpSkip3.has(f.key)).forEach(f=>hdrs.push(f.label));hdrs.push('Coverage Type','Non-Compliance Reason');
     const widths=[71];if(groupLabel)widths.push(45);cfFields.filter(f=>!grpSkip3.has(f.key)).forEach(()=>widths.push(22));widths.push(30,80);
+    // Build flat rows first, then group by insured name
     const ncRows=[];
     criteria.filter(r=>normStatus(r[C.overall_comp])==='non_compliant'&&r[C.nc_reasons]).forEach(r=>{
       const ins=insuredById[r['insured_id']]||{};
@@ -5590,7 +5592,48 @@ async function buildComplianceDetailXL(insureds,coverages,criteria,{statusFilter
       });
     });
     ncRows.sort((a,b)=>(a['Insured Name']||'').localeCompare(b['Insured Name']||''));
-    buildWS(wb,'Non-Compliance Reasons',hdrs,ncRows,{colWidths:widths,wrapCols:new Set(['Non-Compliance Reason']),styleFn:(cell,h,v,alt)=>applyData(cell,alt)});
+    // Build worksheet manually with Excel row grouping (outline)
+    const wsNC=wb.addWorksheet('Non-Compliance Reasons');
+    wsNC.properties.outlineLevelRow=1;
+    wsNC.columns=hdrs.map((h,i)=>({header:'',width:widths[i]||20}));
+    const ncHdrRow=wsNC.addRow(hdrs);ncHdrRow.height=22;ncHdrRow.eachCell(cell=>applyHdr(cell));
+    wsNC.views=[{state:'frozen',ySplit:1}];
+    // Group flat rows by insured name
+    const ncByName=[];
+    let curName=null,curGroup=null;
+    ncRows.forEach(r=>{
+      const nm=r['Insured Name']||'';
+      if(nm!==curName){curName=nm;curGroup={name:nm,rows:[]};ncByName.push(curGroup);}
+      curGroup.rows.push(r);
+    });
+    // Write: summary row (collapsed header) + detail rows (outline level 1, hidden)
+    ncByName.forEach((grp,gi)=>{
+      const alt=gi%2===0;
+      // Summary row: insured name + reason count, other cols blank
+      const summaryVals=hdrs.map(h=>{
+        if(h==='Insured Name')return grp.name;
+        if(h==='Non-Compliance Reason')return `${grp.rows.length} reason${grp.rows.length!==1?'s':''}`;
+        return '';
+      });
+      const sumRow=wsNC.addRow(summaryVals);sumRow.height=20;
+      sumRow.eachCell((cell,ci)=>{
+        applyData(cell,alt);
+        if(ci===1){cell.font={name:'Arial',size:10,bold:true,color:{argb:XL.NAVY}};}
+        if(hdrs[ci-1]==='Non-Compliance Reason'){cell.font={name:'Arial',size:10,bold:false,color:{argb:'FF5A6B7B'}};cell.alignment={vertical:'middle'};}
+      });
+      // Detail rows: outline level 1, collapsed by default
+      grp.rows.forEach((r,ri)=>{
+        const detailVals=hdrs.map(h=>(r[h]===null||r[h]===undefined)?'':r[h]);
+        const dr=wsNC.addRow(detailVals);dr.height=18;
+        dr.outlineLevel=1;dr.hidden=true;
+        hdrs.forEach((h,ci)=>{
+          const cell=dr.getCell(ci+1);
+          applyData(cell,alt);
+          if(h==='Non-Compliance Reason'){cell.alignment={wrapText:true,vertical:'top'};}
+        });
+      });
+    });
+    wsNC.autoFilter={from:{row:1,column:1},to:{row:1,column:hdrs.length}};
   }
   return wb;
 }
@@ -5706,15 +5749,17 @@ function buildComplianceSummaryHTML(insureds,coverages,criteria,{reportDate}){
   const topCrit=Object.entries(critMap).sort((a,b)=>b[1]-a[1]).slice(0,8);
 
   // COI status — has coverage = has COI on file
+  // Only non-compliant and pending vendors are evaluated; compliant vendors are never flagged as No COI
   const withCoiSet=new Set(coverages.map(r=>r['insured_name']||r['insured_id']||'').filter(Boolean));
+  const nonCompliantActive=active.filter(r=>normStatus(r[C.status])!=='compliant');
   const hasCoi=active.filter(r=>withCoiSet.has(r[C.entity_name])||withCoiSet.has(r[C.insured_id])).length;
-  const noCoi=active.filter(r=>!withCoiSet.has(r[C.entity_name])&&!withCoiSet.has(r[C.insured_id]));
+  const noCoi=nonCompliantActive.filter(r=>!withCoiSet.has(r[C.entity_name])&&!withCoiSet.has(r[C.insured_id]));
   const noCoiCount=noCoi.length;
 
-  // No-COI breakdown by compliance status
+  // No-COI breakdown by compliance status (compliant vendors excluded by definition)
   const noCoiNc  =noCoi.filter(r=>normStatus(r[C.status])==='non_compliant').length;
   const noCoiPend=noCoi.filter(r=>normStatus(r[C.status])==='pending'||normStatus(r[C.status])==='unknown'||!normStatus(r[C.status])).length;
-  const noCoiComp=noCoiCount-noCoiNc-noCoiPend;
+  const noCoiComp=0;
 
   // SVG donut chart helper
   const donut=(segs,sz=110)=>{
