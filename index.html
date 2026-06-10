@@ -276,7 +276,7 @@
     .prt-loading { display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 60px 20px; gap: 14px; color: var(--muted); font-size: 13px; }
     .prt-spinner { width: 32px; height: 32px; border: 3px solid var(--border); border-top-color: #00AEEF; border-radius: 50%; animation: prt-spin 0.8s linear infinite; }
     @keyframes prt-spin { to { transform: rotate(360deg); } }
-    .prt-scorecard { display: grid; grid-template-columns: repeat(5, 1fr); gap: 14px; margin-bottom: 22px; }
+    .prt-scorecard { display: grid; grid-template-columns: repeat(7, 1fr); gap: 14px; margin-bottom: 22px; }
     .prt-kpi { border-radius: 10px; padding: 0; border: 1px solid rgba(30,46,61,0.09); background: var(--card); box-shadow: var(--shadow); overflow: hidden; display: flex; flex-direction: column; }
     .prt-kpi-accent { height: 4px; width: 100%; flex-shrink: 0; }
     .prt-kpi-body { padding: 14px 16px 15px; flex: 1; }
@@ -1085,6 +1085,8 @@
         <div class="prt-trend-bars" id="prt-trend-bars"></div>
         <div class="prt-section-hdr" style="margin-top:20px"><div class="prt-section-hdr-lbl">Top Non-Compliance Reasons</div><div class="prt-section-hdr-line"></div></div>
         <div id="prt-top-nc"></div>
+        <div class="prt-section-hdr" style="margin-top:24px"><div class="prt-section-hdr-lbl">Vendor Aging — Currently NC</div><div class="prt-section-hdr-line"></div><div id="prt-aging-meta" style="font-size:11px;color:var(--muted);white-space:nowrap"></div></div>
+        <div id="prt-vendor-aging"></div>
       </div>
       <!-- Tab: Industry Breakdown -->
       <div id="prt-tab-industry" class="prt-tab-panel" style="display:none">
@@ -2568,6 +2570,8 @@ async function prtLoad() {
       const liveCP = await fetchCSV(s.customPropsPath || 'data/evident/custom_properties.csv').catch(()=>[]);
       if (liveCP.length) liveIns = enrichInsureds(liveIns, liveCP);
     } catch(e) { console.warn('[PRT] custom_properties enrich skipped:', e.message); }
+    setMsg('Loading insights data\u2026');
+    const { vendorHistory, programSummary } = await loadInsightsData();
     setMsg('Calculating compliance\u2026');
     const activeAll = liveIns.filter(r => r[C.active] !== 'false' && r[C.paused] !== 'true');
     const totalActive = activeAll.length;
@@ -2764,7 +2768,7 @@ async function prtLoad() {
       ? ` (${uniqueActive.toLocaleString()} unique third parties across ${totalActive.toLocaleString()} tracked relationships)`
       : ` across ${totalActive.toLocaleString()} tracked third parties`;
     const narrative = `As of ${new Date().toLocaleDateString('en-US',{month:'long',day:'numeric',year:'numeric'})}, the CertSecure program manages ${clientStats.length} active client programs${_uniqueNote}. Overall compliance stands at ${overallRate}% \u2014 ${countCompliant.toLocaleString()} compliant, ${countNC.toLocaleString()} non-compliant, ${countExpired.toLocaleString()} with expired coverage, and ${countNoCOI.toLocaleString()} with no certificate on file. Program compliance is ${trendWord} over the selected period${rateChange !== 0 ? ' (' + (rateChange > 0 ? '+' : '') + rateChange + '% from start of range)' : ''}.`;
-    _prtData = { fromYM, toYM, fmtYM, monthlyTrend, totalActive, uniqueActive, countCompliant, countNC, countExpired, countNoCOI, overallRate, firstRate, rateChange, criteriaSorted, topNCReasons, ncReasonsByType, sentSet, openSet, issueSet, engRate, engLoadMsg, engByClient, clientStats, expiredEntities, noCOIEntities, narrative };
+    _prtData = { fromYM, toYM, fmtYM, monthlyTrend, totalActive, uniqueActive, countCompliant, countNC, countExpired, countNoCOI, overallRate, firstRate, rateChange, criteriaSorted, topNCReasons, ncReasonsByType, sentSet, openSet, issueSet, engRate, engLoadMsg, engByClient, clientStats, expiredEntities, noCOIEntities, narrative, vendorHistory, programSummary };
     prtRender(_prtData);
   } catch(e) {
     if (loadMsg) loadMsg.textContent = 'Failed to load: ' + e.message;
@@ -2790,12 +2794,34 @@ function prtRender(d) {
       : `${d.clientStats.length} clients`;
     const _totalKpiVal = d.totalActive.toLocaleString();
     const _totalKpiLbl = _hasProj && d.uniqueActive < d.totalActive ? 'Tracked Relationships' : 'Total Active';
+
+    // ── Insights KPIs ──
+    const vh = d.vendorHistory || [];
+    const ps = d.programSummary || [];
+
+    // Avg cure days — from most recent program_summary row that has data
+    const psWithCure = ps.filter(r => r.avg_cure_days && Number(r.avg_cure_days) > 0);
+    const latestCure = psWithCure.length ? psWithCure[psWithCure.length-1] : null;
+    const avgCureDays = latestCure ? Number(latestCure.avg_cure_days) : null;
+    const avgCureVal  = avgCureDays != null ? avgCureDays + 'd' : '—';
+    const avgCureSub  = avgCureDays != null
+      ? (avgCureDays <= 14 ? 'Fast resolution' : avgCureDays <= 30 ? 'Moderate' : 'Slow — needs attention')
+      : 'Insufficient history';
+    const avgCureCls  = avgCureDays == null ? 'grey' : avgCureDays <= 14 ? 'green' : avgCureDays <= 30 ? 'amber' : 'red';
+
+    // Repeat offenders — currently NC vendors with 2+ episodes
+    const repeatNC = vh.filter(v => v.is_repeat_offender === 'true' && v.current_status === 'non_compliant').length;
+    const repeatCls = repeatNC === 0 ? 'green' : repeatNC <= 5 ? 'amber' : 'red';
+    const repeatSub = vh.length === 0 ? 'Insufficient history' : `${repeatNC} active repeat${repeatNC !== 1 ? 's' : ''}`;
+
     scoreEl.innerHTML = [
       { cls:'grey',   lbl:_totalKpiLbl,     val: _totalKpiVal, sub: _totalKpiSub },
       { cls: d.overallRate>=95?'green':d.overallRate>=85?'amber':d.overallRate>=70?'orange':'red', lbl:'Compliant', val: d.countCompliant.toLocaleString(), sub: pct(d.countCompliant, d.totalActive) + ' — ' + (d.overallRate>=95?'Best-in-Class':d.overallRate>=85?'On Track':d.overallRate>=70?'Below Avg':'Needs Attention') },
       { cls:'red',    lbl:'Non-Compliant',  val: d.countNC.toLocaleString(), sub: pct(d.countNC, d.totalActive) + ' of active' },
       { cls:'orange', lbl:'Expired COI',    val: d.countExpired.toLocaleString(), sub: pct(d.countExpired, d.totalActive) + ' of active' },
       { cls:'amber',  lbl:'No COI on File', val: d.countNoCOI.toLocaleString(), sub: pct(d.countNoCOI, d.totalActive) + ' of active' },
+      { cls: avgCureCls, lbl:'Avg Cure Time', val: avgCureVal, sub: avgCureSub },
+      { cls: repeatCls,  lbl:'Repeat Offenders', val: vh.length ? repeatNC.toString() : '—', sub: repeatSub },
     ].map(k => `<div class="prt-kpi ${k.cls}"><div class="prt-kpi-accent"></div><div class="prt-kpi-body"><div class="prt-kpi-lbl">${k.lbl}</div><div class="prt-kpi-val">${k.val}</div><div class="prt-kpi-sub">${k.sub}</div></div></div>`).join('');
   }
   const trendEl = document.getElementById('prt-trend-bars');
@@ -2827,9 +2853,96 @@ function prtRender(d) {
   prtRenderTopNC(d);
   prtRenderIndustry(d);
   prtRenderClients(d);
+  prtRenderVendorAging(d);
   // Build per-tab narratives using full data
   prtBuildNarratives(d, d.clientStats, d.totalActive, d.countCompliant, d.countNC, d.countExpired, d.countNoCOI);
   if (!_prtActiveClient) { const drill = document.getElementById('prt-drill-panel'); if (drill) drill.style.display = 'none'; }
+}
+
+// ── Vendor Aging — NC duration & repeat offenders ─────────────────────────────
+function prtRenderVendorAging(d) {
+  const el      = document.getElementById('prt-vendor-aging');
+  const metaEl  = document.getElementById('prt-aging-meta');
+  if (!el) return;
+
+  const vh = d.vendorHistory || [];
+  if (!vh.length) {
+    el.innerHTML = `<div style="font-size:12px;color:var(--muted);padding:12px 0;font-style:italic">
+      No vendor history data yet — insights are built at end of month once daily snapshots have accumulated.
+    </div>`;
+    if (metaEl) metaEl.textContent = '';
+    return;
+  }
+
+  // Filter to currently NC vendors only, sorted by consecutive_nc_days desc
+  const ncVendors = vh
+    .filter(v => v.current_status === 'non_compliant')
+    .sort((a, b) => Number(b.consecutive_nc_days) - Number(a.consecutive_nc_days));
+
+  if (!ncVendors.length) {
+    el.innerHTML = `<div style="font-size:12px;color:var(--muted);padding:12px 0;font-style:italic">
+      No currently NC vendors found in history data.
+    </div>`;
+    if (metaEl) metaEl.textContent = '';
+    return;
+  }
+
+  if (metaEl) {
+    const repeatCount = ncVendors.filter(v => v.is_repeat_offender === 'true').length;
+    metaEl.textContent = `${ncVendors.length} NC vendors · ${repeatCount} repeat offenders`;
+  }
+
+  // Severity colour by days NC
+  const agingColor = days => {
+    if (days >= 90) return { bg: 'rgba(172,21,52,.1)',  text: '#AC1534', label: '90d+' };
+    if (days >= 60) return { bg: 'rgba(234,88,12,.1)',  text: '#EA580C', label: '60–89d' };
+    if (days >= 30) return { bg: 'rgba(217,119,6,.1)',  text: '#D97706', label: '30–59d' };
+    return           { bg: 'rgba(30,46,61,.06)',         text: 'var(--muted)', label: '<30d' };
+  };
+
+  el.innerHTML = `
+    <table style="width:100%;border-collapse:collapse;font-size:12px;margin-top:4px">
+      <thead>
+        <tr>
+          <th style="text-align:left;font-size:9px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);padding:6px 10px 6px 0;border-bottom:2px solid rgba(6,120,213,.15)">Vendor</th>
+          <th style="text-align:left;font-size:9px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);padding:6px 10px;border-bottom:2px solid rgba(6,120,213,.15)">Client</th>
+          <th style="text-align:left;font-size:9px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);padding:6px 10px;border-bottom:2px solid rgba(6,120,213,.15)">Platform</th>
+          <th style="text-align:center;font-size:9px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);padding:6px 10px;border-bottom:2px solid rgba(6,120,213,.15)">Days NC</th>
+          <th style="text-align:center;font-size:9px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);padding:6px 10px;border-bottom:2px solid rgba(6,120,213,.15)">Episodes</th>
+          <th style="text-align:left;font-size:9px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);padding:6px 0 6px 10px;border-bottom:2px solid rgba(6,120,213,.15)">First NC</th>
+          <th style="text-align:left;font-size:9px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);padding:6px 0 6px 10px;border-bottom:2px solid rgba(6,120,213,.15)">Avg Cure</th>
+        </tr>
+      </thead>
+      <tbody>
+        ${ncVendors.slice(0, 50).map((v, i) => {
+          const days   = Number(v.consecutive_nc_days) || 0;
+          const clr    = agingColor(days);
+          const repeat = v.is_repeat_offender === 'true';
+          const avgCure= v.avg_cure_days ? v.avg_cure_days + 'd' : '—';
+          const firstNC= v.first_nc_date ? v.first_nc_date.slice(0,10) : '—';
+          const eps    = Number(v.total_nc_episodes) || 0;
+          const bg     = i % 2 === 0 ? '' : 'background:rgba(30,46,61,.025)';
+          return `<tr style="${bg}">
+            <td style="padding:8px 10px 8px 0;border-bottom:1px solid var(--border);color:var(--text);font-weight:600;max-width:220px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">
+              ${v.vendor_name}
+              ${repeat ? `<span style="font-size:8px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;background:rgba(172,21,52,.1);color:#AC1534;padding:1px 6px;border-radius:10px;margin-left:5px">REPEAT</span>` : ''}
+            </td>
+            <td style="padding:8px 10px;border-bottom:1px solid var(--border);color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:160px">${v.client}</td>
+            <td style="padding:8px 10px;border-bottom:1px solid var(--border)">
+              <span style="font-size:9px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;padding:2px 7px;border-radius:4px;background:${v.platform==='trustlayer'?'rgba(212,87,10,.1)':'rgba(6,120,213,.1)'};color:${v.platform==='trustlayer'?'#D4570A':'#0678D5'}">${v.platform==='trustlayer'?'TL':'EV'}</span>
+            </td>
+            <td style="padding:8px 10px;border-bottom:1px solid var(--border);text-align:center">
+              <span style="font-size:12px;font-weight:700;background:${clr.bg};color:${clr.text};padding:2px 9px;border-radius:12px">${days}</span>
+            </td>
+            <td style="padding:8px 10px;border-bottom:1px solid var(--border);text-align:center;color:${eps>=2?'#AC1534':'var(--text)'};font-weight:${eps>=2?'700':'400'}">${eps}</td>
+            <td style="padding:8px 0 8px 10px;border-bottom:1px solid var(--border);color:var(--muted);white-space:nowrap">${firstNC}</td>
+            <td style="padding:8px 0 8px 10px;border-bottom:1px solid var(--border);color:var(--muted);white-space:nowrap">${avgCure}</td>
+          </tr>`;
+        }).join('')}
+      </tbody>
+    </table>
+    ${ncVendors.length > 50 ? `<div style="font-size:11px;color:var(--muted);padding:8px 0;text-align:center">Showing top 50 of ${ncVendors.length} NC vendors</div>` : ''}
+  `;
 }
 
 // Build a small inline SVG sparkline from an array of {rate} points
@@ -6380,7 +6493,30 @@ async function listSnapshotMonths(year){
   if(s.pat)headers['Authorization']=`Bearer ${s.pat}`;
   const res=await fetch(url,{headers});if(!res.ok)return[];
   const data=await res.json();
-  return(Array.isArray(data)?data:[]).filter(f=>f.type==='dir'&&/^\d{4}-\d{2}$/.test(f.name)).map(f=>f.name).sort();
+  if(!Array.isArray(data))return[];
+  // Accept both daily (YYYY-MM-DD) and legacy monthly (YYYY-MM) folders
+  // For daily folders, deduplicate to one entry per month (the latest day)
+  const daily   = data.filter(f=>f.type==='dir'&&/^\d{4}-\d{2}-\d{2}$/.test(f.name)).map(f=>f.name).sort();
+  const monthly = data.filter(f=>f.type==='dir'&&/^\d{4}-\d{2}$/.test(f.name)).map(f=>f.name).sort();
+  if(daily.length){
+    // Return all daily snapshot folder names (PRT will load each one)
+    // Also include any legacy monthly folders that don't overlap
+    const dailyMonths = new Set(daily.map(d=>d.slice(0,7)));
+    const legacyOnly  = monthly.filter(m=>!dailyMonths.has(m));
+    return [...legacyOnly, ...daily].sort();
+  }
+  return monthly;
+}
+
+// Load insights files — called once per PRT load
+async function loadInsightsData() {
+  try {
+    const vh = await fetchCSV('snapshots/insights/vendor_history.csv').catch(()=>[]);
+    const ps = await fetchCSV('snapshots/insights/program_summary.csv').catch(()=>[]);
+    return { vendorHistory: vh, programSummary: ps };
+  } catch(e) {
+    return { vendorHistory: [], programSummary: [] };
+  }
 }
 async function fetchSnapshotCSV(year,month,file){return fetchCSV(`snapshots/${year}/${month}/${file}`);}
 
