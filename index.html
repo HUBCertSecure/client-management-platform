@@ -5448,7 +5448,17 @@ async function rgTriggerSync(fromPRT) {
         body: JSON.stringify({ ref: s.branch || 'main' })
       }
     );
-    if (!res.ok) throw new Error(`GitHub returned ${res.status}`);
+    if (!res.ok) {
+      const errBody = await res.json().catch(() => ({}));
+      const msg = res.status === 422
+        ? 'PAT lacks workflow permission — add the "workflow" scope in GitHub → Settings → Developer settings → Personal access tokens'
+        : res.status === 404
+        ? 'Workflow not found — check repo/branch in Settings'
+        : res.status === 401 || res.status === 403
+        ? 'Access denied — check your Access Token in Settings'
+        : `GitHub returned ${res.status}${errBody.message ? ': ' + errBody.message : ''}`;
+      throw new Error(msg);
+    }
     if (statusEl) statusEl.textContent = 'Sync triggered — data updates in ~5 min';
     if (tsEl) tsEl.textContent = 'Sync running…';
     toast('Sync triggered successfully. Data will refresh in ~5 minutes.', 'success');
@@ -5991,7 +6001,7 @@ ${chk('cs-ncreasons')&&topNC.length?`<div>${secHdr('Top Non-Compliance Reasons')
 ${chk('cs-criteriadist')&&topCrit.length?`<div>${secHdr('Insured Criteria Breakdown')}<div class="bcard">${topCrit.map(([t,n])=>`<div style="display:flex;align-items:center;gap:8px;padding:5px 0;border-bottom:1px solid #F5F7FA;font-size:9px"><div style="width:130px;color:#5A6B7B;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(t)}</div>${progBar(n,topCrit[0]?.[1]||1,'#3872B8')}<div style="width:22px;text-align:right;font-weight:700;color:#3872B8">${n}</div></div>`).join('')}</div></div>`:'<div></div>'}
 </div>
 ${chk('cs-coveragedist')&&topCov.length?`${secHdr('Coverage Type Distribution')}<div class="bcard"><div style="display:grid;grid-template-columns:1fr 1fr;gap:0 24px">${topCov.map(([t,n])=>`<div style="display:flex;align-items:center;gap:8px;padding:5px 0;border-bottom:1px solid #F5F7FA;font-size:9px"><div style="width:130px;color:#5A6B7B;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(t)}</div>${progBar(n,topCov[0]?.[1]||1,'#6BA3DE')}<div style="width:22px;text-align:right;font-weight:700;color:#3872B8">${n}</div></div>`).join('')}</div></div>`:''}
-<div class="footer"><div>&#x1F512; Confidential \u2014 HUB HUB CertSecure \u00b7 ${esc(selectedClient.name)} \u00b7 Compliance Summary</div><div>${stamp}</div></div><\/body><\/html>`;
+<div class="footer"><div>&#x1F512; Confidential \u2014 HUB CertSecure \u00b7 ${esc(selectedClient.name)} \u00b7 Compliance Summary</div><div>${stamp}</div></div><\/body><\/html>`;
 }
 </script>
 <script>
@@ -6047,7 +6057,7 @@ ${chk('es-nceng')&&ncActive.length?`${secHdr('NC Insured Engagement Rate')}<div 
 ${chk('es-issues')&&issueTypes.length?`${secHdr('Delivery Issue Breakdown')}<div class="bcard"><div style="display:grid;grid-template-columns:1fr 1fr;gap:0 24px">${issueTypes.map(([t,n])=>`<div style="display:flex;align-items:center;gap:8px;padding:5px 0;border-bottom:1px solid #F5F7FA;font-size:9px"><div style="width:100px;color:#5A6B7B;text-transform:capitalize">${t.replace(/_/g,' ')}</div>${progBar(n,issueTypes[0]?.[1]||1,'#DC2626')}<div style="width:22px;text-align:right;font-weight:700;color:#DC2626">${n}</div></div>`).join('')}</div></div>`:''}
 ${chk('es-60day')&&recentSentSet.size>0?`${secHdr(`Activity Window \u2014 Last ${engWindow} Days`)}<div class="bcard"><div style="display:grid;grid-template-columns:repeat(4,1fr);gap:10px">${[['Emails Sent',recentSentSet.size,'#3872B8','#EBF2FB'],['Opened',recentOpenSet.size,openColor,openRate>=50?'#E6F5EF':'#FFF8E6'],['Clicked',new Set(recentClick.map(normEm).filter(Boolean)).size,'#1E2E3D','#EEF1F8'],['Issues',new Set(issues.filter(n=>new Date(n[C.sent_at])>=cutoff).map(normEm).filter(Boolean)).size,'#DC2626','#FDF0EE']].map(([l,n,c,bg])=>`<div style="background:${bg};border-radius:8px;padding:10px 12px"><div style="font-size:8px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:${c};margin-bottom:4px">${l}</div><div style="font-size:22px;font-weight:800;color:${c}">${n}</div></div>`).join('')}</div></div>`:''}
 ${chk('es-topsubjects')&&topSubjects.length?`${secHdr('Top Email Subjects by Open Rate')}<div class="bcard"><div style="display:grid;grid-template-columns:1fr 1fr;gap:0 24px">${topSubjects.map(s=>{const rc=s.rate>=50?'#16A34A':s.rate>=25?'#D97706':'#DC2626';return`<div style="display:flex;align-items:center;gap:8px;padding:5px 0;border-bottom:1px solid #F5F7FA;font-size:9px"><div style="flex:1;color:#5A6B7B;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(s.subject.length>60?s.subject.slice(0,60)+'\u2026':s.subject)}</div><div style="font-weight:700;color:${rc};white-space:nowrap">${s.rate}%</div></div>`;}).join('')}</div></div>`:''}
-<div class="footer"><div>&#x1F512; Confidential \u2014 HUB HUB CertSecure \u00b7 ${esc(selectedClient.name)} \u00b7 Engagement Summary</div><div>${stamp}</div></div><\/body><\/html>`;
+<div class="footer"><div>&#x1F512; Confidential \u2014 HUB CertSecure \u00b7 ${esc(selectedClient.name)} \u00b7 Engagement Summary</div><div>${stamp}</div></div><\/body><\/html>`;
 }
 async function listSnapshotMonths(year){
   const s=getSettings(),url=`https://api.github.com/repos/${s.owner}/${s.repo}/contents/snapshots/${year}?ref=${s.branch}`,headers={'Accept':'application/vnd.github.v3+json'};
