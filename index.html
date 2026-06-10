@@ -930,7 +930,7 @@
     <div class="card">
       <div class="card-title">Select Reports to Generate</div>
       <div class="report-grid">
-        <div class="report-card" id="rc-cs"><div class="report-card-hdr" onclick="toggleReport('cs')"><div class="rc-dot"></div><div><div class="rc-title">Compliance Summary</div><div class="rc-sub">Executive compliance overview</div></div><span class="rc-type type-pdf">PDF</span></div><div class="report-card-body"><div class="sec-div">Sections to Include</div><div class="cb-group"><label class="cb-item"><input type="checkbox" id="cs-kpi" checked> Program KPI Cards</label><label class="cb-item"><input type="checkbox" id="cs-breakdown" checked> Compliance Status Breakdown</label><label class="cb-item"><input type="checkbox" id="cs-coi" checked> COI Submission Status</label><label class="cb-item"><input type="checkbox" id="cs-expiring" checked> Expiring Coverage (7 / 30 / 60 / 90 days)</label><label class="cb-item"><input type="checkbox" id="cs-ncreasons" checked> Top Non-Compliance Reasons</label><label class="cb-item"><input type="checkbox" id="cs-criteriadist" checked> Insured Criteria Breakdown</label><label class="cb-item"><input type="checkbox" id="cs-coveragedist" checked> Insured Coverage Breakdown</label></div></div></div>
+        <div class="report-card" id="rc-cs"><div class="report-card-hdr" onclick="toggleReport('cs')"><div class="rc-dot"></div><div><div class="rc-title">Compliance Summary</div><div class="rc-sub">Executive compliance overview</div></div><span class="rc-type type-pdf">PDF</span></div><div class="report-card-body"><div class="sec-div">Sections to Include</div><div class="cb-group"><label class="cb-item"><input type="checkbox" id="cs-kpi" checked> Program KPI Cards</label><label class="cb-item"><input type="checkbox" id="cs-breakdown" checked> Compliance Status Breakdown</label><label class="cb-item"><input type="checkbox" id="cs-coi" checked> COI Submission Status</label><label class="cb-item"><input type="checkbox" id="cs-expiring" checked> Expiring Coverage (7 / 30 / 60 / 90 days)</label><label class="cb-item"><input type="checkbox" id="cs-ncreasons" checked> Top Non-Compliance Reasons</label><label class="cb-item"><input type="checkbox" id="cs-criteriadist" checked> Insured Criteria Breakdown</label></div></div></div>
         <div class="report-card" id="rc-cd"><div class="report-card-hdr" onclick="toggleReport('cd')"><div class="rc-dot"></div><div><div class="rc-title">Compliance Detail</div><div class="rc-sub">Full entity-level compliance data</div></div><span class="rc-type type-excel">Excel</span></div><div class="report-card-body"><div class="sec-div">Sheets to Include</div><div class="cb-group"><label class="cb-item"><input type="checkbox" id="cd-summary" checked> Summary</label><label class="cb-item"><input type="checkbox" id="cd-entitylist" checked> <span id="cd-entity-lbl">Entity List</span></label><label class="cb-item"><input type="checkbox" id="cd-exceptions" checked> Exception Analysis</label><label class="cb-item"><input type="checkbox" id="cd-nocoi" checked> No COI on File</label><label class="cb-item"><input type="checkbox" id="cd-expiring" checked> Expiring Coverage</label><label class="cb-item"><input type="checkbox" id="cd-nccoverage" checked> NC by Coverage &amp; Criteria</label><label class="cb-item"><input type="checkbox" id="cd-ncreasons" checked> Non-Compliance Reasons</label></div><div class="sec-div">Compliance Status Filter</div><select id="cd-status"><option value="all">All Statuses</option><option value="non_compliant">Non-Compliant Only</option><option value="compliant">Compliant Only</option><option value="pending">New / Pending Only</option></select><div class="sec-div" id="cd-cf-hdr" style="display:none">Custom Fields</div><div class="cb-group" id="cd-cf-list"></div></div></div>
         <div class="report-card" id="rc-es"><div class="report-card-hdr" onclick="toggleReport('es')"><div class="rc-dot"></div><div><div class="rc-title">Engagement Summary</div><div class="rc-sub">Email engagement overview</div></div><span class="rc-type type-pdf">PDF</span></div><div class="report-card-body"><div class="sec-div">Sections to Include</div><div class="cb-group"><label class="cb-item"><input type="checkbox" id="es-kpi" checked> Email KPI Cards</label><label class="cb-item"><input type="checkbox" id="es-byloc" checked> Engagement by Project / Location</label><label class="cb-item"><input type="checkbox" id="es-openrate" checked> Open Rate Breakdown</label><label class="cb-item"><input type="checkbox" id="es-delivery" checked> Deliverability Status</label><label class="cb-item"><input type="checkbox" id="es-issues" checked> Delivery Issue Breakdown</label><label class="cb-item"><input type="checkbox" id="es-60day" checked> Activity Window &amp; Funnel</label><label class="cb-item"><input type="checkbox" id="es-nceng" checked> NC Insured Engagement Rate</label><label class="cb-item"><input type="checkbox" id="es-topsubjects"> Top Email Subjects by Open Rate</label></div><div class="sec-div">Engagement Window</div><select id="es-window"><option value="60">Last 60 Days</option><option value="30">Last 30 Days</option><option value="90">Last 90 Days</option></select></div></div>
         <div class="report-card" id="rc-ed"><div class="report-card-hdr" onclick="toggleReport('ed')"><div class="rc-dot"></div><div><div class="rc-title">Engagement Detail</div><div class="rc-sub">Full engagement data</div></div><span class="rc-type type-excel">Excel</span></div><div class="report-card-body"><div class="sec-div">Sheets to Include</div><div class="cb-group"><label class="cb-item"><input type="checkbox" id="ed-summary" checked> Summary</label><label class="cb-item"><input type="checkbox" id="ed-noeng" checked> No Engagement Since Go-Live</label><label class="cb-item"><input type="checkbox" id="ed-ncnoeng" checked> NC + No Recent Engagement</label><label class="cb-item"><input type="checkbox" id="ed-undel" checked> Undeliverable Emails</label></div><div class="sec-div">Engagement Window</div><select id="ed-window"><option value="60">Last 60 Days</option><option value="30">Last 30 Days</option><option value="90">Last 90 Days</option></select><div class="sec-div" id="ed-cf-hdr" style="display:none">Custom Fields</div><div class="cb-group" id="ed-cf-list"></div></div></div>
@@ -5760,7 +5760,12 @@ async function buildComplianceDetailXL(insureds,coverages,criteria,{statusFilter
   }
   if(chk('cd-entitylist')){
     let rows=statusFilter!=='all'?active.filter(r=>normStatus(r[C.status])===statusFilter):active;
-    rows=[...rows].sort((a,b)=>(a[C.entity_name]||'').localeCompare(b[C.entity_name]||''));
+    // Sort by Location/Project first (A-Z), then by Insured Name (A-Z) within each group
+    rows=[...rows].sort((a,b)=>{
+      const ga=(a[groupField]||'').trim(), gb=(b[groupField]||'').trim();
+      if(ga!==gb) return ga.localeCompare(gb);
+      return (a[C.entity_name]||'').localeCompare(b[C.entity_name]||'');
+    });
     const grpSkip=new Set(isProj?['projectName','jobDescription']:isLoc?['propertyLocation']:[]);
     const hdrs=['Insured Name'];if(groupLabel)hdrs.push(groupLabel);
     cfFields.filter(f=>!grpSkip.has(f.key)).forEach(f=>hdrs.push(f.label));
@@ -6012,8 +6017,7 @@ function buildComplianceSummaryHTML(insureds,coverages,criteria,{reportDate}){
   const topNC=Object.entries(ncMap).sort((a,b)=>b[1]-a[1]).slice(0,8);
 
   // Coverage & criteria distribution
-  const covMap={};coverages.forEach(r=>{const ct=fmtCoverage(r[C.coverage_type]);if(ct)covMap[ct]=(covMap[ct]||0)+1;});
-  const topCov=Object.entries(covMap).sort((a,b)=>b[1]-a[1]).slice(0,8);
+
   const critMap={};criteria.forEach(r=>{const ct=fmtCoverage(r[C.coverage_type]);if(ct)critMap[ct]=(critMap[ct]||0)+1;});
   const topCrit=Object.entries(critMap).sort((a,b)=>b[1]-a[1]).slice(0,8);
 
@@ -6057,7 +6061,6 @@ ${chk('cs-expiring')&&expTotal>0?`${secHdr('Expiring Coverage')}<div style="disp
 ${chk('cs-ncreasons')&&topNC.length?`<div>${secHdr('Top Non-Compliance Reasons')}<div class="bcard">${ncRows}</div></div>`:'<div></div>'}
 ${chk('cs-criteriadist')&&topCrit.length?`<div>${secHdr('Insured Criteria Breakdown')}<div class="bcard">${topCrit.map(([t,n])=>`<div style="display:flex;align-items:center;gap:8px;padding:5px 0;border-bottom:1px solid #F5F7FA;font-size:9px"><div style="width:130px;color:#5A6B7B;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(t)}</div>${progBar(n,topCrit[0]?.[1]||1,'#3872B8')}<div style="width:22px;text-align:right;font-weight:700;color:#3872B8">${n}</div></div>`).join('')}</div></div>`:'<div></div>'}
 </div>
-${chk('cs-coveragedist')&&topCov.length?`${secHdr('Coverage Type Distribution')}<div class="bcard"><div style="display:grid;grid-template-columns:1fr 1fr;gap:0 24px">${topCov.map(([t,n])=>`<div style="display:flex;align-items:center;gap:8px;padding:5px 0;border-bottom:1px solid #F5F7FA;font-size:9px"><div style="width:130px;color:#5A6B7B;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(t)}</div>${progBar(n,topCov[0]?.[1]||1,'#6BA3DE')}<div style="width:22px;text-align:right;font-weight:700;color:#3872B8">${n}</div></div>`).join('')}</div></div>`:''}
 <div class="footer"><div>&#x1F512; Confidential \u2014 HUB CertSecure \u00b7 ${esc(selectedClient.name)} \u00b7 Compliance Summary</div><div>${stamp}</div></div><\/body><\/html>`;
 }
 </script>
@@ -6273,9 +6276,38 @@ function normStatus(s){const v=(s||'').toLowerCase().replace(/[\s\-]/g,'_');if(v
 function fmtStatus(s){const n=normStatus(s);if(n==='compliant')return'Compliant';if(n==='non_compliant')return'Non-Compliant';return'New / Pending';}
 function fmtVerif(s){const v=(s||'').toLowerCase().replace(/[\s\-]/g,'_');if(v==='verified')return'Verified';if(v==='unverified')return'Unverified';if(v==='pending')return'Pending';return s||'Unverified';}
 function fmtCoverage(s){if(!s)return'';var norm=s.trim().toLowerCase().replace(/[\s_\-\/]+/g,' ').replace(/[\u2018\u2019]/g,"'");var canon={'gl':'Commercial General Liability','cgl':'Commercial General Liability','general liability':'Commercial General Liability','commercial general liability':'Commercial General Liability','al':'Business Auto Liability','bal':'Business Auto Liability','auto liability':'Business Auto Liability','business auto liability':'Business Auto Liability','business auto':'Business Auto Liability','commercial auto liability':'Business Auto Liability','automobile liability':'Business Auto Liability','auto insurance':'Business Auto Liability','wc':'Workers Compensation','workers compensation':'Workers Compensation','workers\' compensation':'Workers Compensation','workers\' compensation and employer\'s liability':'Workers Compensation','workers compensation and employers liability':'Workers Compensation','workers comp':'Workers Compensation','ul':'Umbrella / Excess Liability','xs':'Umbrella / Excess Liability','xl':'Umbrella / Excess Liability','umbrella liability':'Umbrella / Excess Liability','excess liability':'Umbrella / Excess Liability','umbrella excess liability':'Umbrella / Excess Liability','umbrella/excess liability':'Umbrella / Excess Liability','commercial umbrella':'Umbrella / Excess Liability','prof':'Professional Liability','eo':'Errors & Omissions','professional liability':'Professional Liability','errors and omissions':'Errors & Omissions','errors & omissions':'Errors & Omissions','cybl':'Cyber Liability','cyber':'Cyber Liability','cyber liability':'Cyber Liability','poll':'Pollution Liability','pollution liability':'Pollution Liability','epli':'Employment Practices Liability','employment practices liability':'Employment Practices Liability','prop':'Commercial Property','bldg':'Commercial Property','commercial property':'Commercial Property','bop':'Business Owners Policy','business owners policy':'Business Owners Policy','im':'Inland Marine','inland marine':'Inland Marine','dirs':'Directors & Officers','directors & officers':'Directors & Officers','directors and officers':'Directors & Officers','additional requirements':'Additional Requirements','homeowners':'Homeowners','cargo liability':'Cargo Liability','environmental liability':'Environmental Liability','farmowners':'Farmowners'};if(canon[norm])return canon[norm];var up=s.toUpperCase().replace(/[\s_\-]+/g,'');var acr={GL:'Commercial General Liability',CGL:'Commercial General Liability',AL:'Business Auto Liability',BAL:'Business Auto Liability',WC:'Workers Compensation',UL:'Umbrella / Excess Liability',XS:'Umbrella / Excess Liability',XL:'Umbrella / Excess Liability',PROF:'Professional Liability',EO:'Errors & Omissions',CYBL:'Cyber Liability',CYBER:'Cyber Liability',POLL:'Pollution Liability',EPLI:'Employment Practices Liability',PROP:'Commercial Property',BLDG:'Commercial Property',BOP:'Business Owners Policy',IM:'Inland Marine',DIRS:'Directors & Officers'};if(acr[up])return acr[up];return s.replace(/_/g,' ').replace(/\b\w/g,function(c){return c.toUpperCase();});}
-function fmtDate(s){if(!s||s==='nan'||s==='N/A')return'\u2014';try{const d=new Date(s);if(isNaN(d.getTime()))return s;return d.toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'});}catch(e){return s;}}
+function fmtDate(s){
+  if(!s||s==='nan'||s==='N/A')return'\u2014';
+  try{
+    let d;
+    if(/^\d{4}-\d{2}-\d{2}$/.test((s||'').trim())){
+      const [y,mo,dy]=s.trim().split('-').map(Number);
+      d=new Date(y,mo-1,dy);  // local midnight — no timezone shift
+    } else {
+      d=new Date(s);
+    }
+    if(isNaN(d.getTime()))return s;
+    return d.toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'});
+  }catch(e){return s;}
+}
 function fmtNotifList(s){if(!s||s==='nan')return'';const c=s.replace(/^\[|\]$/g,'').replace(/[\"\u2019\u2018']/g,'');return c.split(',').map(e=>e.trim()).filter(e=>e&&e.includes('@')).join(' | ');}
-function daysUntilDate(s){if(!s||s==='nan'||s==='N/A')return null;try{const d=new Date(s),now=new Date();now.setHours(0,0,0,0);if(isNaN(d.getTime()))return null;return Math.round((d-now)/86400000);}catch(e){return null;}}
+function daysUntilDate(s){
+  if(!s||s==='nan'||s==='N/A')return null;
+  try{
+    // Parse date-only strings (YYYY-MM-DD) as LOCAL midnight to avoid UTC shift
+    // e.g. '2026-06-12' must render as Jun 12, not Jun 11 in CDT
+    let d;
+    if(/^\d{4}-\d{2}-\d{2}$/.test(s.trim())){
+      const [y,mo,dy]=s.trim().split('-').map(Number);
+      d=new Date(y,mo-1,dy);  // local midnight — no timezone shift
+    } else {
+      d=new Date(s);
+    }
+    const now=new Date();now.setHours(0,0,0,0);
+    if(isNaN(d.getTime()))return null;
+    return Math.round((d-now)/86400000);
+  }catch(e){return null;}
+}
 function pct(n,d){if(!d)return'\u2014';return Math.round(n/d*100)+'%';}
 function barPct(n,max){return max?Math.round(n/max*100):0;}
 function esc(s){return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
