@@ -4,6 +4,7 @@ on:
   schedule:
     - cron: '0 */4 * * *'   # Every 4 hours: 12AM 4AM 8AM 12PM 4PM 8PM UTC
                               # = 7PM 11PM 3AM 7AM 11AM 3PM CT
+    - cron: '0 0 * * *'      # Daily at midnight UTC — triggers daily snapshot
   workflow_dispatch:
 
 concurrency:
@@ -100,7 +101,7 @@ jobs:
           file_pattern: 'data/trustlayer/**'
           push_options: '--force-with-lease'
 
-  # ── Snapshot: end-of-month only, or on manual dispatch ────────────
+  # ── Daily Snapshot: midnight UTC every day ─────────────────────────
   snapshot:
     runs-on: ubuntu-latest
     needs: [sync-evident, sync-trustlayer]
@@ -113,45 +114,79 @@ jobs:
           fetch-depth: 1
 
       - name: Check if snapshot should run
-        id: check_date
+        id: check_time
+        run: |
+          HOUR=$(date -u +%-H)
+          TRIGGER="${{ github.event_name }}"
+          echo "Hour (UTC): $HOUR, Trigger: $TRIGGER"
+          # Run at midnight (hour 0) or on manual dispatch
+          if [ "$HOUR" = "0" ] || [ "$TRIGGER" = "workflow_dispatch" ]; then
+            echo "run=true" >> $GITHUB_OUTPUT
+          else
+            echo "run=false" >> $GITHUB_OUTPUT
+            echo "Skipping snapshot — not midnight UTC and not manual dispatch"
+          fi
+
+      - name: Check if end of month (for insights build)
+        id: check_eom
+        if: steps.check_time.outputs.run == 'true'
         run: |
           TODAY=$(date -u +%-d)
           LAST_DAY=$(date -u -d "$(date -u +%Y-%m-01) +1 month -1 day" +%-d)
           TRIGGER="${{ github.event_name }}"
-          echo "Today: $TODAY, Last day of month: $LAST_DAY, Trigger: $TRIGGER"
+          echo "Today: $TODAY, Last day of month: $LAST_DAY"
           if [ "$TODAY" = "$LAST_DAY" ] || [ "$TRIGGER" = "workflow_dispatch" ]; then
-            echo "run=true" >> $GITHUB_OUTPUT
+            echo "run_insights=true" >> $GITHUB_OUTPUT
+            echo "Will build insights after snapshot"
           else
-            echo "run=false" >> $GITHUB_OUTPUT
-            echo "Skipping snapshot — not last day of month and not manual dispatch"
+            echo "run_insights=false" >> $GITHUB_OUTPUT
+            echo "Skipping insights build — not end of month"
           fi
 
+      - name: Set up Node.js
+        if: steps.check_time.outputs.run == 'true'
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
       - name: Pull latest committed data
-        if: steps.check_date.outputs.run == 'true'
+        if: steps.check_time.outputs.run == 'true'
         run: git pull --rebase origin main
 
-      - name: Take snapshot and push
-        if: steps.check_date.outputs.run == 'true'
-        env:
-          GH_PAT: ${{ secrets.GH_PAT }}
+      - name: Take daily snapshot
+        if: steps.check_time.outputs.run == 'true'
         run: |
           DATE=$(date -u +%Y-%m-%d)
           YEAR=$(date -u +%Y)
-          MONTH=$(date -u +%Y-%m)
 
-          # Evident snapshot
-          EV_DIR="snapshots/${YEAR}/${MONTH}"
+          # Evident snapshot — daily folder YYYY/YYYY-MM-DD/
+          EV_DIR="snapshots/${YEAR}/${DATE}"
           mkdir -p "$EV_DIR"
           [ -f "data/evident/insureds.csv"  ] && cp "data/evident/insureds.csv"  "$EV_DIR/insureds.csv"
           [ -f "data/evident/criteria.csv"  ] && cp "data/evident/criteria.csv"  "$EV_DIR/criteria.csv"
           [ -f "data/evident/coverages.csv" ] && cp "data/evident/coverages.csv" "$EV_DIR/coverages.csv"
 
-          # TrustLayer snapshot
-          TL_DIR="snapshots/trustlayer/${YEAR}/${MONTH}"
+          # TrustLayer snapshot — daily folder trustlayer/YYYY/YYYY-MM-DD/
+          TL_DIR="snapshots/trustlayer/${YEAR}/${DATE}"
           mkdir -p "$TL_DIR"
           [ -f "data/trustlayer/insureds.csv"  ] && cp "data/trustlayer/insureds.csv"  "$TL_DIR/insureds.csv"
           [ -f "data/trustlayer/criteria.csv"  ] && cp "data/trustlayer/criteria.csv"  "$TL_DIR/criteria.csv"
           [ -f "data/trustlayer/coverages.csv" ] && cp "data/trustlayer/coverages.csv" "$TL_DIR/coverages.csv"
+
+          echo "Snapshot taken: EV -> ${EV_DIR}, TL -> ${TL_DIR}"
+
+      - name: Build vendor insights (end of month only)
+        if: steps.check_time.outputs.run == 'true' && steps.check_eom.outputs.run_insights == 'true'
+        run: |
+          echo "Building vendor insights from all snapshots..."
+          node scripts/build-insights.js
+
+      - name: Commit snapshot and insights
+        if: steps.check_time.outputs.run == 'true'
+        env:
+          GH_PAT: ${{ secrets.GH_PAT }}
+        run: |
+          DATE=$(date -u +%Y-%m-%d)
 
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git config user.name "github-actions[bot]"
@@ -165,4 +200,4 @@ jobs:
 
           git commit -m "chore: snapshot ${DATE} [skip ci]"
           git push origin main --force-with-lease
-          echo "Snapshot pushed: EV -> ${EV_DIR}, TL -> ${TL_DIR}"
+          echo "Snapshot committed: ${DATE}"
