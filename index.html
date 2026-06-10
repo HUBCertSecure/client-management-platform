@@ -918,9 +918,9 @@
       <div class="card-title">Select Reports to Generate</div>
       <div class="report-grid">
         <div class="report-card" id="rc-cs"><div class="report-card-hdr" onclick="toggleReport('cs')"><div class="rc-dot"></div><div><div class="rc-title">Compliance Summary</div><div class="rc-sub">Executive compliance overview</div></div><span class="rc-type type-pdf">PDF</span></div><div class="report-card-body"><div class="sec-div">Sections to Include</div><div class="cb-group"><label class="cb-item"><input type="checkbox" id="cs-kpi" checked> Program KPI Cards</label><label class="cb-item"><input type="checkbox" id="cs-breakdown" checked> Compliance Status Breakdown</label><label class="cb-item"><input type="checkbox" id="cs-coi" checked> COI Submission Status</label><label class="cb-item"><input type="checkbox" id="cs-nocoi" checked> No COI on File &#8212; Breakdown</label><label class="cb-item"><input type="checkbox" id="cs-expiring" checked> Expiring Coverage (7 / 30 / 60 / 90 days)</label><label class="cb-item"><input type="checkbox" id="cs-ncreasons" checked> Top Non-Compliance Reasons</label><label class="cb-item"><input type="checkbox" id="cs-criteriadist" checked> Insured Criteria Breakdown</label><label class="cb-item"><input type="checkbox" id="cs-coveragedist" checked> Insured Coverage Breakdown</label></div></div></div>
-        <div class="report-card" id="rc-cd"><div class="report-card-hdr" onclick="toggleReport('cd')"><div class="rc-dot"></div><div><div class="rc-title">Compliance Detail</div><div class="rc-sub">Full entity-level compliance data</div></div><span class="rc-type type-excel">Excel</span></div><div class="report-card-body"><div class="sec-div">Sheets to Include</div><div class="cb-group"><label class="cb-item"><input type="checkbox" id="cd-summary" checked> Summary</label><label class="cb-item"><input type="checkbox" id="cd-entitylist" checked> <span id="cd-entity-lbl">Entity List</span></label><label class="cb-item"><input type="checkbox" id="cd-expiring" checked> Expiring Coverage</label><label class="cb-item"><input type="checkbox" id="cd-nccoverage" checked> NC by Coverage &amp; Criteria</label><label class="cb-item"><input type="checkbox" id="cd-ncreasons" checked> Non-Compliance Reasons</label></div><div class="sec-div">Compliance Status Filter</div><select id="cd-status"><option value="all">All Statuses</option><option value="non_compliant">Non-Compliant Only</option><option value="compliant">Compliant Only</option><option value="pending">New / Pending Only</option></select><div class="sec-div" id="cd-cf-hdr" style="display:none">Custom Fields</div><div class="cb-group" id="cd-cf-list"></div></div></div>
-        <div class="report-card" id="rc-es"><div class="report-card-hdr" onclick="toggleReport('es')"><div class="rc-dot"></div><div><div class="rc-title">Engagement Summary</div><div class="rc-sub">Email engagement overview</div></div><span class="rc-type type-pdf">PDF</span></div><div class="report-card-body"><div class="sec-div">Sections to Include</div><div class="cb-group"><label class="cb-item"><input type="checkbox" id="es-kpi" checked> Email KPI Cards</label><label class="cb-item"><input type="checkbox" id="es-openrate" checked> Open Rate Breakdown</label><label class="cb-item"><input type="checkbox" id="es-delivery" checked> Deliverability Status</label><label class="cb-item"><input type="checkbox" id="es-issues" checked> Delivery Issue Breakdown</label><label class="cb-item"><input type="checkbox" id="es-60day" checked> Activity Window &amp; Funnel</label><label class="cb-item"><input type="checkbox" id="es-nceng" checked> NC Insured Engagement Rate</label><label class="cb-item"><input type="checkbox" id="es-topsubjects"> Top Email Subjects by Open Rate</label></div><div class="sec-div">Engagement Window</div><select id="es-window"><option value="60">Last 60 Days</option><option value="30">Last 30 Days</option><option value="90">Last 90 Days</option></select></div></div>
-        <div class="report-card" id="rc-ed"><div class="report-card-hdr" onclick="toggleReport('ed')"><div class="rc-dot"></div><div><div class="rc-title">Engagement Detail</div><div class="rc-sub">Full engagement data</div></div><span class="rc-type type-excel">Excel</span></div><div class="report-card-body"><div class="sec-div">Sheets to Include</div><div class="cb-group"><label class="cb-item"><input type="checkbox" id="ed-summary" checked> Summary</label><label class="cb-item"><input type="checkbox" id="ed-nocoi" checked> No COIs on File</label><label class="cb-item"><input type="checkbox" id="ed-noeng" checked> No Engagement Since Go-Live</label><label class="cb-item"><input type="checkbox" id="ed-ncnoeng" checked> NC + No Recent Engagement</label><label class="cb-item"><input type="checkbox" id="ed-undel" checked> Undeliverable Emails</label></div><div class="sec-div">Engagement Window</div><select id="ed-window"><option value="60">Last 60 Days</option><option value="30">Last 30 Days</option><option value="90">Last 90 Days</option></select><div class="sec-div" id="ed-cf-hdr" style="display:none">Custom Fields</div><div class="cb-group" id="ed-cf-list"></div></div></div>
+        <div class="report-card" id="rc-cd"><div class="report-card-hdr" onclick="toggleReport('cd')"><div class="rc-dot"></div><div><div class="rc-title">Compliance Detail</div><div class="rc-sub">Full entity-level compliance data</div></div><span class="rc-type type-excel">Excel</span></div><div class="report-card-body"><div class="sec-div">Sheets to Include</div><div class="cb-group"><label class="cb-item"><input type="checkbox" id="cd-summary" checked> Summary</label><label class="cb-item"><input type="checkbox" id="cd-entitylist" checked> <span id="cd-entity-lbl">Entity List</span></label><label class="cb-item"><input type="checkbox" id="cd-nocoi" checked> No COI on File</label><label class="cb-item"><input type="checkbox" id="cd-expiring" checked> Expiring Coverage</label><label class="cb-item"><input type="checkbox" id="cd-nccoverage" checked> NC by Coverage &amp; Criteria</label><label class="cb-item"><input type="checkbox" id="cd-ncreasons" checked> Non-Compliance Reasons</label></div><div class="sec-div">Compliance Status Filter</div><select id="cd-status"><option value="all">All Statuses</option><option value="non_compliant">Non-Compliant Only</option><option value="compliant">Compliant Only</option><option value="pending">New / Pending Only</option></select><div class="sec-div" id="cd-cf-hdr" style="display:none">Custom Fields</div><div class="cb-group" id="cd-cf-list"></div></div></div>
+        <div class="report-card" id="rc-es"><div class="report-card-hdr" onclick="toggleReport('es')"><div class="rc-dot"></div><div><div class="rc-title">Engagement Summary</div><div class="rc-sub">Email engagement overview</div></div><span class="rc-type type-pdf">PDF</span></div><div class="report-card-body"><div class="sec-div">Sections to Include</div><div class="cb-group"><label class="cb-item"><input type="checkbox" id="es-kpi" checked> Email KPI Cards</label><label class="cb-item"><input type="checkbox" id="es-byloc" checked> Engagement by Project / Location</label><label class="cb-item"><input type="checkbox" id="es-openrate" checked> Open Rate Breakdown</label><label class="cb-item"><input type="checkbox" id="es-delivery" checked> Deliverability Status</label><label class="cb-item"><input type="checkbox" id="es-issues" checked> Delivery Issue Breakdown</label><label class="cb-item"><input type="checkbox" id="es-60day" checked> Activity Window &amp; Funnel</label><label class="cb-item"><input type="checkbox" id="es-nceng" checked> NC Insured Engagement Rate</label><label class="cb-item"><input type="checkbox" id="es-topsubjects"> Top Email Subjects by Open Rate</label></div><div class="sec-div">Engagement Window</div><select id="es-window"><option value="60">Last 60 Days</option><option value="30">Last 30 Days</option><option value="90">Last 90 Days</option></select></div></div>
+        <div class="report-card" id="rc-ed"><div class="report-card-hdr" onclick="toggleReport('ed')"><div class="rc-dot"></div><div><div class="rc-title">Engagement Detail</div><div class="rc-sub">Full engagement data</div></div><span class="rc-type type-excel">Excel</span></div><div class="report-card-body"><div class="sec-div">Sheets to Include</div><div class="cb-group"><label class="cb-item"><input type="checkbox" id="ed-summary" checked> Summary</label><label class="cb-item"><input type="checkbox" id="ed-noeng" checked> No Engagement Since Go-Live</label><label class="cb-item"><input type="checkbox" id="ed-ncnoeng" checked> NC + No Recent Engagement</label><label class="cb-item"><input type="checkbox" id="ed-undel" checked> Undeliverable Emails</label></div><div class="sec-div">Engagement Window</div><select id="ed-window"><option value="60">Last 60 Days</option><option value="30">Last 30 Days</option><option value="90">Last 90 Days</option></select><div class="sec-div" id="ed-cf-hdr" style="display:none">Custom Fields</div><div class="cb-group" id="ed-cf-list"></div></div></div>
       </div>
       <div style="margin-top:14px;border-top:1px solid var(--border);padding-top:14px">
         <div class="sec-div" style="margin-bottom:10px;padding-top:0;border-top:none;font-size:10px;letter-spacing:.09em">Additional Reports</div>
@@ -2329,6 +2329,11 @@ async function prtLoad() {
     try { const tlI = await fetchCSV(s.tlInsuredsPath  || 'data/trustlayer/insureds.csv');  liveIns  = [...liveIns,  ...tlI]; } catch(e) {}
     try { const tlC = await fetchCSV(s.tlCriteriaPath  || 'data/trustlayer/criteria.csv');  liveCrit = [...liveCrit, ...tlC]; } catch(e) {}
     try { const tlV = await fetchCSV(s.tlCoveragesPath || 'data/trustlayer/coverages.csv'); liveCov  = [...liveCov,  ...tlV]; } catch(e) {}
+    // Enrich liveIns with custom properties (project/location names) before all calculations
+    try {
+      const liveCP = await fetchCSV(s.customPropsPath || 'data/evident/custom_properties.csv').catch(()=>[]);
+      if (liveCP.length) liveIns = enrichInsureds(liveIns, liveCP);
+    } catch(e) { console.warn('[PRT] custom_properties enrich skipped:', e.message); }
     setMsg('Calculating compliance\u2026');
     const activeAll = liveIns.filter(r => r[C.active] !== 'false' && r[C.paused] !== 'true');
     const totalActive = activeAll.length;
@@ -3318,11 +3323,18 @@ function prtShowClient(clientName) {
     ? `<span style="color:${client.improvement>=0?'#3EBD3E':'#AC1534'};font-size:13px;font-weight:700">${client.improvement>=0?'\u25b2':'\u25bc'}${Math.abs(client.improvement)}% over period</span>`
     : '';
   const statusOrder = { 'non_compliant': 0, 'pending': 1, 'compliant': 2 };
+  // Structure-aware labels
+  const _isProj = client.structure === 'project';
+  const _isLoc  = client.structure === 'location';
+  const _entityCol  = _isProj ? 'Subcontractor' : _isLoc ? 'Tenant' : 'Vendor / Entity';
+  const _groupCol   = _isProj ? 'Project' : _isLoc ? 'Location' : null;
+  const _groupField = _isProj ? '_projectName' : _isLoc ? '_locationName' : null;
   const vendorRows = client.vendors
     .sort((a, b) => (statusOrder[normStatus(a[C.status])]||1) - (statusOrder[normStatus(b[C.status])]||1))
     .map(r => {
       const st = normStatus(r[C.status]);
       const name  = r[C.entity_name] || r['insured_name'] || '\u2014';
+      const group = _groupField ? (r[_groupField] || '\u2014') : null;
       const email = r[C.email] || r['primary_contact_email'] || '\u2014';
       const nextExp = r[C.next_exp] || r['next_expiration'] || '';
       let badgeCls = 'compliant', badgeTxt = 'Compliant';
@@ -3334,7 +3346,8 @@ function prtShowClient(clientName) {
         else if (isExp) { badgeCls = 'expired';       badgeTxt = 'Expired'; }
         else            { badgeCls = 'non-compliant'; badgeTxt = 'Non-Compliant'; }
       }
-      return `<tr><td style="font-weight:600">${esc(name)}</td><td><span class="prt-status-badge ${badgeCls}">${badgeTxt}</span></td><td style="color:var(--muted)">${esc(email)}</td><td style="color:var(--muted)">${nextExp ? new Date(nextExp).toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'}) : '\u2014'}</td></tr>`;
+      const groupCell = _groupCol ? `<td style="color:var(--muted);font-size:11px">${esc(group)}</td>` : '';
+      return `<tr><td style="font-weight:600">${esc(name)}</td>${groupCell}<td><span class="prt-status-badge ${badgeCls}">${badgeTxt}</span></td><td style="color:var(--muted)">${esc(email)}</td><td style="color:var(--muted)">${nextExp ? new Date(nextExp).toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'}) : '\u2014'}</td></tr>`;
     }).join('');
   const ncSection = client.clientTopNC.length ? `
     <div class="prt-section-hdr" style="margin-top:16px"><div class="prt-section-hdr-lbl">Top NC Reasons</div><div class="prt-section-hdr-line"></div></div>
@@ -3347,7 +3360,7 @@ function prtShowClient(clientName) {
     <div class="prt-drill-hdr">
       <div style="flex:1;min-width:0">
         <div class="prt-drill-name">${esc(clientName)}</div>
-        <div style="font-size:12px;color:var(--muted);margin-top:2px">${client.total.toLocaleString()} active vendors &nbsp;&middot;&nbsp; <span style="font-weight:700;color:${rateColor}">${client.rate}% compliant</span> &nbsp;&middot;&nbsp; ${({'general':'General','project':'Construction','location':'Real Estate'})[client.structure]||'General'} &nbsp;&middot;&nbsp; ${client.platform==='trustlayer'?'TrustLayer':'Evident'} &nbsp;&middot;&nbsp; ${chgStr}</div>
+        <div style="font-size:12px;color:var(--muted);margin-top:2px">${client.total.toLocaleString()} active ${_isProj?'subcontractor relationships':_isLoc?'tenants':'vendors'} &nbsp;&middot;&nbsp; <span style="font-weight:700;color:${rateColor}">${client.rate}% compliant</span> &nbsp;&middot;&nbsp; ${({'general':'General','project':'Construction','location':'Real Estate'})[client.structure]||'General'} &nbsp;&middot;&nbsp; ${client.platform==='trustlayer'?'TrustLayer':'Evident'} &nbsp;&middot;&nbsp; ${chgStr}</div>
         ${client.monthlyRates && client.monthlyRates.length ? `<div style="margin-top:10px;max-width:320px">${prtSparkline(client.monthlyRates, client.rate, rateColor)}<div style="font-size:9px;color:var(--muted);display:flex;justify-content:space-between;margin-top:2px"><span>${client.monthlyRates[0].month}</span><span>${client.monthlyRates[client.monthlyRates.length-1].month} → now</span></div></div>` : ''}
       </div>
       <button class="prt-drill-close" onclick="prtShowClient('${clientName.replace(/'/g,"\\'")}')" title="Close">&#10005;</button>
@@ -3359,9 +3372,52 @@ function prtShowClient(clientName) {
       <div class="prt-kpi amber"><div class="prt-kpi-accent"></div><div class="prt-kpi-body"><div class="prt-kpi-lbl">No COI on File</div><div class="prt-kpi-val">${client.noCOI.length}</div><div class="prt-kpi-sub">${pct(client.noCOI.length,client.total)}</div></div></div>
     </div>
     ${ncSection}
-    <div class="prt-section-hdr" style="margin-top:16px"><div class="prt-section-hdr-lbl">All Vendors (${client.vendors.length})</div><div class="prt-section-hdr-line"></div></div>
+    ${(_isProj||_isLoc)?`
+    <div class="prt-section-hdr" style="margin-top:16px">
+      <div class="prt-section-hdr-lbl">By ${_isProj?'Project':'Location'} — Worst First</div>
+      <div class="prt-section-hdr-line"></div>
+    </div>
+    ${(()=>{
+      // Group vendors by project/location
+      const grpMap={};
+      client.vendors.forEach(r=>{
+        const grp=(r[_groupField]||'').trim()||'Unassigned';
+        if(!grpMap[grp])grpMap[grp]={total:0,comp:0,nc:0,expired:0,noCOI:0};
+        grpMap[grp].total++;
+        const st=normStatus(r[C.status]);
+        const nm=(r[C.entity_name]||r['insured_name']||'').trim().toLowerCase();
+        const isNC=st==='non_compliant';
+        const isExp=isNC&&client.expired.some(e=>(e[C.entity_name]||e['insured_name']||'').trim().toLowerCase()===nm);
+        const isNoCOI=isNC&&client.noCOI.some(e=>(e[C.entity_name]||e['insured_name']||'').trim().toLowerCase()===nm);
+        if(st==='compliant')grpMap[grp].comp++;
+        else if(isNC){grpMap[grp].nc++;if(isExp)grpMap[grp].expired++;else if(isNoCOI)grpMap[grp].noCOI++;}
+      });
+      const grpRows=Object.entries(grpMap)
+        .map(([name,g])=>({name,rate:g.total?Math.round(g.comp/g.total*100):0,...g}))
+        .sort((a,b)=>a.rate-b.rate); // worst first
+      if(!grpRows.length)return'<div style="font-size:12px;color:var(--muted)">No group data available.</div>';
+      const cols=[_isProj?'Project':'Location','Subcontractors/Tenants','Compliant','Non-Compliant','Compliance Rate'];
+      const thStyle='padding:7px 10px;text-align:left;font-size:10px;font-weight:700;color:#5A6B7B;letter-spacing:.04em;text-transform:uppercase;border-bottom:2px solid var(--border)';
+      const tdStyle=(i)=>'padding:7px 10px;font-size:12px;border-bottom:1px solid var(--border)'+(i===0?';font-weight:600':'');
+      return \`<table style="width:100%;border-collapse:collapse;margin-bottom:4px">
+        <thead><tr>\${cols.map(h=>\`<th style="\${thStyle}">\${h}</th>\`).join('')}</tr></thead>
+        <tbody>\${grpRows.map((g,ri)=>{
+          const rc=g.rate>=95?'#3EBD3E':g.rate>=85?'#D97706':g.rate>=70?'#EA580C':'#AC1534';
+          const bg=ri%2===0?'':'background:#F9FBFC';
+          return \`<tr style="\${bg}">
+            <td style="\${tdStyle(0)}">\${esc(g.name)}</td>
+            <td style="\${tdStyle(1)}">\${g.total}</td>
+            <td style="\${tdStyle(2)};color:#3EBD3E;font-weight:600">\${g.comp}</td>
+            <td style="\${tdStyle(3)};color:#AC1534;font-weight:600">\${g.nc}</td>
+            <td style="\${tdStyle(4)}"><span style="font-weight:800;color:\${rc}">\${g.rate}%</span></td>
+          </tr>\`;
+        }).join('')}</tbody>
+      </table>\`;
+    })()}
+    `:''}
+    <div class="prt-section-hdr" style="margin-top:16px"><div class="prt-section-hdr-lbl">All ${_isProj?'Subcontractors':_isLoc?'Tenants':'Vendors'} (${client.vendors.length})</div><div class="prt-section-hdr-line"></div></div>
     <table class="prt-vendor-table">
-      <thead><tr><th style="width:35%">Vendor / Entity</th><th style="width:120px">Status</th><th>Contact Email</th><th>Next Expiration</th></tr></thead>
+      <thead><tr><th style="width:30%">${_entityCol}</th>${_groupCol?`<th style="width:22%">${_groupCol}</th>`:''}<th style="width:120px">Status</th><th>Contact Email</th><th>Next Expiration</th></tr></thead>
       <tbody>${vendorRows}</tbody>
     </table>
   </div>`;
@@ -5350,7 +5406,7 @@ async function generate(){
     if(E.cd){setProgress('Building Compliance Detail\u2026','Generating Excel workbook',1);const wb=await buildComplianceDetailXL(insureds,coverages,criteria,{statusFilter,reportDate});downloads.push({label:'Compliance Detail',type:'excel',blob:await xlBlob(wb),filename:`${selectedClient.name} - Compliance Detail - ${new Date().toISOString().split('T')[0]}.xlsx`});}
     if(E.ed){setProgress('Building Engagement Detail\u2026','Generating Excel workbook',1);const wb=await buildEngagementDetailXL(insureds,notifications,{engWindow,reportDate});downloads.push({label:'Engagement Detail',type:'excel',blob:await xlBlob(wb),filename:`${selectedClient.name} - Engagement Detail - ${new Date().toISOString().split('T')[0]}.xlsx`});}
     if(E.cs){setProgress('Building Compliance Summary\u2026','Generating PDF',1);downloads.push({label:'Compliance Summary',type:'pdf',html:buildComplianceSummaryHTML(insureds,coverages,criteria,{reportDate}),filename:`${selectedClient.name} - Compliance Summary - ${new Date().toISOString().split('T')[0]}.pdf`});}
-    if(E.es){setProgress('Building Engagement Summary\u2026','Generating PDF',1);downloads.push({label:'Engagement Summary',type:'pdf',html:buildEngagementSummaryHTML(notifications,{reportDate,engWindow:esWindow}),filename:`${selectedClient.name} - Engagement Summary - ${new Date().toISOString().split('T')[0]}.pdf`});}
+    if(E.es){setProgress('Building Engagement Summary\u2026','Generating PDF',1);downloads.push({label:'Engagement Summary',type:'pdf',html:buildEngagementSummaryHTML(notifications,insureds,{reportDate,engWindow:esWindow}),filename:`${selectedClient.name} - Engagement Summary - ${new Date().toISOString().split('T')[0]}.pdf`});}
     if(E.yer){
       const _poProducer=document.getElementById('po-producer')?.value?.trim()||'';
       if(!_poProducer){toast('Producer name is required — please enter it in the options.','error');}
@@ -5433,17 +5489,27 @@ function addDownloadNotif(d){
 </script>
 <script>
 function enrichInsureds(insureds,customProps){
-  const customMap={};
+  // Build two lookup maps: primary by contact_email, fallback by insured_id
+  const byEmail={}, byId={};
   for(const row of customProps){
-    const key=(row['contact_email']||row['insured_name']||'').trim().toLowerCase();
-    if(!key||key==='nan')continue;
     const fn=(row['field_name']||'').trim(),fv=(row['field_value']||'').trim();
     if(!fn||!fv||fv==='nan')continue;
-    if(!customMap[key])customMap[key]={};
-    if(!(fn in customMap[key]))customMap[key][fn]=fv;
+    const em=(row['contact_email']||'').trim().toLowerCase();
+    if(em&&em!=='nan'){
+      if(!byEmail[em])byEmail[em]={};
+      if(!(fn in byEmail[em]))byEmail[em][fn]=fv;
+    }
+    const id=(row['insured_id']||'').trim();
+    if(id&&id!=='nan'){
+      if(!byId[id])byId[id]={};
+      if(!(fn in byId[id]))byId[id][fn]=fv;
+    }
   }
   return insureds.map(r=>{
-    const key=(r[C.email]||'').trim().toLowerCase(),cp=customMap[key]||{};
+    const em=(r[C.email]||'').trim().toLowerCase();
+    const id=(r[C.insured_id]||'').trim();
+    // Email match first, insured_id fallback
+    const cp=byEmail[em]||byId[id]||{};
     return{...r,_custom:cp,_contractNumber:cp['contractNumber']||'',_entityType:cp['entityType']||'',_projectName:cp['projectName']||cp['jobDescription']||'',_projectNumber:cp['projectNumber']||cp['jobNumber']||'',_locationName:cp['propertyLocation']||'',_notificationList:fmtNotifList(cp['notificationList']||''),_realEmail:(cp['email']||'').trim().toLowerCase()};
   });
 }
@@ -5510,6 +5576,7 @@ async function buildComplianceDetailXL(insureds,coverages,criteria,{statusFilter
     const cdShDir=ws0.addRow(['Sheet','Description']);cdShDir.height=22;cdShDir.eachCell(cell=>applyHdr(cell));
     const cdSheets=[
       [groupLabelFull?`${groupLabelFull} List`:'Entity List', `Full list of active third-parties with compliance status${groupLabelFull?' grouped by '+groupLabelFull:''}`],
+      ['No COI on File','Non-compliant and pending third-parties with no coverage records on file'],
       ['Expiring Coverage','Coverage lines expiring within 90 days, sorted by earliest expiration'],
       ['NC by Coverage & Criteria','Non-compliance counts broken down by coverage type and specific criteria'],
       ['Non-Compliance Reasons','Row-level list of every non-compliance reason per entity'],
@@ -5547,6 +5614,23 @@ async function buildComplianceDetailXL(insureds,coverages,criteria,{statusFilter
       obj['Compliance Status']=fmtStatus(r[C.status]);obj['Verification Status']=fmtVerif(r[C.verify_status]);
       obj['Next Expiration']=fmtDate(r[C.next_exp]);obj['Notification Email']=fmtNotifList(r._notificationList)||r[C.email]||'';return obj;
     }),{colWidths:widths,styleFn:(cell,h,v,alt)=>{if(h==='Compliance Status')applyStatus(cell,v,alt);else applyData(cell,alt);}});
+  }
+  if(chk('cd-nocoi')){
+    const grpSkipNC=new Set(isProj?['projectName','jobDescription']:isLoc?['propertyLocation']:[]);
+    const hdrsNC=['Insured Name'];if(groupLabel)hdrsNC.push(groupLabel);cfFields.filter(f=>!grpSkipNC.has(f.key)).forEach(f=>hdrsNC.push(f.label));hdrsNC.push('Compliance Status','Verification Status','Next Expiration','Notification Email');
+    const widthsNC=[71];if(groupLabel)widthsNC.push(45);cfFields.filter(f=>!grpSkipNC.has(f.key)).forEach(()=>widthsNC.push(22));widthsNC.push(21,23,19,55);
+    const noCoiActive=active.filter(r=>normStatus(r[C.status])!=='compliant');
+    const withCoiSetCD=new Set((coverages||[]).map(r=>r['insured_name']||r['insured_id']||'').filter(Boolean));
+    const noCoiRowsCD=noCoiActive.filter(r=>!withCoiSetCD.has(r[C.entity_name])&&!withCoiSetCD.has(r[C.insured_id])).sort((a,b)=>(a[C.entity_name]||'').localeCompare(b[C.entity_name]||''));
+    if(noCoiRowsCD.length){
+      buildWS(wb,'No COI on File',hdrsNC,noCoiRowsCD.map(r=>{
+        const obj={'Insured Name':r[C.entity_name]||''};if(groupLabel)obj[groupLabel]=r[groupField]||'';
+        cfFields.filter(f=>!grpSkipNC.has(f.key)).forEach(f=>{obj[f.label]=r._custom?.[f.key]||'';});
+        obj['Compliance Status']=fmtStatus(r[C.status]);obj['Verification Status']=fmtVerif(r[C.verify_status]);
+        obj['Next Expiration']=fmtDate(r[C.next_exp]);obj['Notification Email']=fmtNotifList(r._notificationList)||r[C.email]||'';
+        return obj;
+      }),{colWidths:widthsNC,styleFn:(cell,h,v,alt)=>{if(h==='Compliance Status')applyStatus(cell,v,alt);else applyData(cell,alt);}});
+    }
   }
   if(chk('cd-expiring')&&coverages.length){
     const exp=coverages.map(r=>({...r,_days:daysUntilDate(r[C.exp_date])})).filter(r=>r._days!==null&&r._days>=0&&r._days<=90).sort((a,b)=>a._days-b._days);
@@ -5659,14 +5743,13 @@ async function buildEngagementDetailXL(insureds,notifications,{engWindow,reportD
   const fmtEngDate=ds=>{try{return new Date(ds).toLocaleDateString('en-US',{month:'short',day:'2-digit',year:'numeric'});}catch(e){return ds;}};
   if(chk('ed-summary')){
     const ws0=wb.addWorksheet('Summary');ws0.columns=[{width:52},{width:12}];
-    const noCoiRows=active.filter(r=>!hasEmail(r,sentEmails));
     const noEngRows=active.filter(r=>hasEmail(r,sentEmails)&&!hasEmail(r,openedSinceGoLive));
     const recentOpenS=new Set(notifications.filter(n=>isEngOpen(n)&&new Date(n[C.sent_at])>=cutoff).map(normEm).filter(Boolean));
     const ncNoEngRows=active.filter(r=>normStatus(r[C.status])==='non_compliant'&&!hasEmail(r,recentOpenS));
     const dataRange=allDates.length?`${fmtEngDate(allDates[0])} \u2014 ${fmtEngDate(allDates[allDates.length-1])}`:'N/A';
     const goLive=metaGoLive?fmtEngDate(metaGoLive):(allDates.length?fmtEngDate(allDates[0]):'N/A');
     const catHdr=ws0.addRow(['Category','Count']);catHdr.height=22;catHdr.eachCell(cell=>applyHdr(cell));ws0.views=[{state:'frozen',ySplit:1}];
-    [['Active Third-Parties',active.length],['Emails Sent (unique)',sentEmails.size],['No COI on File',noCoiRows.length],['No Engagement Since Go-Live',noEngRows.length],[`Non-Compliant, No ${engWindow}-Day Engagement`,ncNoEngRows.length],['Addresses with Delivery Issues',issueEmails.size]].forEach(([l,n],ri)=>{
+    [['Active Third-Parties',active.length],['Emails Sent (unique)',sentEmails.size],['No Engagement Since Go-Live',noEngRows.length],[`Non-Compliant, No ${engWindow}-Day Engagement`,ncNoEngRows.length],['Addresses with Delivery Issues',issueEmails.size]].forEach(([l,n],ri)=>{
       const alt=ri%2===0,dr=ws0.addRow([l,n]);dr.height=18;applyData(dr.getCell(1),alt);applyData(dr.getCell(2),alt);dr.getCell(2).alignment={horizontal:'right',vertical:'middle'};
     });
     ws0.addRow([]);
@@ -5676,7 +5759,6 @@ async function buildEngagementDetailXL(insureds,notifications,{engWindow,reportD
     const cutoffFmt=new Date(new Date().setDate(new Date().getDate()-engWindow)).toLocaleDateString('en-US',{month:'short',day:'2-digit',year:'numeric'});
     const firstEngDate=allDates.length?new Date(allDates[0]).toLocaleDateString('en-US',{month:'short',day:'2-digit',year:'numeric'}):'program start';
     [
-      ['No COIs on File','Non-Compliant entities with no coverage records on file'],
       ['No Engagement Since Go-Live',`Sent to but never opened or clicked (data from ${firstEngDate})`],
       [`NC + No ${engWindow}-Day Engagement`,`Non-Compliant with no open/click since ${cutoffFmt}`],
       ['Undeliverable Emails','All delivery issues grouped by email address'],
@@ -5707,7 +5789,6 @@ async function buildEngagementDetailXL(insureds,notifications,{engWindow,reportD
   function getWidths(){const w=[71,45];cfFields.filter(f=>!engGrpSkip.has(f.key)).forEach(()=>w.push(22));w.push(21,23,55,19);return w;}
   function makeRow(r){const obj={'Insured Name':r[C.entity_name]||''};if(groupLabel)obj[groupLabel]=r[groupField]||'';cfFields.filter(f=>!engGrpSkip.has(f.key)).forEach(f=>{obj[f.label]=r._custom?.[f.key]||'';});obj['Compliance Status']=fmtStatus(r[C.status]);obj['Verification Status']=fmtVerif(r[C.verify_status]);obj['Notification Email']=fmtNotifList(r._notificationList)||r[C.email]||'';obj['Next Expiration']=fmtDate(r[C.next_exp]);return obj;}
   const statusStyleFn=(cell,h,v,alt)=>{if(h==='Compliance Status')applyStatus(cell,v,alt);else applyData(cell,alt);};
-  if(chk('ed-nocoi')){const rows=active.filter(r=>!hasEmail(r,sentEmails)).map(makeRow);if(rows.length)buildWS(wb,'No COIs on File',getHdrs(),rows,{colWidths:getWidths(),styleFn:statusStyleFn});}
   if(chk('ed-noeng')){const rows=active.filter(r=>!hasEmail(r,openedEmails)&&!hasEmail(r,clickedEmails)).map(makeRow);if(rows.length)buildWS(wb,'No Engagement Since Go-Live',getHdrs(),rows,{colWidths:getWidths(),hdrBg:XL.RED,styleFn:statusStyleFn});}
   if(chk('ed-ncnoeng')){
     const recentOpen=new Set(notifications.filter(n=>isEngOpen(n)&&new Date(n[C.sent_at])>=cutoff).map(normEm).filter(Boolean));
@@ -5781,6 +5862,7 @@ function buildComplianceSummaryHTML(insureds,coverages,criteria,{reportDate}){
   return `<!DOCTYPE html><html><head><meta charset="UTF-8"><title>${esc(selectedClient.name)} \u2014 Compliance Summary</title><style>@import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800;900&display=swap');*{box-sizing:border-box;margin:0;padding:0}body{font-family:'Outfit',Arial,sans-serif;background:white;color:#1E2E3D;width:960px;padding:26px 30px 20px;-webkit-print-color-adjust:exact;print-color-adjust:exact}.kpi4{display:grid;grid-template-columns:repeat(4,1fr);gap:10px}.kpi{border-radius:8px;padding:12px 14px}.kpi-lbl{font-size:8px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;margin-bottom:5px;color:#5A6B7B}.kpi-val{font-size:28px;font-weight:800;line-height:1}.kpi-sub{font-size:10px;font-weight:600;margin-top:3px}.two-col{display:grid;grid-template-columns:1fr 1fr;gap:12px}.three-col{display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px}.bcard{border:1px solid #E8ECF5;border-radius:8px;padding:12px 14px}.donut-wrap{display:flex;align-items:center;gap:14px}.footer{margin-top:18px;padding-top:10px;border-top:1px solid #E8ECF5;display:flex;justify-content:space-between;font-size:8.5px;color:#B0B8C8}@page{size:letter landscape;margin:8mm}@media print{body{-webkit-print-color-adjust:exact;print-color-adjust:exact}}<\/style><\/head><body>
 <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:18px;padding-bottom:14px;border-bottom:3px solid #1E2E3D"><div>${logoTag}<div style="margin-top:10px"><div style="font-size:22px;font-weight:900;color:#1E2E3D">${esc(selectedClient.name)}</div><div style="font-size:11px;color:#5A6B7B;margin-top:2px">Compliance Summary &nbsp;\u00b7&nbsp; ${stamp}</div></div></div><div style="text-align:center;background:${rate>=80?'#E6F5EF':'#FDF0EE'};border-radius:10px;padding:12px 22px"><div style="font-size:8px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:${rateColor}">Compliance Rate</div><div style="font-size:46px;font-weight:900;color:${rateColor};line-height:1">${rate}%</div><div style="font-size:9px;color:${rateColor};margin-top:2px">${comp} of ${total} active</div></div></div>
 ${chk('cs-kpi')?`${secHdr('Program KPIs')}<div class="kpi4"><div class="kpi" style="background:#EEF1F8"><div class="kpi-lbl">Total Active</div><div class="kpi-val" style="color:#1E2E3D">${total}</div></div><div class="kpi" style="background:#E6F5EF"><div class="kpi-lbl">Compliant</div><div class="kpi-val" style="color:#16A34A">${comp}</div><div class="kpi-sub" style="color:#16A34A">${pct(comp,total)} of active</div></div><div class="kpi" style="background:${nc>0?'#FDF0EE':'#E6F5EF'}"><div class="kpi-lbl">Non-Compliant</div><div class="kpi-val" style="color:${nc>0?'#DC2626':'#16A34A'}">${nc}</div><div class="kpi-sub" style="color:${nc>0?'#DC2626':'#16A34A'}">${pct(nc,total)} of active</div></div><div class="kpi" style="background:#EBF2FB"><div class="kpi-lbl">New / Pending</div><div class="kpi-val" style="color:#3872B8">${newp}</div><div class="kpi-sub" style="color:#3872B8">${pct(newp,total)} of active</div></div></div>`:''}
+${(()=>{const _sl=STRUCT[selectedClient.structure];const _gf=selectedClient.structure==='project'?'_projectName':selectedClient.structure==='location'?'_locationName':null;const _gl=selectedClient.structure==='project'?'Project':selectedClient.structure==='location'?'Location':null;if(!_gf||!_gl)return'';const _gmap={};active.forEach(r=>{const g=(r[_gf]||'').trim()||'Unassigned';if(!_gmap[g])_gmap[g]={total:0,comp:0,nc:0};_gmap[g].total++;const st=normStatus(r[C.status]);if(st==='compliant')_gmap[g].comp++;else if(st==='non_compliant')_gmap[g].nc++;});const _grows=Object.entries(_gmap).map(([name,g])=>({name,rate:g.total?Math.round(g.comp/g.total*100):0,...g})).sort((a,b)=>a.rate-b.rate);if(!_grows.length)return'';const _hdr=`<tr><th style="padding:5px 8px;text-align:left;font-size:8px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:#5A6B7B;border-bottom:1px solid #E8ECF5">${_gl}</th><th style="padding:5px 8px;text-align:right;font-size:8px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:#5A6B7B;border-bottom:1px solid #E8ECF5">Total</th><th style="padding:5px 8px;text-align:right;font-size:8px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:#5A6B7B;border-bottom:1px solid #E8ECF5">Compliant</th><th style="padding:5px 8px;text-align:right;font-size:8px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:#5A6B7B;border-bottom:1px solid #E8ECF5">Non-Compliant</th><th style="padding:5px 8px;text-align:right;font-size:8px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:#5A6B7B;border-bottom:1px solid #E8ECF5">Rate</th></tr>`;const _rows=_grows.map((g,i)=>{const rc=g.rate>=95?'#16A34A':g.rate>=85?'#D97706':g.rate>=70?'#EA580C':'#DC2626';const bg=i%2===0?'#FAFBFC':'#FFFFFF';return`<tr style="background:${bg}"><td style="padding:5px 8px;font-size:9px;font-weight:600;color:#1E2E3D;border-bottom:1px solid #F5F7FA">${esc(g.name)}</td><td style="padding:5px 8px;font-size:9px;text-align:right;color:#5A6B7B;border-bottom:1px solid #F5F7FA">${g.total}</td><td style="padding:5px 8px;font-size:9px;text-align:right;font-weight:700;color:#16A34A;border-bottom:1px solid #F5F7FA">${g.comp}</td><td style="padding:5px 8px;font-size:9px;text-align:right;font-weight:700;color:#DC2626;border-bottom:1px solid #F5F7FA">${g.nc}</td><td style="padding:5px 8px;font-size:9px;text-align:right;font-weight:800;color:${rc};border-bottom:1px solid #F5F7FA">${g.rate}%</td></tr>`;}).join('');return`${secHdr('Compliance by '+_gl+' — Worst First')}<div class="bcard" style="padding:0;overflow:hidden"><table style="width:100%;border-collapse:collapse">${_hdr}${_rows}</table></div>`;})()}
 ${(chk('cs-breakdown')||chk('cs-coi'))?`${secHdr('Compliance Overview')}<div class="${chk('cs-breakdown')&&chk('cs-coi')?'two-col':''}">
 ${chk('cs-breakdown')?`<div class="bcard"><div style="font-size:9px;font-weight:700;color:#5A6B7B;letter-spacing:.08em;text-transform:uppercase;margin-bottom:10px">Compliance Status Breakdown</div><div class="donut-wrap">${donut([{v:comp,c:'#16A34A'},{v:nc,c:'#DC2626'},{v:newp,c:'#3872B8'}])}<div style="flex:1">${legend('Compliant',comp,total,'#16A34A')}${legend('Non-Compliant',nc,total,'#DC2626')}${legend('New / Pending',newp,total,'#3872B8')}</div></div></div>`:''}
 ${chk('cs-coi')?`<div class="bcard"><div style="font-size:9px;font-weight:700;color:#5A6B7B;letter-spacing:.08em;text-transform:uppercase;margin-bottom:10px">COI Submission Status</div><div class="donut-wrap">${donut([{v:hasCoi,c:'#16A34A'},{v:noCoiCount,c:'#EA580C'}])}<div style="flex:1">${legend('COI on File',hasCoi,total,'#16A34A')}${legend('No COI on File',noCoiCount,total,'#EA580C')}</div></div></div>`:''}
@@ -5796,7 +5878,7 @@ ${chk('cs-coveragedist')&&topCov.length?`${secHdr('Coverage Type Distribution')}
 }
 </script>
 <script>
-function buildEngagementSummaryHTML(notifications,{reportDate,engWindow}){
+function buildEngagementSummaryHTML(notifications,insureds,{reportDate,engWindow}){
   const cutoff=new Date();cutoff.setDate(cutoff.getDate()-engWindow);
   const stamp=new Date().toLocaleString('en-US',{month:'long',day:'numeric',year:'numeric',hour:'numeric',minute:'2-digit',timeZoneName:'short'});
   const logoSrc=typeof CERTSECURE_LOGO_SRC!=='undefined'?CERTSECURE_LOGO_SRC:(document.querySelector('.header-logo')?.src?.startsWith('data:')?document.querySelector('.header-logo').src:null);
@@ -5817,8 +5899,8 @@ function buildEngagementSummaryHTML(notifications,{reportDate,engWindow}){
   const issueTypes=Object.entries(issueTypeMap).sort((a,b)=>b[1]-a[1]);
   const totalIssues=Object.values(issueTypeMap).reduce((a,b)=>a+b,0);
 
-  // NC engagement (needs insureds — use window context)
-  const clientInsureds = (typeof lastLoadedInsureds !== 'undefined') ? lastLoadedInsureds : [];
+  // NC engagement — use passed-in insureds (already enriched with project/location data)
+  const clientInsureds = (Array.isArray(insureds) && insureds.length) ? insureds : ((typeof lastLoadedInsureds !== 'undefined') ? lastLoadedInsureds : []);
   const ncActive = clientInsureds.filter(r=>r[C.active]!=='false'&&r[C.paused]!=='true'&&normStatus(r[C.status])==='non_compliant');
   const ncEngaged = ncActive.filter(r=>{const emails=[...insuredEmails(r)];return emails.some(e=>openSet.has(e));}).length;
   const ncEngRate = ncActive.length?Math.round(ncEngaged/ncActive.length*100):0;
@@ -5839,6 +5921,7 @@ function buildEngagementSummaryHTML(notifications,{reportDate,engWindow}){
   return `<!DOCTYPE html><html><head><meta charset="UTF-8"><title>${esc(selectedClient.name)} \u2014 Engagement Summary</title><style>@import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800;900&display=swap');*{box-sizing:border-box;margin:0;padding:0}body{font-family:'Outfit',Arial,sans-serif;background:white;color:#1E2E3D;width:960px;padding:26px 30px 20px;-webkit-print-color-adjust:exact;print-color-adjust:exact}.kpi4{display:grid;grid-template-columns:repeat(4,1fr);gap:10px}.kpi{border-radius:8px;padding:12px 14px}.kpi-lbl{font-size:8px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;margin-bottom:5px}.kpi-val{font-size:28px;font-weight:800;line-height:1}.kpi-sub{font-size:10px;font-weight:600;margin-top:3px}.two-col{display:grid;grid-template-columns:1fr 1fr;gap:12px}.three-col{display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px}.bcard{border:1px solid #E8ECF5;border-radius:8px;padding:12px 14px}.donut-wrap{display:flex;align-items:center;gap:14px}.footer{margin-top:18px;padding-top:10px;border-top:1px solid #E8ECF5;display:flex;justify-content:space-between;font-size:8.5px;color:#B0B8C8}@page{size:letter landscape;margin:8mm}@media print{body{-webkit-print-color-adjust:exact;print-color-adjust:exact}}<\/style><\/head><body>
 <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:18px;padding-bottom:14px;border-bottom:3px solid #1E2E3D"><div>${logoTag}<div style="margin-top:10px"><div style="font-size:22px;font-weight:900;color:#1E2E3D">${esc(selectedClient.name)}</div><div style="font-size:11px;color:#5A6B7B;margin-top:2px">Engagement Summary &nbsp;\u00b7&nbsp; Last ${engWindow} days &nbsp;\u00b7&nbsp; ${stamp}</div></div></div><div style="text-align:center;background:${openRate>=50?'#E6F5EF':openRate>=25?'#FFF8E6':'#FDF0EE'};border-radius:10px;padding:12px 22px"><div style="font-size:8px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:${openColor}">Open Rate</div><div style="font-size:46px;font-weight:900;color:${openColor};line-height:1">${openRate}%</div><div style="font-size:9px;color:${openColor};margin-top:2px">${openSet.size} of ${sentSet.size} contacts</div></div></div>
 ${chk('es-kpi')?`${secHdr('Email KPIs')}<div class="kpi4"><div class="kpi" style="background:#EBF2FB"><div class="kpi-lbl" style="color:#1D4ED8">Contacts Reached</div><div class="kpi-val" style="color:#3872B8">${sentSet.size}</div></div><div class="kpi" style="background:${openRate>=50?'#E6F5EF':openRate>=25?'#FFF8E6':'#FDF0EE'}"><div class="kpi-lbl" style="color:${openColor}">Opened</div><div class="kpi-val" style="color:${openColor}">${openSet.size}</div><div class="kpi-sub" style="color:${openColor}">${openRate}% open rate</div></div><div class="kpi" style="background:#EEF1F8"><div class="kpi-lbl" style="color:#5A6B7B">Clicked a Link</div><div class="kpi-val" style="color:#1E2E3D">${clickSet.size}</div><div class="kpi-sub" style="color:#5A6B7B">${clickRate}% click-to-open</div></div><div class="kpi" style="background:${issueSet.size>0?'#FDF0EE':'#E6F5EF'}"><div class="kpi-lbl" style="color:${issueSet.size>0?'#B91C1C':'#15803D'}">Delivery Issues</div><div class="kpi-val" style="color:${issueSet.size>0?'#DC2626':'#16A34A'}">${issueSet.size}</div></div></div>`:''}
+${chk('es-byloc')?(()=>{const _esGf=selectedClient.structure==='project'?'_projectName':selectedClient.structure==='location'?'_locationName':null;const _esGl=selectedClient.structure==='project'?'Project':selectedClient.structure==='location'?'Location':null;if(!_esGf||!_esGl||!clientInsureds.length)return'';const _esActive=clientInsureds.filter(r=>r[C.active]!=='false'&&r[C.paused]!=='true');if(!_esActive.length)return'';const _esGmap={};_esActive.forEach(r=>{const g=(r[_esGf]||'').trim()||'Unassigned';const emails=[...insuredEmails(r)];if(!_esGmap[g])_esGmap[g]={total:0,contacted:0,opened:0,nc:0,ncEng:0};_esGmap[g].total++;if(emails.some(e=>sentSet.has(e)))_esGmap[g].contacted++;if(emails.some(e=>openSet.has(e)))_esGmap[g].opened++;if(normStatus(r[C.status])==='non_compliant'){_esGmap[g].nc++;if(emails.some(e=>openSet.has(e)))_esGmap[g].ncEng++;}});const _esRows=Object.entries(_esGmap).map(([name,g])=>({name,openRate:g.contacted?Math.round(g.opened/g.contacted*100):0,ncEngRate:g.nc?Math.round(g.ncEng/g.nc*100):null,...g})).sort((a,b)=>(a.ncEngRate??101)-(b.ncEngRate??101));if(!_esRows.length)return'';const _esHdr=`<tr><th style="padding:5px 8px;text-align:left;font-size:8px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:#5A6B7B;border-bottom:1px solid #E8ECF5">${_esGl}</th><th style="padding:5px 8px;text-align:right;font-size:8px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:#5A6B7B;border-bottom:1px solid #E8ECF5">Contacts</th><th style="padding:5px 8px;text-align:right;font-size:8px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:#5A6B7B;border-bottom:1px solid #E8ECF5">Opened</th><th style="padding:5px 8px;text-align:right;font-size:8px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:#5A6B7B;border-bottom:1px solid #E8ECF5">Open Rate</th><th style="padding:5px 8px;text-align:right;font-size:8px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:#5A6B7B;border-bottom:1px solid #E8ECF5">NC</th><th style="padding:5px 8px;text-align:right;font-size:8px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:#5A6B7B;border-bottom:1px solid #E8ECF5">NC Engaged</th><th style="padding:5px 8px;text-align:right;font-size:8px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:#5A6B7B;border-bottom:1px solid #E8ECF5">NC Eng Rate</th></tr>`;const _esBody=_esRows.map((g,i)=>{const oc=g.openRate>=50?'#16A34A':g.openRate>=25?'#D97706':'#DC2626';const nc=g.ncEngRate===null?'#B0B8C8':g.ncEngRate>=50?'#16A34A':g.ncEngRate>=25?'#D97706':'#DC2626';const bg=i%2===0?'#FAFBFC':'#FFFFFF';return`<tr style="background:${bg}"><td style="padding:5px 8px;font-size:9px;font-weight:600;color:#1E2E3D;border-bottom:1px solid #F5F7FA">${esc(g.name)}</td><td style="padding:5px 8px;font-size:9px;text-align:right;color:#5A6B7B;border-bottom:1px solid #F5F7FA">${g.contacted}</td><td style="padding:5px 8px;font-size:9px;text-align:right;color:#5A6B7B;border-bottom:1px solid #F5F7FA">${g.opened}</td><td style="padding:5px 8px;font-size:9px;text-align:right;font-weight:700;color:${oc};border-bottom:1px solid #F5F7FA">${g.openRate}%</td><td style="padding:5px 8px;font-size:9px;text-align:right;color:#AC1534;font-weight:600;border-bottom:1px solid #F5F7FA">${g.nc}</td><td style="padding:5px 8px;font-size:9px;text-align:right;color:#5A6B7B;border-bottom:1px solid #F5F7FA">${g.ncEng}</td><td style="padding:5px 8px;font-size:9px;text-align:right;font-weight:800;color:${nc};border-bottom:1px solid #F5F7FA">${g.ncEngRate!==null?g.ncEngRate+'%':'—'}</td></tr>`;}).join('');return`${secHdr('Engagement by '+_esGl+' — Worst NC Engagement First')}<div class="bcard" style="padding:0;overflow:hidden"><table style="width:100%;border-collapse:collapse">${_esHdr}${_esBody}</table></div>`;})():''}
 ${(chk('es-openrate')||chk('es-delivery'))?`${secHdr('Engagement & Deliverability Breakdown')}<div class="${chk('es-openrate')&&chk('es-delivery')?'two-col':''}">
 ${chk('es-openrate')?`<div class="bcard"><div style="font-size:9px;font-weight:700;color:#5A6B7B;letter-spacing:.08em;text-transform:uppercase;margin-bottom:10px">Open Rate Breakdown</div><div class="donut-wrap">${donut([{v:openSet.size,c:openColor},{v:sentSet.size-openSet.size,c:'#E8ECF5'}])}<div style="flex:1">${legend('Opened',openSet.size,sentSet.size,openColor)}${legend('Not Opened',sentSet.size-openSet.size,sentSet.size,'#B0B8C8')}${clickSet.size?legend('Clicked',clickSet.size,sentSet.size,'#3872B8'):''}</div></div></div>`:''}
 ${chk('es-delivery')?`<div class="bcard"><div style="font-size:9px;font-weight:700;color:#5A6B7B;letter-spacing:.08em;text-transform:uppercase;margin-bottom:10px">Deliverability Status</div><div class="donut-wrap">${donut([{v:deliveredSet.size,c:'#16A34A'},{v:issueSet.size,c:'#DC2626'}])}<div style="flex:1">${legend('Delivered',deliveredSet.size,sentSet.size,'#16A34A')}${legend('Delivery Issues',issueSet.size,sentSet.size,'#DC2626')}${legend('Issue Rate',issueSet.size,sentSet.size,'#EA580C')}</div></div></div>`:''}
