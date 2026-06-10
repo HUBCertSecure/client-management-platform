@@ -931,7 +931,7 @@
       <div class="card-title">Select Reports to Generate</div>
       <div class="report-grid">
         <div class="report-card" id="rc-cs"><div class="report-card-hdr" onclick="toggleReport('cs')"><div class="rc-dot"></div><div><div class="rc-title">Compliance Summary</div><div class="rc-sub">Executive compliance overview</div></div><span class="rc-type type-pdf">PDF</span></div><div class="report-card-body"><div class="sec-div">Sections to Include</div><div class="cb-group"><label class="cb-item"><input type="checkbox" id="cs-kpi" checked> Program KPI Cards</label><label class="cb-item"><input type="checkbox" id="cs-breakdown" checked> Compliance Status Breakdown</label><label class="cb-item"><input type="checkbox" id="cs-coi" checked> COI Submission Status</label><label class="cb-item"><input type="checkbox" id="cs-expiring" checked> Expiring Coverage (7 / 30 / 60 / 90 days)</label><label class="cb-item"><input type="checkbox" id="cs-ncreasons" checked> Top Non-Compliance Reasons</label><label class="cb-item"><input type="checkbox" id="cs-criteriadist" checked> Insured Criteria Breakdown</label><label class="cb-item"><input type="checkbox" id="cs-coveragedist" checked> Insured Coverage Breakdown</label></div></div></div>
-        <div class="report-card" id="rc-cd"><div class="report-card-hdr" onclick="toggleReport('cd')"><div class="rc-dot"></div><div><div class="rc-title">Compliance Detail</div><div class="rc-sub">Full entity-level compliance data</div></div><span class="rc-type type-excel">Excel</span></div><div class="report-card-body"><div class="sec-div">Sheets to Include</div><div class="cb-group"><label class="cb-item"><input type="checkbox" id="cd-summary" checked> Summary</label><label class="cb-item"><input type="checkbox" id="cd-entitylist" checked> <span id="cd-entity-lbl">Entity List</span></label><label class="cb-item"><input type="checkbox" id="cd-nocoi" checked> No COI on File</label><label class="cb-item"><input type="checkbox" id="cd-expiring" checked> Expiring Coverage</label><label class="cb-item"><input type="checkbox" id="cd-nccoverage" checked> NC by Coverage &amp; Criteria</label><label class="cb-item"><input type="checkbox" id="cd-ncreasons" checked> Non-Compliance Reasons</label></div><div class="sec-div">Compliance Status Filter</div><select id="cd-status"><option value="all">All Statuses</option><option value="non_compliant">Non-Compliant Only</option><option value="compliant">Compliant Only</option><option value="pending">New / Pending Only</option></select><div class="sec-div" id="cd-cf-hdr" style="display:none">Custom Fields</div><div class="cb-group" id="cd-cf-list"></div></div></div>
+        <div class="report-card" id="rc-cd"><div class="report-card-hdr" onclick="toggleReport('cd')"><div class="rc-dot"></div><div><div class="rc-title">Compliance Detail</div><div class="rc-sub">Full entity-level compliance data</div></div><span class="rc-type type-excel">Excel</span></div><div class="report-card-body"><div class="sec-div">Sheets to Include</div><div class="cb-group"><label class="cb-item"><input type="checkbox" id="cd-summary" checked> Summary</label><label class="cb-item"><input type="checkbox" id="cd-entitylist" checked> <span id="cd-entity-lbl">Entity List</span></label><label class="cb-item"><input type="checkbox" id="cd-exceptions" checked> Exception Analysis</label><label class="cb-item"><input type="checkbox" id="cd-nocoi" checked> No COI on File</label><label class="cb-item"><input type="checkbox" id="cd-expiring" checked> Expiring Coverage</label><label class="cb-item"><input type="checkbox" id="cd-nccoverage" checked> NC by Coverage &amp; Criteria</label><label class="cb-item"><input type="checkbox" id="cd-ncreasons" checked> Non-Compliance Reasons</label></div><div class="sec-div">Compliance Status Filter</div><select id="cd-status"><option value="all">All Statuses</option><option value="non_compliant">Non-Compliant Only</option><option value="compliant">Compliant Only</option><option value="pending">New / Pending Only</option></select><div class="sec-div" id="cd-cf-hdr" style="display:none">Custom Fields</div><div class="cb-group" id="cd-cf-list"></div></div></div>
         <div class="report-card" id="rc-es"><div class="report-card-hdr" onclick="toggleReport('es')"><div class="rc-dot"></div><div><div class="rc-title">Engagement Summary</div><div class="rc-sub">Email engagement overview</div></div><span class="rc-type type-pdf">PDF</span></div><div class="report-card-body"><div class="sec-div">Sections to Include</div><div class="cb-group"><label class="cb-item"><input type="checkbox" id="es-kpi" checked> Email KPI Cards</label><label class="cb-item"><input type="checkbox" id="es-byloc" checked> Engagement by Project / Location</label><label class="cb-item"><input type="checkbox" id="es-openrate" checked> Open Rate Breakdown</label><label class="cb-item"><input type="checkbox" id="es-delivery" checked> Deliverability Status</label><label class="cb-item"><input type="checkbox" id="es-issues" checked> Delivery Issue Breakdown</label><label class="cb-item"><input type="checkbox" id="es-60day" checked> Activity Window &amp; Funnel</label><label class="cb-item"><input type="checkbox" id="es-nceng" checked> NC Insured Engagement Rate</label><label class="cb-item"><input type="checkbox" id="es-topsubjects"> Top Email Subjects by Open Rate</label></div><div class="sec-div">Engagement Window</div><select id="es-window"><option value="60">Last 60 Days</option><option value="30">Last 30 Days</option><option value="90">Last 90 Days</option></select></div></div>
         <div class="report-card" id="rc-ed"><div class="report-card-hdr" onclick="toggleReport('ed')"><div class="rc-dot"></div><div><div class="rc-title">Engagement Detail</div><div class="rc-sub">Full engagement data</div></div><span class="rc-type type-excel">Excel</span></div><div class="report-card-body"><div class="sec-div">Sheets to Include</div><div class="cb-group"><label class="cb-item"><input type="checkbox" id="ed-summary" checked> Summary</label><label class="cb-item"><input type="checkbox" id="ed-noeng" checked> No Engagement Since Go-Live</label><label class="cb-item"><input type="checkbox" id="ed-ncnoeng" checked> NC + No Recent Engagement</label><label class="cb-item"><input type="checkbox" id="ed-undel" checked> Undeliverable Emails</label></div><div class="sec-div">Engagement Window</div><select id="ed-window"><option value="60">Last 60 Days</option><option value="30">Last 30 Days</option><option value="90">Last 90 Days</option></select><div class="sec-div" id="ed-cf-hdr" style="display:none">Custom Fields</div><div class="cb-group" id="ed-cf-list"></div></div></div>
       </div>
@@ -2951,7 +2951,30 @@ function prtRenderIndustry(d) {
         <div class="prt-ind-stat"><div class="prt-ind-stat-lbl">No COI</div><strong style="color:#D97706">${noCOI.toLocaleString()}</strong></div>
       </div>
       <div style="margin-top:10px;font-size:11px">Trend: ${trendStr}</div>
-      ${topNC ? `<div style="margin-top:6px;font-size:11px;color:var(--muted)">Top gap: <strong style="color:var(--text)">${esc(topNC[0])}</strong> (${topNC[1]} NC)</div>` : ''}
+      ${(()=>{
+        if (!topNC) return '';
+        // Gather reasons for the top NC coverage type across all clients in this segment
+        const topGapName = topNC[0];
+        const reasonMap = {};
+        clients.forEach(c => {
+          const gap = (c.clientCovGaps||[]).find(g => g.name === topGapName);
+          if (gap) gap.topReasons.forEach(([r,n]) => { reasonMap[r] = (reasonMap[r]||0)+n; });
+        });
+        const topReasons = Object.entries(reasonMap).sort((a,b)=>b[1]-a[1]).slice(0,3);
+        const reasonHtml = topReasons.length
+          ? '<div style="margin-top:4px;display:flex;flex-direction:column;gap:2px">'
+            + topReasons.map(([r,n]) =>
+              `<div style="display:flex;justify-content:space-between;font-size:10px;color:var(--muted)"><span style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap;flex:1;padding-right:8px">${esc(r)}</span><span style="font-weight:700;color:var(--text);flex-shrink:0">${n}</span></div>`
+            ).join('')
+            + '</div>'
+          : '';
+        return `<div style="margin-top:8px;border-top:1px solid var(--border);padding-top:7px">
+          <div style="font-size:10px;font-weight:700;color:var(--muted);letter-spacing:.04em;text-transform:uppercase;margin-bottom:4px">Top Gap</div>
+          <div style="font-size:11px;font-weight:700;color:var(--text)">${esc(topGapName)}</div>
+          <div style="font-size:10px;color:var(--muted);margin-bottom:3px">${topNC[1]} non-compliant</div>
+          ${reasonHtml}
+        </div>`;
+      })()}
     </div>`;
   }).filter(Boolean);
 
@@ -5688,7 +5711,14 @@ async function buildComplianceDetailXL(insureds,coverages,criteria,{statusFilter
   const stamp=new Date().toLocaleString('en-US',{month:'long',day:'numeric',year:'numeric',hour:'numeric',minute:'2-digit',timeZoneName:'short'});
   const cfFields=getCustomFields('cd'),isProj=selectedClient.structure==='project',isLoc=selectedClient.structure==='location';
   const groupField=isProj?'_projectName':isLoc?'_locationName':'_entityType',groupLabel=sl.groupLabel;
-  const insuredById={};active.forEach(r=>{if(r[C.insured_id])insuredById[r[C.insured_id]]=r;});
+  const insuredById={};const insuredByName={};
+  active.forEach(r=>{
+    if(r[C.insured_id])insuredById[r[C.insured_id]]=r;
+    const nm=(r[C.entity_name]||'').trim().toLowerCase();
+    if(nm&&!insuredByName[nm])insuredByName[nm]=r;
+  });
+  // Helper: look up insured by ID first, then by name
+  const findIns=(id,name)=>insuredById[id]||insuredById[(id||'').trim()]||insuredByName[(name||'').trim().toLowerCase()]||{};
   if(chk('cd-summary')){
     const ws0=wb.addWorksheet('Summary');ws0.columns=[{width:42},{width:12},{width:14}];
     const mHdr=ws0.addRow(['Metric','Count','% of Active']);mHdr.height=22;mHdr.eachCell(cell=>applyHdr(cell));ws0.views=[{state:'frozen',ySplit:1}];
@@ -5703,6 +5733,7 @@ async function buildComplianceDetailXL(insureds,coverages,criteria,{statusFilter
     const cdShDir=ws0.addRow(['Sheet','Description']);cdShDir.height=22;cdShDir.eachCell(cell=>applyHdr(cell));
     const cdSheets=[
       [groupLabelFull?`${groupLabelFull} List`:'Entity List', `Full list of active third-parties with compliance status${groupLabelFull?' grouped by '+groupLabelFull:''}`],
+      ['Exception Analysis','Vendors compliant via approved exceptions or waivers — specific criteria failures that were granted an exemption'],
       ['No COI on File','Non-compliant and pending third-parties with no coverage records on file'],
       ['Expiring Coverage','Coverage lines expiring within 90 days, sorted by earliest expiration'],
       ['NC by Coverage & Criteria','Non-compliance counts broken down by coverage type and specific criteria'],
@@ -5742,6 +5773,36 @@ async function buildComplianceDetailXL(insureds,coverages,criteria,{statusFilter
       obj['Next Expiration']=fmtDate(r[C.next_exp]);obj['Notification Email']=fmtNotifList(r._notificationList)||r[C.email]||'';return obj;
     }),{colWidths:widths,styleFn:(cell,h,v,alt)=>{if(h==='Compliance Status')applyStatus(cell,v,alt);else applyData(cell,alt);}});
   }
+  if(chk('cd-exceptions')&&criteria.length){
+    // Exceptions: vendors whose overall compliance = COMPLIANT but still have nc_reasons entries
+    // These are criteria that were waived/granted an exception by the program administrator
+    const grpSkipEx=new Set(isProj?['projectName','jobDescription']:isLoc?['propertyLocation']:[]);
+    const hdrsEx=['Insured Name'];if(groupLabel)hdrsEx.push(groupLabel);hdrsEx.push('Coverage Type','Exception / Waived Criteria','Compliance Status');
+    const widthsEx=[71];if(groupLabel)widthsEx.push(45);widthsEx.push(35,80,21);
+    const exRows=[];
+    // Find criteria rows where overall = compliant but nc_reasons is NOT empty (waived criteria)
+    criteria.filter(r=>normStatus(r[C.overall_comp])==='compliant'&&(r[C.nc_reasons]||'').trim()).forEach(r=>{
+      const ins=insuredById[r[C.insured_id]]||insuredById[r['insured_id']]||{};
+      (r[C.nc_reasons]||'').split(' | ').map(s=>s.trim()).filter(Boolean).forEach(part=>{
+        const ci=part.indexOf(':');
+        const ct=ci>0?fmtCoverage(part.slice(0,ci).trim()):'';
+        const reason=mapNCReason(ci>0?part.slice(ci+1).trim():part);
+        const obj={'Insured Name':r[C.crit_name]||''};
+        if(groupLabel)obj[groupLabel]=ins[groupField]||'';
+        obj['Coverage Type']=ct;
+        obj['Exception / Waived Criteria']=reason;
+        obj['Compliance Status']='Compliant (Exception)';
+        exRows.push(obj);
+      });
+    });
+    exRows.sort((a,b)=>(a['Insured Name']||'').localeCompare(b['Insured Name']||''));
+    if(exRows.length){
+      buildWS(wb,'Exception Analysis',hdrsEx,exRows,{colWidths:widthsEx,wrapCols:new Set(['Exception / Waived Criteria']),styleFn:(cell,h,v,alt)=>{
+        if(h==='Compliance Status'){cell.fill=xlFill('FFE6F5EF');cell.font={name:'Arial',size:10,bold:true,color:{argb:'FF1A7F5A'}};cell.alignment={vertical:'middle'};}
+        else applyData(cell,alt);
+      }});
+    }
+  }
   if(chk('cd-nocoi')){
     const grpSkipNC=new Set(isProj?['projectName','jobDescription']:isLoc?['propertyLocation']:[]);
     const hdrsNC=['Insured Name'];if(groupLabel)hdrsNC.push(groupLabel);cfFields.filter(f=>!grpSkipNC.has(f.key)).forEach(f=>hdrsNC.push(f.label));hdrsNC.push('Compliance Status','Verification Status','Next Expiration','Notification Email');
@@ -5765,7 +5826,7 @@ async function buildComplianceDetailXL(insureds,coverages,criteria,{statusFilter
     const hdrs=['Insured Name'];if(groupLabel)hdrs.push(groupLabel);cfFields.filter(f=>!grpSkip2.has(f.key)).forEach(f=>hdrs.push(f.label));hdrs.push('Coverage Type','Expiration Date','Days Until','Status');
     const widths=[71];if(groupLabel)widths.push(45);cfFields.filter(f=>!grpSkip2.has(f.key)).forEach(()=>widths.push(22));widths.push(30,16,12,21);
     buildWS(wb,'Expiring Coverage',hdrs,exp.map(r=>{
-      const ins=insuredById[r['insured_id']]||{};
+      const ins=findIns(r['insured_id'],r['insured_name']);
       const obj={'Insured Name':r['insured_name']||'',...(groupLabel?{[groupLabel]:ins[groupField]||''}:{}),'Coverage Type':fmtCoverage(r[C.coverage_type]),'Expiration Date':fmtDate(r[C.exp_date]),'Days Until':r._days,'Status':fmtStatus(ins[C.status]||'')};
       cfFields.filter(f=>!grpSkip2.has(f.key)).forEach(f=>{obj[f.label]=ins._custom?.[f.key]||'';});return obj;
     }),{colWidths:widths,styleFn:(cell,h,v,alt)=>{if(h==='Status')applyStatus(cell,v,alt);else if(h==='Days Until')applyDays(cell,typeof v==='number'?v:parseInt(v)||0,alt);else applyData(cell,alt);}});
@@ -5795,7 +5856,7 @@ async function buildComplianceDetailXL(insureds,coverages,criteria,{statusFilter
     // Build flat rows first, then group by insured name
     const ncRows=[];
     criteria.filter(r=>normStatus(r[C.overall_comp])==='non_compliant'&&r[C.nc_reasons]).forEach(r=>{
-      const ins=insuredById[r['insured_id']]||{};
+      const ins=findIns(r[C.insured_id]||r['insured_id'],r[C.crit_name]);
       (r[C.nc_reasons]||'').split(' | ').map(s=>s.trim()).filter(Boolean).forEach(part=>{
         const ci=part.indexOf(':'),ct=ci>0?fmtCoverage(part.slice(0,ci).trim()):'',reason=mapNCReason(ci>0?part.slice(ci+1).trim():part);
         const obj={'Insured Name':r[C.crit_name]||'',...(groupLabel?{[groupLabel]:ins[groupField]||''}:{}),'Coverage Type':ct,'Non-Compliance Reason':reason};
