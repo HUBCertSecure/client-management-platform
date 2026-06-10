@@ -3,6 +3,7 @@ name: Sync Data
 on:
   schedule:
     - cron: '0 */4 * * *'   # Every 4 hours: 12AM 4AM 8AM 12PM 4PM 8PM UTC
+                              # = 7PM 11PM 3AM 7AM 11AM 3PM CT
   workflow_dispatch:
 
 concurrency:
@@ -13,6 +14,7 @@ permissions:
   contents: write
 
 jobs:
+  # ── Evident + TrustLayer run in parallel ──────────────────────────
   sync-evident:
     runs-on: ubuntu-latest
     steps:
@@ -68,7 +70,7 @@ jobs:
           push_options: '--force-with-lease'
 
   sync-trustlayer:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-latest        # runs in parallel with sync-evident
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -98,7 +100,7 @@ jobs:
           file_pattern: 'data/trustlayer/**'
           push_options: '--force-with-lease'
 
-  # Snapshot runs after both syncs — end of month only (or manual dispatch)
+  # ── Snapshot: end-of-month only, or on manual dispatch ────────────
   snapshot:
     runs-on: ubuntu-latest
     needs: [sync-evident, sync-trustlayer]
@@ -110,25 +112,26 @@ jobs:
           ref: main
           fetch-depth: 1
 
-      - name: Check if last day of month
+      - name: Check if snapshot should run
         id: check_date
         run: |
-          TODAY=$(date -u +%d)
-          LAST_DAY=$(date -u -d "$(date -u +%Y-%m-01) +1 month -1 day" +%d)
-          if [ "$TODAY" = "$LAST_DAY" ] || [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
-            echo "take_snapshot=true" >> $GITHUB_OUTPUT
-            echo "Snapshot: YES (last_day=$TODAY/$LAST_DAY, event=${{ github.event_name }})"
+          TODAY=$(date -u +%-d)
+          LAST_DAY=$(date -u -d "$(date -u +%Y-%m-01) +1 month -1 day" +%-d)
+          TRIGGER="${{ github.event_name }}"
+          echo "Today: $TODAY, Last day of month: $LAST_DAY, Trigger: $TRIGGER"
+          if [ "$TODAY" = "$LAST_DAY" ] || [ "$TRIGGER" = "workflow_dispatch" ]; then
+            echo "run=true" >> $GITHUB_OUTPUT
           else
-            echo "take_snapshot=false" >> $GITHUB_OUTPUT
-            echo "Snapshot: SKIPPED (not last day of month: $TODAY vs $LAST_DAY)"
+            echo "run=false" >> $GITHUB_OUTPUT
+            echo "Skipping snapshot — not last day of month and not manual dispatch"
           fi
 
       - name: Pull latest committed data
-        if: steps.check_date.outputs.take_snapshot == 'true'
+        if: steps.check_date.outputs.run == 'true'
         run: git pull --rebase origin main
 
-      - name: Take end-of-month snapshot and push
-        if: steps.check_date.outputs.take_snapshot == 'true'
+      - name: Take snapshot and push
+        if: steps.check_date.outputs.run == 'true'
         env:
           GH_PAT: ${{ secrets.GH_PAT }}
         run: |
@@ -136,12 +139,14 @@ jobs:
           YEAR=$(date -u +%Y)
           MONTH=$(date -u +%Y-%m)
 
+          # Evident snapshot
           EV_DIR="snapshots/${YEAR}/${MONTH}"
           mkdir -p "$EV_DIR"
           [ -f "data/evident/insureds.csv"  ] && cp "data/evident/insureds.csv"  "$EV_DIR/insureds.csv"
           [ -f "data/evident/criteria.csv"  ] && cp "data/evident/criteria.csv"  "$EV_DIR/criteria.csv"
           [ -f "data/evident/coverages.csv" ] && cp "data/evident/coverages.csv" "$EV_DIR/coverages.csv"
 
+          # TrustLayer snapshot
           TL_DIR="snapshots/trustlayer/${YEAR}/${MONTH}"
           mkdir -p "$TL_DIR"
           [ -f "data/trustlayer/insureds.csv"  ] && cp "data/trustlayer/insureds.csv"  "$TL_DIR/insureds.csv"
@@ -158,6 +163,6 @@ jobs:
             exit 0
           fi
 
-          git commit -m "chore: end-of-month snapshot ${DATE} [skip ci]"
+          git commit -m "chore: snapshot ${DATE} [skip ci]"
           git push origin main --force-with-lease
           echo "Snapshot pushed: EV -> ${EV_DIR}, TL -> ${TL_DIR}"
