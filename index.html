@@ -2749,9 +2749,18 @@ async function prtLoad() {
       const meta = (typeof CLIENT_META_MAP !== 'undefined' && CLIENT_META_MAP[ck]) || {};
       // Also look up structure from CLIENTS array
       const clientDef = (typeof CLIENTS !== 'undefined' ? CLIENTS : []).find(c => c.key === ck || c.client_name === ck) || {};
+      // Also check CLIENTS_FALLBACK directly for TL clients whose key may not match loaded CSV client names
+      const fallbackDef = (typeof CLIENTS_FALLBACK !== 'undefined' ? CLIENTS_FALLBACK : []).find(c => {
+        if (c.client_name === ck) return true;
+        const rpn = (c.rp_common_name||'').toLowerCase().replace(/[^a-z0-9]/g,'');
+        const ckn = ck.toLowerCase().replace(/[^a-z0-9]/g,'');
+        return rpn && (ckn.includes(rpn) || rpn.includes(ckn));
+      }) || {};
+      const resolvedStructure = clientDef.structure || fallbackDef.structure || meta.structure || 'general';
+      const resolvedPlatform  = meta.platform || meta.source || clientDef.platform || clientDef.source || fallbackDef.platform || fallbackDef.source || 'evident';
       clientStats.push({
-        name: ck, platform: meta.platform || meta.source || clientDef.source || 'evident',
-        structure: clientDef.structure || meta.structure || 'general',
+        name: ck, platform: resolvedPlatform,
+        structure: resolvedStructure,
         total: liveActive.length, comp: lComp, nc: lNC, rate: lRate,
         expired: clientExpired, noCOI: clientNoCOI,
         vendors: liveActive, improvement, clientTopNC, clientCovGaps, clientReasonMap, monthlyRates,
@@ -2874,10 +2883,14 @@ function prtRenderVendorAging(d) {
     return;
   }
 
-  // Filter to currently NC vendors only, sorted by consecutive_nc_days desc
+  // Filter to currently NC vendors only — sorted by days NC desc, then alpha within ties
   const ncVendors = vh
     .filter(v => v.current_status === 'non_compliant')
-    .sort((a, b) => Number(b.consecutive_nc_days) - Number(a.consecutive_nc_days));
+    .sort((a, b) => {
+      const daysDiff = Number(b.consecutive_nc_days) - Number(a.consecutive_nc_days);
+      if (daysDiff !== 0) return daysDiff;
+      return (a.vendor_name || '').localeCompare(b.vendor_name || '');
+    });
 
   if (!ncVendors.length) {
     el.innerHTML = `<div style="font-size:12px;color:var(--muted);padding:12px 0;font-style:italic">
@@ -3562,7 +3575,11 @@ function prtRenderEngagement(d) {
     ? `<span style="font-size:9px;background:rgba(62,189,62,.15);color:#2a9e2a;padding:1px 6px;border-radius:3px;font-weight:700">TL</span>`
     : `<span style="font-size:9px;background:rgba(6,120,213,.12);color:#0678D5;padding:1px 6px;border-radius:3px;font-weight:700">EV</span>`;
 
-  const clientRows = filteredClients.sort((a,b) => a.rate - b.rate).map(c => {
+  const clientRows = filteredClients.sort((a,b) => {
+    const rateDiff = a.rate - b.rate;
+    if (rateDiff !== 0) return rateDiff;
+    return (a.name||'').localeCompare(b.name||'');
+  }).map(c => {
     const rateCol = c.rate>=95?'#3EBD3E':c.rate>=85?'#D97706':c.rate>=70?'#EA580C':'#AC1534';
     const barW = Math.round(c.rate);
     let engHtml = '';
@@ -3588,7 +3605,7 @@ function prtRenderEngagement(d) {
       <div style="width:48px;text-align:right;font-size:13px;font-weight:800;color:${rateCol}">${c.rate}%</div>
       <div style="width:80px;text-align:right;font-size:11px;color:var(--muted)">${c.total.toLocaleString()} vendors</div>
       <div style="width:60px;text-align:right;font-size:11px;color:#AC1534">${c.nc} NC</div>
-      <div style="width:60px;text-align:right;font-size:11px;color:#EA580C">${c.expired.length} exp</div>
+      <div style="width:60px;text-align:right;font-size:11px;color:#EA580C">${c.expired.length} Expired</div>
     </div>`;
   }).join('');
 
@@ -3606,7 +3623,7 @@ function prtRenderEngagement(d) {
     + `<div class="prt-section-hdr"><div class="prt-section-hdr-lbl">Compliance &amp; Outreach — By Client</div><div class="prt-section-hdr-line"></div></div>
        <div style="font-size:12px;color:var(--muted);margin-bottom:10px">Sorted lowest compliance first.${hasPerClient?' Outreach stats from engagement CSV.':''}</div>
        <div style="display:flex;gap:28px;font-size:10px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);padding:0 10px;margin-bottom:4px">
-         <div style="width:210px">Client</div><div style="flex:1">Compliance</div><div style="width:48px;text-align:right">Rate</div><div style="width:80px;text-align:right">Vendors</div><div style="width:60px;text-align:right">NC</div><div style="width:60px;text-align:right">Exp</div>
+         <div style="width:210px">Client</div><div style="flex:1">Compliance</div><div style="width:48px;text-align:right">Rate</div><div style="width:80px;text-align:right">Vendors</div><div style="width:60px;text-align:right">NC</div><div style="width:60px;text-align:right">Expired</div>
        </div>
        ${clientRows || '<div style="font-size:12px;color:var(--muted);padding:8px 0">No clients match filter.</div>'}` + issueList;
 }
@@ -3747,7 +3764,13 @@ function prtShowClient(clientName) {
   const _groupCol   = _isProj ? 'Project' : _isLoc ? 'Location' : null;
   const _groupField = _isProj ? '_projectName' : _isLoc ? '_locationName' : null;
   const vendorRows = client.vendors
-    .sort((a, b) => (statusOrder[normStatus(a[C.status])]||1) - (statusOrder[normStatus(b[C.status])]||1))
+    .sort((a, b) => {
+      const statusDiff = (statusOrder[normStatus(a[C.status])]||1) - (statusOrder[normStatus(b[C.status])]||1);
+      if (statusDiff !== 0) return statusDiff;
+      const nameA = (a[C.entity_name] || a['insured_name'] || '').toLowerCase();
+      const nameB = (b[C.entity_name] || b['insured_name'] || '').toLowerCase();
+      return nameA.localeCompare(nameB);
+    })
     .map(r => {
       const st = normStatus(r[C.status]);
       const name  = r[C.entity_name] || r['insured_name'] || '\u2014';
@@ -3856,7 +3879,7 @@ function buildPRTHTML(d) {
     if (_prtFilter.struct !== 'all' && c.structure !== _prtFilter.struct) return false;
     if (_prtFilter.plat  !== 'all' && c.platform  !== _prtFilter.plat)   return false;
     return true;
-  }).sort((a, b) => a.rate - b.rate);
+  }).sort((a, b) => { const rd = a.rate - b.rate; return rd !== 0 ? rd : (a.name||a.key||'').localeCompare(b.name||b.key||''); });
 
   const structLabelMap = { general:'General', project:'Construction', location:'Real Estate' };
   const clientRows = filteredClients.map((c, i) => {
@@ -3989,7 +4012,7 @@ async function buildPRTExcel(d) {
     if (_prtFilter.struct !== 'all' && c.structure !== _prtFilter.struct) return false;
     if (_prtFilter.plat   !== 'all' && c.platform  !== _prtFilter.plat)  return false;
     return true;
-  }).sort((a, b) => a.rate - b.rate);
+  }).sort((a, b) => { const rd = a.rate - b.rate; return rd !== 0 ? rd : (a.name||a.key||'').localeCompare(b.name||b.key||''); });
 
   // ── Sheet 1: Scorecard ───────────────────────────────────────────────
   const ws1 = wb.addWorksheet('Scorecard');
