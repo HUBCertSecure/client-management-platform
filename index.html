@@ -838,6 +838,12 @@
       <div class="prt-spinner"></div>
       <div id="prt-loading-msg">Loading program data&hellip;</div>
     </div>
+    <div id="prt-sync-bar" style="display:none;align-items:center;gap:10px;padding:7px 14px;margin-bottom:10px;background:rgba(6,120,213,0.06);border:1px solid rgba(6,120,213,0.18);border-radius:7px;font-size:12px;color:#263746">
+      <span style="font-size:14px">🕐</span>
+      <span>Data last synced: <strong id="prt-sync-ts">—</strong></span>
+      <span style="flex:1"></span>
+      <button onclick="rgTriggerSync(true)" style="padding:4px 12px;background:#0678D5;color:white;border:none;border-radius:5px;font-size:11px;font-weight:700;cursor:pointer;font-family:inherit;white-space:nowrap">&#8679; Sync Now</button>
+    </div>
     <div id="prt-content" style="display:none">
       <!-- Tab nav -->
       <div class="prt-tabs" id="prt-tabs">
@@ -914,6 +920,13 @@
   <div id="step-2" class="step-panel" style="display:none">
     
     <div class="client-banner" id="client-banner"><div><div class="banner-name" id="banner-name"></div><div class="banner-struct" id="banner-struct"></div></div><span class="banner-change" onclick="goTo(1)">&#8592; Change Client</span></div>
+    <div id="rg-sync-bar" style="display:none;align-items:center;gap:10px;padding:8px 14px;margin-bottom:10px;background:rgba(6,120,213,0.06);border:1px solid rgba(6,120,213,0.18);border-radius:7px;font-size:12px;color:#263746">
+      <span style="font-size:14px">🕐</span>
+      <span>Data last synced: <strong id="rg-sync-ts">—</strong></span>
+      <span style="flex:1"></span>
+      <button id="rg-sync-btn" onclick="rgTriggerSync()" style="padding:4px 12px;background:#0678D5;color:white;border:none;border-radius:5px;font-size:11px;font-weight:700;cursor:pointer;font-family:inherit;white-space:nowrap">&#8679; Sync Now</button>
+      <span id="rg-sync-status" style="font-size:11px;color:var(--muted)"></span>
+    </div>
     <div class="card">
       <div class="card-title">Select Reports to Generate</div>
       <div class="report-grid">
@@ -2545,6 +2558,7 @@ function prtRender(d) {
   loading.style.display = 'none';
   content.style.display = '';
   prtUpdateFilterBadges();
+  prtShowSyncBar(d);
   const narEl = document.getElementById('prt-narrative');
   if (narEl) narEl.textContent = d.narrative;
   const scoreEl = document.getElementById('prt-scorecard');
@@ -4931,6 +4945,7 @@ function goTo(n) {
   if (n === 2 && selectedClient) {
     const s = STRUCT[selectedClient.structure];
     document.getElementById('banner-name').textContent = selectedClient.name;
+    rgLoadSyncTimestamp();
     document.getElementById('banner-struct').textContent = s.groupLabel ? s.label + ' \u2014 Shown by ' + s.groupLabel : s.label;
     document.getElementById('cd-entity-lbl').textContent = s.groupLabel ? s.groupLabel + ' List' : 'Entity List';
     updateGenBtn();
@@ -5356,6 +5371,104 @@ ${['compliant','non_compliant','pending'].map(s=>{const n=tIns.filter(r=>(r.comp
 <div style="text-align:center;font-size:10px;color:#9CA3AF;margin-top:12px">🔒 Confidential · HUB CertSecure · Generated ${stamp}</div>
 <\/body><\/html>`;
 }
+
+// ── SYNC TIMESTAMP & ON-DEMAND SYNC ─────────────────────────────────────────
+function fmtSyncDate(raw) {
+  if (!raw) return 'Unknown';
+  try {
+    // Handles both "06/09/2026" and "2026-06-09" and "2026-06-09 15:13:43"
+    const d = new Date(raw.replace(/(\d{2})\/(\d{2})\/(\d{4})/, '$3-$1-$2'));
+    if (isNaN(d)) return raw;
+    return d.toLocaleString('en-US', {
+      month: 'short', day: 'numeric', year: 'numeric',
+      hour: 'numeric', minute: '2-digit', timeZoneName: 'short'
+    });
+  } catch(e) { return raw; }
+}
+
+async function rgLoadSyncTimestamp() {
+  const bar = document.getElementById('rg-sync-bar');
+  const tsEl = document.getElementById('rg-sync-ts');
+  if (!bar || !tsEl) return;
+  bar.style.display = 'flex';
+  tsEl.textContent = 'Loading…';
+  try {
+    const s = getSettings();
+    if (!s.pat) { tsEl.textContent = 'No token configured'; return; }
+    const rows = await fetchCSV(s.insuredsPath || 'data/evident/insureds.csv').catch(() => []);
+    const syncRaw = rows.length ? (rows[0]['sync_timestamp'] || rows[0]['sync_date'] || '') : '';
+    tsEl.textContent = syncRaw ? fmtSyncDate(syncRaw) : 'Not available';
+  } catch(e) {
+    tsEl.textContent = 'Could not load';
+  }
+}
+
+function prtShowSyncBar(d) {
+  const bar = document.getElementById('prt-sync-bar');
+  const tsEl = document.getElementById('prt-sync-ts');
+  if (!bar || !tsEl) return;
+  // Pull sync_timestamp from liveIns via clientStats vendors
+  let syncRaw = '';
+  if (d && d.clientStats) {
+    for (const c of d.clientStats) {
+      if (c.vendors && c.vendors.length) {
+        syncRaw = c.vendors[0]['sync_timestamp'] || c.vendors[0]['sync_date'] || '';
+        if (syncRaw) break;
+      }
+    }
+  }
+  tsEl.textContent = syncRaw ? fmtSyncDate(syncRaw) : 'Not available';
+  bar.style.display = 'flex';
+}
+
+async function rgTriggerSync(fromPRT) {
+  const btn = fromPRT
+    ? document.querySelector('#prt-sync-bar button')
+    : document.getElementById('rg-sync-btn');
+  const statusEl = document.getElementById('rg-sync-status');
+  const tsEl = fromPRT
+    ? document.getElementById('prt-sync-ts')
+    : document.getElementById('rg-sync-ts');
+
+  if (btn) { btn.disabled = true; btn.textContent = 'Syncing…'; }
+  if (statusEl) statusEl.textContent = '';
+
+  try {
+    const s = getSettings();
+    if (!s.pat) throw new Error('No Access Token configured');
+    const res = await fetch(
+      `https://api.github.com/repos/${s.owner}/${s.repo}/actions/workflows/sync.yml/dispatches`,
+      {
+        method: 'POST',
+        headers: {
+          'Accept': 'application/vnd.github.v3+json',
+          'Authorization': `Bearer ${s.pat}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ ref: s.branch || 'main' })
+      }
+    );
+    if (!res.ok) throw new Error(`GitHub returned ${res.status}`);
+    if (statusEl) statusEl.textContent = 'Sync triggered — data updates in ~5 min';
+    if (tsEl) tsEl.textContent = 'Sync running…';
+    toast('Sync triggered successfully. Data will refresh in ~5 minutes.', 'success');
+    // Auto-refresh timestamp after 5 minutes
+    setTimeout(async () => {
+      if (!fromPRT) await rgLoadSyncTimestamp();
+      if (fromPRT) {
+        // Re-run PRT load to get fresh data
+        _prtData = null;
+        prtLoad();
+      }
+      if (btn) { btn.disabled = false; btn.textContent = fromPRT ? '↑ Sync Now' : '↑ Sync Now'; }
+    }, 5 * 60 * 1000);
+  } catch(e) {
+    toast('Could not trigger sync: ' + e.message, 'error');
+    if (btn) { btn.disabled = false; btn.textContent = '↑ Sync Now'; }
+    if (statusEl) statusEl.textContent = 'Failed — ' + e.message;
+  }
+}
+
 
 async function generate(){
   csDebug.log("REPORT","generate","Report generation started",{reports:[..._selectedReports],client:selectedClient?.name});
