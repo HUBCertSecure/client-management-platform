@@ -376,6 +376,242 @@
     html.dark .home-card { background: #1e2d36; border-color: rgba(0,174,239,.15); }
     html.dark .home-card:hover { border-color: #00AEEF; box-shadow: 0 4px 18px rgba(0,174,239,.18); }
     html.dark .home-welcome-bar { background: rgba(0,174,239,.07); border-color: rgba(0,174,239,.18); }
+
+    /* ═══════════════════════════════════════════════
+       ENTERPRISE VISUAL POLISH  v0.61
+       CSS-only — no JS changes
+    ═══════════════════════════════════════════════ */
+
+    /* 1 ── CARD SHADOWS & BORDER REFINEMENTS
+       Slightly stronger shadow + a cool-tinted top highlight
+       on every .card so they lift off the page background    */
+    .card {
+      border: 1px solid rgba(30,46,61,0.11);
+      box-shadow: 0 1px 3px rgba(30,46,61,0.06), 0 4px 16px rgba(30,46,61,0.10);
+    }
+    .card:hover {
+      box-shadow: 0 2px 6px rgba(30,46,61,0.08), 0 8px 24px rgba(30,46,61,0.13);
+    }
+    html.dark .card {
+      border-color: rgba(255,255,255,0.06);
+      box-shadow: 0 1px 3px rgba(0,0,0,0.25), 0 4px 20px rgba(0,0,0,0.30);
+    }
+
+    /* 2 ── HOME DASHBOARD CARDS
+       Crisper icon treatment, richer hover state, subtle
+       active-press feedback, and a top accent line on hover  */
+    .home-card {
+      border: 1px solid rgba(30,46,61,0.11);
+      border-top: 3px solid transparent;
+      box-shadow: 0 1px 3px rgba(30,46,61,0.06), 0 3px 12px rgba(30,46,61,0.08);
+      gap: 12px;
+      position: relative;
+      overflow: hidden;
+    }
+    .home-card::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(135deg, rgba(0,174,239,0.03) 0%, transparent 60%);
+      opacity: 0;
+      transition: opacity .2s;
+      pointer-events: none;
+    }
+    .home-card:hover {
+      border-color: rgba(0,174,239,0.35);
+      border-top-color: #00AEEF;
+      box-shadow: 0 4px 20px rgba(0,174,239,0.14), 0 1px 4px rgba(30,46,61,0.08);
+      transform: translateY(-3px);
+    }
+    .home-card:hover::before { opacity: 1; }
+    .home-card:active { transform: translateY(-1px); }
+    .home-card-icon {
+      width: 46px;
+      height: 46px;
+      border-radius: 11px;
+      background: linear-gradient(135deg, rgba(0,174,239,0.12) 0%, rgba(6,120,213,0.09) 100%);
+      border: 1px solid rgba(0,174,239,0.18);
+      box-shadow: 0 1px 4px rgba(0,174,239,0.10);
+    }
+    .home-card:hover .home-card-icon {
+      background: linear-gradient(135deg, rgba(0,174,239,0.18) 0%, rgba(6,120,213,0.14) 100%);
+    }
+    .home-card-title { font-size: 15px; font-weight: 700; letter-spacing: .01em; }
+    .home-card-arrow {
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: .04em;
+      text-transform: uppercase;
+      opacity: 0.7;
+      transition: opacity .15s, letter-spacing .15s;
+    }
+    .home-card:hover .home-card-arrow { opacity: 1; letter-spacing: .07em; }
+    html.dark .home-card {
+      border-color: rgba(0,174,239,0.12);
+      border-top-color: transparent;
+      box-shadow: 0 1px 4px rgba(0,0,0,0.25), 0 3px 14px rgba(0,0,0,0.28);
+    }
+    html.dark .home-card:hover {
+      border-color: rgba(0,174,239,0.35);
+      border-top-color: #00AEEF;
+      box-shadow: 0 4px 22px rgba(0,174,239,0.18), 0 1px 4px rgba(0,0,0,0.3);
+    }
+
+    /* 3 ── CLIENT GRID DATA TILES
+       More data-tile feel: tighter visual hierarchy,
+       platform color strip reads as a status indicator     */
+    .client-card {
+      border: 1px solid rgba(30,46,61,0.11) !important;
+      border-left: 4px solid var(--border) !important;
+      border-radius: 8px;
+      box-shadow: 0 1px 3px rgba(30,46,61,0.06);
+      transition: border-color .15s, box-shadow .15s, transform .1s;
+    }
+    .client-card:hover {
+      box-shadow: 0 3px 12px rgba(6,120,213,0.12), 0 1px 3px rgba(30,46,61,0.06) !important;
+      transform: translateY(-1px);
+    }
+    .client-card.selected {
+      box-shadow: 0 0 0 3px rgba(6,120,213,0.15), 0 3px 12px rgba(6,120,213,0.10) !important;
+    }
+    .client-card.plat-ev { border-left-color: #0678D5 !important; }
+    .client-card.plat-tl { border-left-color: #D4570A !important; }
+    .client-card.plat-ev:hover,
+    .client-card.plat-ev.selected { border-left-color: #0563b8 !important; }
+    .client-card.plat-tl:hover,
+    .client-card.plat-tl.selected { border-left-color: #EA6D0A !important; }
+    html.dark .client-card {
+      border-color: rgba(255,255,255,0.07) !important;
+      box-shadow: 0 1px 4px rgba(0,0,0,0.22);
+    }
+    html.dark .client-card:hover {
+      box-shadow: 0 3px 14px rgba(0,174,239,0.15), 0 1px 4px rgba(0,0,0,0.22) !important;
+    }
+
+    /* 4 ── CONTENT AREA VISUAL DEPTH
+       A very subtle inner shadow on the content wrapper
+       so it reads as a raised surface vs flat bg           */
+    .content-wrap {
+      background: var(--page-bg);
+    }
+    .main {
+      padding: 20px 26px 48px;
+    }
+
+    /* 5 ── BREADCRUMB / PAGE HEADER AREA
+       Bolder visual divider, slightly more height,
+       better title/subtitle proportions                    */
+    .breadcrumb-bar {
+      height: 58px;
+      min-height: 58px;
+      padding: 0 24px;
+      border-bottom: 1px solid var(--border);
+      background: var(--card);
+      box-shadow: 0 1px 0 rgba(30,46,61,0.06), 0 2px 8px rgba(30,46,61,0.04);
+      position: sticky;
+      top: 52px;
+      z-index: 40;
+    }
+    .bc-page {
+      font-size: 15px;
+      font-weight: 700;
+      color: var(--text);
+      letter-spacing: .01em;
+    }
+    .page-title {
+      font-size: 22px;
+      font-weight: 800;
+      letter-spacing: -.01em;
+    }
+    .page-hdr {
+      padding-bottom: 14px;
+      border-bottom: 2px solid rgba(6,120,213,0.13);
+      margin-bottom: 20px;
+    }
+    html.dark .breadcrumb-bar {
+      background: var(--card);
+      border-color: rgba(255,255,255,0.06);
+      box-shadow: 0 1px 0 rgba(0,0,0,0.2), 0 2px 8px rgba(0,0,0,0.15);
+    }
+
+    /* 6 ── BUTTON STYLE REFINEMENTS
+       Primary: deeper gradient + subtle shadow.
+       Secondary: more defined border + clean hover.
+       All buttons: slightly tighter radius for crispness.  */
+    .btn-primary {
+      background: linear-gradient(180deg, #1384E0 0%, #0570C9 100%);
+      box-shadow: 0 1px 3px rgba(6,120,213,0.25), inset 0 1px 0 rgba(255,255,255,0.12);
+      border: 1px solid rgba(5,99,184,0.4);
+    }
+    .btn-primary:hover {
+      background: linear-gradient(180deg, #0E78CF 0%, #0560B0 100%);
+      box-shadow: 0 2px 6px rgba(6,120,213,0.30), inset 0 1px 0 rgba(255,255,255,0.10);
+    }
+    .btn-primary:active {
+      background: #0560B0;
+      box-shadow: inset 0 1px 3px rgba(0,0,0,0.15);
+      transform: translateY(1px);
+    }
+    .btn-secondary {
+      border: 1.5px solid rgba(6,120,213,0.55);
+      background: rgba(6,120,213,0.03);
+    }
+    .btn-secondary:hover {
+      background: rgba(6,120,213,0.07);
+      border-color: #0678D5;
+    }
+    html.dark .btn-primary {
+      background: linear-gradient(180deg, #3A9FE8 0%, #2880CC 100%);
+      box-shadow: 0 1px 4px rgba(0,0,0,0.3), inset 0 1px 0 rgba(255,255,255,0.1);
+    }
+    html.dark .btn-primary:hover {
+      background: linear-gradient(180deg, #4AAFF8 0%, #3090DC 100%);
+    }
+
+    /* 7 ── SETTINGS BOX DEPTH
+       Ensure settings boxes read as cards on dark bg        */
+    .settings-box {
+      border: 1px solid rgba(30,46,61,0.10);
+      box-shadow: 0 1px 4px rgba(30,46,61,0.07), 0 2px 8px rgba(30,46,61,0.04);
+    }
+    html.dark .settings-box {
+      border-color: rgba(255,255,255,0.06);
+      box-shadow: 0 1px 4px rgba(0,0,0,0.2);
+    }
+
+    /* 8 ── REPORT CARDS
+       Cleaner border, shadow lift on hover                  */
+    .report-card {
+      box-shadow: 0 1px 3px rgba(30,46,61,0.06);
+      transition: border-color .15s, box-shadow .15s;
+    }
+    .report-card:hover {
+      box-shadow: 0 3px 12px rgba(6,120,213,0.10), 0 1px 3px rgba(30,46,61,0.06);
+    }
+    .report-card.selected {
+      box-shadow: 0 0 0 3px rgba(6,120,213,0.12), 0 2px 10px rgba(6,120,213,0.08);
+    }
+
+    /* 9 ── SIDEBAR ACTIVE ITEM
+       Crisper active highlight with micro-glow             */
+    .sb-item.active {
+      background: rgba(6,120,213,0.20);
+      border-left: 3px solid #00AEEF;
+      box-shadow: inset 0 0 12px rgba(0,174,239,0.06);
+    }
+    .sb-item:hover {
+      background: rgba(255,255,255,0.07);
+    }
+
+    /* 10 ── INPUT FOCUS RING REFINEMENT
+       Consistent, crisp focus ring across all inputs       */
+    select:focus, input[type="text"]:focus,
+    input[type="date"]:focus, input[type="email"]:focus,
+    input[type="password"]:focus, input[type="month"]:focus {
+      border-color: var(--blue);
+      box-shadow: 0 0 0 3px rgba(6,120,213,0.12);
+      outline: none;
+    }
 </style>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/lucide/0.383.0/umd/lucide.min.js"></script>
 </head>
