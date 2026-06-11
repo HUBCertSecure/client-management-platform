@@ -263,12 +263,14 @@ function main() {
     const contacts    = readCsv("contacts.csv");
 
     // Build vendor_id -> primary email map from contacts
+    // Note: is_primary / is_default_request_recipient may be boolean true or string "true"
     const emailByVendor = {};
+    function isTruthy(val) { return val === true || val === "true"; }
     for (const c of contacts) {
       const vid = (c.vendor_id || "").trim();
       if (!vid) continue;
       // Prefer default_request_recipient, then primary, then first contact
-      if (!emailByVendor[vid] || c.is_default_request_recipient === "true" || c.is_primary === "true") {
+      if (!emailByVendor[vid] || isTruthy(c.is_default_request_recipient) || isTruthy(c.is_primary)) {
         if (c.email) emailByVendor[vid] = c.email.trim();
       }
     }
