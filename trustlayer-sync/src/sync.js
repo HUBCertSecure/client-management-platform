@@ -885,14 +885,31 @@ async function main() {
 
     // ── DOCUMENT REQUESTS (all clients) ──────────────────────────
     // GET /parties/{id}/document-request (v1) — sent_at/opened_at per vendor
+    // v1 uses different IDs than v2 — build a name→v1ID map first
+    let v1PartyIdByName = {};
+    try {
+      const v1Parties = await fetchAllV1(client.token, "/parties");
+      for (const p of v1Parties) {
+        const name = (p.name || "").trim().toLowerCase();
+        if (name) v1PartyIdByName[name] = p.id || p._id || "";
+      }
+      console.log(`  v1 parties fetched for ID mapping: ${v1Parties.length}`);
+    } catch(e) {
+      console.warn(`  ⚠️  Could not fetch v1 parties for document-request mapping: ${e.message}`);
+    }
+
     await pooled(vendors, 5, async (v) => {
-      const id = v._id || v.id;
+      const v2id  = v._id || v.id;
+      const vname = (v.name || "").trim().toLowerCase();
+      // Prefer v1 party ID (required for /parties/{id}/document-request endpoint)
+      // Fall back to v2 ID if no match found (will likely 404 but won't break)
+      const id = v1PartyIdByName[vname] || v2id;
       try {
         const dr = await apiGet(client.token, BASE_V1, `/parties/${id}/document-request`);
         if (dr) {
           rows.document_requests.push({
             client:      client.name,
-            vendor_id:   id,
+            vendor_id:   v2id,   // keep v2 ID here so transform.js join works with contacts.csv
             vendor_name: v.name || "",
             request_id:  dr.id || dr._id || "",
             status:      dr.status || "",
