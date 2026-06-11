@@ -1,35 +1,36 @@
 client,id,name,description,status,is_default,created_at,updated_at,sync_date
-"Block Real Estate Services, LLC",69bd7368b107ee7b36bb6b1b,Block Requirements,,,,2026-03-20,2026-06-02,2026-06-10
-Construction Management Inc.,69c55ecf8839dd8358282da8,Standard,,,,2026-03-26,2026-04-27,2026-06-10
-Construction Management Inc.,69cbe8e725202035353de1a8,EIFS,,,,2026-03-31,2026-04-27,2026-06-10
-Construction Management Inc.,69eb9fff2e42b9ac6e90df30,Standard + Exception,,,,2026-04-24,2026-04-27,2026-06-10
-QTS Data Centers,69f0b71c7b24cf3460d0bdd6,Standard (Do Not Use),,,,2026-03-26,2026-05-15,2026-06-10
-QTS Data Centers,69fce83434cc7f59e6910372,Standard 1,,,,2026-05-07,2026-06-03,2026-06-10
-QTS Data Centers,69fde8d3e65517f425635394,Standard 2,,,,2026-05-08,2026-06-03,2026-06-10
-QTS Data Centers,69fdef080bb484cab5136290,Standard 3,,,,2026-05-08,2026-06-03,2026-06-10
-QTS Data Centers,69fdf12102bb2c42a87a56a7,Standard 4,,,,2026-05-08,2026-06-03,2026-06-10
-QTS Data Centers,69fdfbdf8e25e7a0d91b078a,Standard 5,,,,2026-05-08,2026-06-03,2026-06-10
-QTS Data Centers,69fe006b02bb2c42a87dec88,Standard 6,,,,2026-05-08,2026-06-03,2026-06-10
-QTS Data Centers,69fe03728e25e7a0d91d00fb,Standard 7,,,,2026-05-08,2026-06-03,2026-06-10
-QTS Data Centers,69fe0e43d36549433c220e1e,Standard 8,,,,2026-05-08,2026-06-03,2026-06-10
-QTS Data Centers,69fe11e13b208288e0b0bb68,Standard 9,,,,2026-05-08,2026-06-03,2026-06-10
-QTS Data Centers,69fe14bed4f5e8104096e3bf,Standard 10 - UMB 25M,,,,2026-05-08,2026-06-03,2026-06-10
-QTS Data Centers,6a037235605ede0990b10f5c,Standard 10 - UMB 50M,,,,2026-05-12,2026-06-03,2026-06-10
-QTS Data Centers,6a0373701881bdb244753541,Standard 11,,,,2026-05-12,2026-06-03,2026-06-10
-QTS Data Centers,6a0373ed58f4c309a0863a0d,Standard 12,,,,2026-05-12,2026-06-03,2026-06-10
-QTS Data Centers,6a037470da0b110dd497005a,Standard 13,,,,2026-05-12,2026-06-03,2026-06-10
-QTS Data Centers,6a03750f605ede0990b1a4e1,Standard 14,,,,2026-05-12,2026-06-03,2026-06-10
-QTS Data Centers,6a0376501881bdb24475c4b4,Standard 14 with Cyber Liability,,,,2026-05-12,2026-06-03,2026-06-10
-QTS Data Centers,6a03772c0e17cddf860d086d,Standard 15,,,,2026-05-12,2026-06-03,2026-06-10
-QTS Data Centers,6a0377860e17cddf860d17a1,Standard 16,,,,2026-05-12,2026-06-03,2026-06-10
-QTS Data Centers,6a0377e0a25a3f55f060377e,Standard 17,,,,2026-05-12,2026-06-03,2026-06-10
-QTS Data Centers,6a0729c757406a9433ddf24d,Standard 1 with Drone Liability,,,,2026-05-15,2026-06-03,2026-06-10
-QTS Data Centers,6a072aa2fb05b489b73170e4,Standard 2 with Drone Liability,,,,2026-05-15,2026-06-03,2026-06-10
-QTS Data Centers,6a072ad1c367c496881e53ec,Standard 3 with Drone Liability,,,,2026-05-15,2026-06-03,2026-06-10
-QTS Data Centers,6a072af557406a9433de48ed,Standard 14 with Drone Liability,,,,2026-05-15,2026-06-03,2026-06-10
-Excel Constructors Inc.,6a0cbe7b355ad99530e2eae2,Standard,,,,2026-03-26,2026-05-20,2026-06-10
-Excel Constructors Inc.,6a0dcda5fac3e62538742b18,Comp Ops,,,,2026-05-20,2026-05-20,2026-06-10
-DEMO Client,69fa47d8ad94f1fe3056a61f,Standard,,,,2026-03-26,2026-03-26,2026-06-10
-DEMO Client,6a07685857406a9433eb4803,Construction Standard,,,,2026-05-15,2026-06-08,2026-06-10
-DEMO Client,6a076893b333109abbfb3fb2,Real Estate Standard,,,,2026-05-15,2026-05-18,2026-06-10
-DEMO Client,6a07689c50ffd024b079eb4b,Vendor Standard,,,,2026-05-15,2026-05-18,2026-06-10
+"Block Real Estate Services, LLC",69bd7368b107ee7b36bb6b1b,Block Requirements,,,,2026-03-20,2026-06-02,2026-06-11
+Construction Management Inc.,69c55ecf8839dd8358282da8,Standard,,,,2026-03-26,2026-04-27,2026-06-11
+Construction Management Inc.,69cbe8e725202035353de1a8,EIFS,,,,2026-03-31,2026-04-27,2026-06-11
+Construction Management Inc.,69eb9fff2e42b9ac6e90df30,Standard + Exception,,,,2026-04-24,2026-04-27,2026-06-11
+QTS Data Centers,69f0b71c7b24cf3460d0bdd6,Standard (Do Not Use),,,,2026-03-26,2026-05-15,2026-06-11
+QTS Data Centers,69fce83434cc7f59e6910372,Standard 1,,,,2026-05-07,2026-06-03,2026-06-11
+QTS Data Centers,69fde8d3e65517f425635394,Standard 2,,,,2026-05-08,2026-06-03,2026-06-11
+QTS Data Centers,69fdef080bb484cab5136290,Standard 3,,,,2026-05-08,2026-06-03,2026-06-11
+QTS Data Centers,69fdf12102bb2c42a87a56a7,Standard 4,,,,2026-05-08,2026-06-03,2026-06-11
+QTS Data Centers,69fdfbdf8e25e7a0d91b078a,Standard 5,,,,2026-05-08,2026-06-03,2026-06-11
+QTS Data Centers,69fe006b02bb2c42a87dec88,Standard 6,,,,2026-05-08,2026-06-03,2026-06-11
+QTS Data Centers,69fe03728e25e7a0d91d00fb,Standard 7,,,,2026-05-08,2026-06-03,2026-06-11
+QTS Data Centers,69fe0e43d36549433c220e1e,Standard 8,,,,2026-05-08,2026-06-03,2026-06-11
+QTS Data Centers,69fe11e13b208288e0b0bb68,Standard 9,,,,2026-05-08,2026-06-03,2026-06-11
+QTS Data Centers,69fe14bed4f5e8104096e3bf,Standard 10 - UMB 25M,,,,2026-05-08,2026-06-03,2026-06-11
+QTS Data Centers,6a037235605ede0990b10f5c,Standard 10 - UMB 50M,,,,2026-05-12,2026-06-03,2026-06-11
+QTS Data Centers,6a0373701881bdb244753541,Standard 11,,,,2026-05-12,2026-06-03,2026-06-11
+QTS Data Centers,6a0373ed58f4c309a0863a0d,Standard 12,,,,2026-05-12,2026-06-03,2026-06-11
+QTS Data Centers,6a037470da0b110dd497005a,Standard 13,,,,2026-05-12,2026-06-03,2026-06-11
+QTS Data Centers,6a03750f605ede0990b1a4e1,Standard 14,,,,2026-05-12,2026-06-03,2026-06-11
+QTS Data Centers,6a0376501881bdb24475c4b4,Standard 14 with Cyber Liability,,,,2026-05-12,2026-06-03,2026-06-11
+QTS Data Centers,6a03772c0e17cddf860d086d,Standard 15,,,,2026-05-12,2026-06-03,2026-06-11
+QTS Data Centers,6a0377860e17cddf860d17a1,Standard 16,,,,2026-05-12,2026-06-03,2026-06-11
+QTS Data Centers,6a0377e0a25a3f55f060377e,Standard 17,,,,2026-05-12,2026-06-03,2026-06-11
+QTS Data Centers,6a0729c757406a9433ddf24d,Standard 1 with Drone Liability,,,,2026-05-15,2026-06-03,2026-06-11
+QTS Data Centers,6a072aa2fb05b489b73170e4,Standard 2 with Drone Liability,,,,2026-05-15,2026-06-03,2026-06-11
+QTS Data Centers,6a072ad1c367c496881e53ec,Standard 3 with Drone Liability,,,,2026-05-15,2026-06-03,2026-06-11
+QTS Data Centers,6a072af557406a9433de48ed,Standard 14 with Drone Liability,,,,2026-05-15,2026-06-03,2026-06-11
+QTS Data Centers,6a2aba326a1b36e52508b72c,Standard 18 with Drone Liability,,,,2026-06-11,2026-06-11,2026-06-11
+Excel Constructors Inc.,6a0cbe7b355ad99530e2eae2,Standard,,,,2026-03-26,2026-06-10,2026-06-11
+Excel Constructors Inc.,6a0dcda5fac3e62538742b18,Comp Ops,,,,2026-05-20,2026-06-10,2026-06-11
+DEMO Client,69fa47d8ad94f1fe3056a61f,Standard,,,,2026-03-26,2026-03-26,2026-06-11
+DEMO Client,6a07685857406a9433eb4803,Construction Standard,,,,2026-05-15,2026-06-08,2026-06-11
+DEMO Client,6a076893b333109abbfb3fb2,Real Estate Standard,,,,2026-05-15,2026-05-18,2026-06-11
+DEMO Client,6a07689c50ffd024b079eb4b,Vendor Standard,,,,2026-05-15,2026-05-18,2026-06-11
