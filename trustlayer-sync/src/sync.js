@@ -893,23 +893,25 @@ async function main() {
         const name = (p.name || "").trim().toLowerCase();
         if (name) v1PartyIdByName[name] = p.id || p._id || "";
       }
-      console.log(`  v1 parties fetched for ID mapping: ${v1Parties.length}`);
+      console.log(`  v1 parties fetched for ID mapping: ${Object.keys(v1PartyIdByName).length}`);
     } catch(e) {
       console.warn(`  ⚠️  Could not fetch v1 parties for document-request mapping: ${e.message}`);
     }
 
-    await pooled(vendors, 5, async (v) => {
+    // Concurrency 2 + 500ms delay per request to avoid 429s on this v1 endpoint
+    await pooled(vendors, 2, async (v) => {
       const v2id  = v._id || v.id;
       const vname = (v.name || "").trim().toLowerCase();
       // Prefer v1 party ID (required for /parties/{id}/document-request endpoint)
       // Fall back to v2 ID if no match found (will likely 404 but won't break)
       const id = v1PartyIdByName[vname] || v2id;
+      await sleep(500);
       try {
         const dr = await apiGet(client.token, BASE_V1, `/parties/${id}/document-request`);
         if (dr) {
           rows.document_requests.push({
             client:      client.name,
-            vendor_id:   v2id,   // keep v2 ID here so transform.js join works with contacts.csv
+            vendor_id:   v2id,   // keep v2 ID so transform.js join works with contacts.csv
             vendor_name: v.name || "",
             request_id:  dr.id || dr._id || "",
             status:      dr.status || "",
